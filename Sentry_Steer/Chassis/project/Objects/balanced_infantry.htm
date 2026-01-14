@@ -3,7 +3,7 @@
 <title>Static Call Graph - [.\Objects\balanced_infantry.axf]</title></head>
 <body><HR>
 <H1>Static Call Graph for image .\Objects\balanced_infantry.axf</H1><HR>
-<BR><P>#&#060CALLGRAPH&#062# ARM Linker, 5060750: Last Updated: Tue Jan 13 23:05:16 2026
+<BR><P>#&#060CALLGRAPH&#062# ARM Linker, 5060750: Last Updated: Wed Jan 14 22:40:03 2026
 <BR><P>
 <H3>Maximum Stack Usage =        240 bytes + Unknown(Cycles, Untraceable Function Pointers)</H3><H3>
 Call chain for Maximum Stack Depth:</H3>
@@ -385,6 +385,17 @@ Global Symbols
 <P><STRONG><a name="[a]"></a>WWDG_IRQHandler</STRONG> (Thumb, 0 bytes, Stack size 0 bytes, startup_stm32f40_41xxx.o(.text))
 <BR>[Address Reference Count : 1]<UL><LI> startup_stm32f40_41xxx.o(RESET)
 </UL>
+<P><STRONG><a name="[11f]"></a>arm_cos_f32</STRONG> (Thumb, 108 bytes, Stack size 0 bytes, arm_cos_f32.o(.text))
+<BR><BR>[Called By]<UL><LI><a href="#[12c]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;steer_chassis_control
+<LI><a href="#[13a]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;getDir
+<LI><a href="#[11e]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;add_vector
+</UL>
+
+<P><STRONG><a name="[120]"></a>arm_sin_f32</STRONG> (Thumb, 104 bytes, Stack size 0 bytes, arm_sin_f32.o(.text))
+<BR><BR>[Called By]<UL><LI><a href="#[13a]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;getDir
+<LI><a href="#[11e]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;add_vector
+</UL>
+
 <P><STRONG><a name="[6c]"></a>__aeabi_uldivmod</STRONG> (Thumb, 98 bytes, Stack size 40 bytes, uldiv.o(.text))
 <BR><BR>[Stack]<UL><LI>Max Depth = 40<LI>Call Chain = __aeabi_uldivmod
 </UL>
@@ -566,17 +577,6 @@ Global Symbols
 <P><STRONG><a name="[194]"></a>__decompress</STRONG> (Thumb, 0 bytes, Stack size unknown bytes, __dczerorl2.o(.text), UNUSED)
 
 <P><STRONG><a name="[195]"></a>__decompress1</STRONG> (Thumb, 86 bytes, Stack size unknown bytes, __dczerorl2.o(.text), UNUSED)
-
-<P><STRONG><a name="[11f]"></a>arm_cos_f32</STRONG> (Thumb, 160 bytes, Stack size 0 bytes, arm_cos_f32.o(.text.arm_cos_f32))
-<BR><BR>[Called By]<UL><LI><a href="#[12c]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;steer_chassis_control
-<LI><a href="#[13a]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;getDir
-<LI><a href="#[11e]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;add_vector
-</UL>
-
-<P><STRONG><a name="[120]"></a>arm_sin_f32</STRONG> (Thumb, 152 bytes, Stack size 0 bytes, arm_sin_f32.o(.text.arm_sin_f32))
-<BR><BR>[Called By]<UL><LI><a href="#[13a]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;getDir
-<LI><a href="#[11e]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;add_vector
-</UL>
 
 <P><STRONG><a name="[7e]"></a>Append_CRC16_Check_Sum</STRONG> (Thumb, 44 bytes, Stack size 16 bytes, algorithmofcrc.o(i.Append_CRC16_Check_Sum))
 <BR><BR>[Stack]<UL><LI>Max Depth = 28<LI>Call Chain = Append_CRC16_Check_Sum &rArr; Get_CRC16_Check_Sum
@@ -2184,7 +2184,7 @@ Global Symbols
 </UL>
 <BR>[Address Reference Count : 1]<UL><LI> start_task.o(i.startTask)
 </UL>
-<P><STRONG><a name="[12c]"></a>steer_chassis_control</STRONG> (Thumb, 1966 bytes, Stack size 64 bytes, steer.o(i.steer_chassis_control))
+<P><STRONG><a name="[12c]"></a>steer_chassis_control</STRONG> (Thumb, 1976 bytes, Stack size 64 bytes, steer.o(i.steer_chassis_control))
 <BR><BR>[Stack]<UL><LI>Max Depth = 152<LI>Call Chain = steer_chassis_control &rArr; __aeabi_dadd &rArr; _double_epilogue &rArr; _double_round
 </UL>
 <BR>[Calls]<UL><LI><a href="#[11f]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;arm_cos_f32

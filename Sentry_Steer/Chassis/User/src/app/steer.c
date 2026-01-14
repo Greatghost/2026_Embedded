@@ -5,10 +5,10 @@ extern uint8_t speed_follow_enable_flag;
 void steer_pid_init()
 {
     // 舵向初始编码值设定
-    infantry.steer_init_encoder[STEER1] = 1677;
-    infantry.steer_init_encoder[STEER2] = 2450;
-    infantry.steer_init_encoder[STEER3] = 5303;
-    infantry.steer_init_encoder[STEER4] = 4503;
+    infantry.steer_init_encoder[STEER1] = 1643;
+    infantry.steer_init_encoder[STEER2] = 2366;
+    infantry.steer_init_encoder[STEER3] = 5148;
+    infantry.steer_init_encoder[STEER4] = 4377;
 
     // 轮毂电机安装方向
     infantry.steer_wheel_install_direction[STEER1] = -1;
@@ -225,16 +225,18 @@ void steer_chassis_control(void)
         
         if (remote_controller.control_mode_action == CV_ROTATE || remote_controller.control_mode_action == FOLLOW_GIMBAL || remote_controller.control_mode_action == NOT_FOLLOW_GIMBAL||remote_controller.control_mode_action == SPEED_FOLLOW)
         {
-            // 底盘旋转3508线速度大小赋值 m/s
-            w_vector[STEER1].module = -infantry.target_yaw_v * STEER_INFANTRY_RADIUS; // 从角速度rad/s到线速度m/s
-            w_vector[STEER2].module = +infantry.target_yaw_v * STEER_INFANTRY_RADIUS;
-            w_vector[STEER3].module = +infantry.target_yaw_v * STEER_INFANTRY_RADIUS;
-            w_vector[STEER4].module = -infantry.target_yaw_v * STEER_INFANTRY_RADIUS;
-            // 底盘旋转6020角度朝向赋值 degree
-            w_vector[STEER1].angle = 45.0f;
-            w_vector[STEER2].angle = -45.0f;
-            w_vector[STEER3].angle = 45.0f;
-            w_vector[STEER4].angle = -45.0f;
+            // 底盘旋转3508线速度大小赋值 m/s，统一用绝对值，方向由角度控制
+            float rotation_speed = fabsf(infantry.target_yaw_v) * STEER_INFANTRY_RADIUS; // 从角速度rad/s到线速度m/s
+            w_vector[STEER1].module = rotation_speed;
+            w_vector[STEER2].module = rotation_speed;
+            w_vector[STEER3].module = rotation_speed;
+            w_vector[STEER4].module = rotation_speed;
+            // 底盘旋转6020角度朝向赋值 degree，根据旋转方向调整角度
+            float angle_offset = (infantry.target_yaw_v >= 0) ? 0.0f : 180.0f; // 反转时角度翻转180度
+            w_vector[STEER1].angle = -135.0f + angle_offset;
+            w_vector[STEER2].angle = 135.0f + angle_offset;
+            w_vector[STEER3].angle = -45.0f + angle_offset;
+            w_vector[STEER4].angle = 45.0f + angle_offset;
 
 					
             /*执行向量加法,把转动、平动向量相加*/
