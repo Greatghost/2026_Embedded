@@ -1,0 +1,12 @@
+sentry_chassis_test\observer.o: ..\components\algorithm\src\Observer.c
+sentry_chassis_test\observer.o: ../components/algorithm/inc/Observer.h
+sentry_chassis_test\observer.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\string.h
+sentry_chassis_test\observer.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdint.h
+sentry_chassis_test\observer.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\math.h
+sentry_chassis_test\observer.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdio.h
+sentry_chassis_test\observer.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdlib.h
+sentry_chassis_test\observer.o: ../Middlewares/ST/ARM/DSP/Inc/arm_math.h
+sentry_chassis_test\observer.o: ../Drivers/CMSIS/Include/core_cm4.h
+sentry_chassis_test\observer.o: ../Drivers/CMSIS/Include/cmsis_version.h
+sentry_chassis_test\observer.o: ../Drivers/CMSIS/Include/cmsis_compiler.h
+sentry_chassis_test\observer.o: ../Drivers/CMSIS/Include/cmsis_armcc.h

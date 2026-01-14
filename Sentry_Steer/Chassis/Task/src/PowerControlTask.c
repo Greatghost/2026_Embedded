@@ -1,0 +1,77 @@
+#include "PowerControlTask.h"
+float Interval;
+uint32_t timtim;
+float CapPowerSet()
+{
+	if( cap_controller.cap_vol<8.0f) return 0.f;
+	else if(remote_controller.super_power_state == POWER_TO_SuperPower)
+	{
+		if(cap_controller.cap_vol >16.0f) return 100.0f;
+		else if(cap_controller.cap_vol >8.0f) return (25.0f*(cap_controller.cap_vol - 12.0f));
+		else return 0.f;
+		
+	}
+	else{
+		return LIMIT_MAX_MIN(5.0f*(cap_controller.cap_vol - 24.0f),30.0f,-60.0f);
+	}
+	
+}
+
+void PowerControlTask(void *pvParameters)
+{
+	portTickType xLastWakeTime;
+
+	static int i = 0;
+
+	CapControllerInit();
+
+	float referee_power;
+	float dynamic_referee_power;
+	float dynamic_cap_power;
+	
+
+	while (1)
+	{
+		xLastWakeTime = xTaskGetTickCount();
+
+		// TODO:首先进行异常处理，万一不能收到裁判系统数据或者裁判系统数据离线
+		//referee_power = LIMIT_MAX_MIN(referee_data.Game_Robot_State.chassis_power_limit, 100, 30);
+		referee_power = 100;
+		uint8_t If_Game_Start = (referee_data.Game_Status.game_progress ==0x04)?1:0;
+		if(referee_data.Buff_Musk.remaining_energy == 0x0 && If_Game_Start) dynamic_referee_power = 20 + referee_data.Power_Heat_Data.buffer_energy /4;
+		else dynamic_referee_power = 100.0f + 1.0f*(referee_data.Power_Heat_Data.buffer_energy -40.0f);
+		dynamic_cap_power = CapPowerSet();
+		// 先用100w
+
+		if (remote_controller.fly_state == IS_FLY)
+		{
+			NingCapControl(referee_data.Power_Heat_Data.buffer_energy, dynamic_referee_power, 300.0f);//全向轮300W飞坡姿态良好
+		}
+		else if (remote_controller.super_power_state == POWER_TO_SuperPower)
+		{
+			NingCapControl(referee_data.Power_Heat_Data.buffer_energy, dynamic_referee_power, dynamic_referee_power + dynamic_cap_power);
+		}
+		else if(gimbal_receiver_pack1.through_hole_flag)
+		{
+			NingCapControl(referee_data.Power_Heat_Data.buffer_energy, dynamic_referee_power, 45.0f);
+		}
+		else
+		{
+			NingCapControl(referee_data.Power_Heat_Data.buffer_energy, dynamic_referee_power, dynamic_referee_power + dynamic_cap_power);
+		}
+
+		// 测试
+		// NingCapControl(referee_data.Power_Heat_Data.buffer_energy, referee_power, 100.0f);
+
+		if (i % 4 == 0) // 250HZ
+		{
+			SendCapPack(&cap_send_data, cap_controller.cap_power);
+			Interval = GetDeltaT(&timtim);
+			CanSend(SUPER_POWER_CAN, (int8_t *)(&cap_send_data), SEND_TO_SUPER_POWER_CAN_ID, 8);
+		}
+		
+		i++;
+
+		vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(1));
+	}
+}

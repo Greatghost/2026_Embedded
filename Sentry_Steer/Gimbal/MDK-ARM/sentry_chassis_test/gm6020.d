@@ -1,0 +1,16 @@
+sentry_chassis_test\gm6020.o: ..\components\motor\src\GM6020.c
+sentry_chassis_test\gm6020.o: ../components/motor/inc/GM6020.h
+sentry_chassis_test\gm6020.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\string.h
+sentry_chassis_test\gm6020.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdint.h
+sentry_chassis_test\gm6020.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\math.h
+sentry_chassis_test\gm6020.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdio.h
+sentry_chassis_test\gm6020.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdlib.h
+sentry_chassis_test\gm6020.o: ../components/tools/inc/ZeroCheck.h
+sentry_chassis_test\gm6020.o: ../components/tools/inc/tools.h
+sentry_chassis_test\gm6020.o: ../components/algorithm/inc/my_filter.h
+sentry_chassis_test\gm6020.o: ../components/algorithm/inc/user_lib.h
+sentry_chassis_test\gm6020.o: ../Middlewares/ST/ARM/DSP/Inc/arm_math.h
+sentry_chassis_test\gm6020.o: ../Drivers/CMSIS/Include/core_cm4.h
+sentry_chassis_test\gm6020.o: ../Drivers/CMSIS/Include/cmsis_version.h
+sentry_chassis_test\gm6020.o: ../Drivers/CMSIS/Include/cmsis_compiler.h
+sentry_chassis_test\gm6020.o: ../Drivers/CMSIS/Include/cmsis_armcc.h
