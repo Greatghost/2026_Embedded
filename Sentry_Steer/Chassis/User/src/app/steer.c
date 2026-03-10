@@ -55,8 +55,8 @@ void steer_pid_init()
     Feedforward_Init(&infantry.Steer_6020_FF, 6000, infantry.Steer_6020_FF_Coefficient, 0.004, 0, 0); // 15000
 
     // 底盘前后跟随 输出旋转角速度rad/s  输入弧度制角度
-    //速度跟随会产生较大的差角，maxout给小
-    PID_Init(&infantry.turn_pid, 3.0, 0, 0.05f, 2.0f, 0, 1.5f, 0, 0, 0.001, 0.009, 1, DerivativeFilter | OutputFilter);
+    // 降低Kp以减少震荡，增加死区稳定性
+    PID_Init(&infantry.turn_pid, 3.0, 0, 0.05f, 2.0f, 0, 0.05f, 0, 0, 0.001, 0.009, 1, DerivativeFilter | OutputFilter);
 
 		TD_Init(&infantry.steer_angle_td[0], 60000, 0.01);
 		TD_Init(&infantry.steer_angle_td[1], 60000, 0.01);
@@ -142,7 +142,17 @@ void steer_chassis_control(void)
     /*如要底盘跟随,计算旋转速度*/
     if (remote_controller.control_mode_action == FOLLOW_GIMBAL||remote_controller.control_mode_action == SPEED_FOLLOW)
     {
-        infantry.target_yaw_v = GIMBAL_MOTOR_SIGN * (PID_Calculate(&infantry.turn_pid, infantry.error_angle, 0.0f)); // 单位rad/s
+        // 添加死区判断，避免小角度误差时的震荡
+        if (fabsf(infantry.error_angle) > 0.05f)  // 死区：约2.86度
+        {
+            infantry.target_yaw_v = GIMBAL_MOTOR_SIGN * (PID_Calculate(&infantry.turn_pid, infantry.error_angle, 0.0f)); // 单位rad/s
+        }
+        else
+        {
+            infantry.target_yaw_v = 0.0f;  // 在死区内，停止旋转
+            // 清除PID积分，防止误差累积
+            infantry.turn_pid.Iout = 0.0f;
+        }
     }
 
 			
