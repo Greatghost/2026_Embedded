@@ -1,0 +1,43 @@
+# Keil/MDK-ARM build outputs
+*.o
+*.d
+*.crf
+*.axf
+*.hex
+*.map
+*.htm
+*.dep
+*.build_log.htm
+
+# Keil project user settings (machine-specific)
+*.uvguix
+*.uvoptx
+
+# JLink logs and settings
+JLinkLog.txt
+JLinkSettings.ini
+
+# VS Code settings
+.vscode/
+
+# Build directories
+Objects/
+Listings/
+DebugConfig/
+RTE/
+
+# Archives
+*.zip
+
+# Logs and locks
+*.log
+*.lock
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+*~
