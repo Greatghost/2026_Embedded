@@ -110,20 +110,18 @@ typedef struct PC_StateControl
 
 #pragma pack(push, 1)     //
 //所有发送到pc的数据，均为1byte Head,1byte typre ,12byte data,1byte crc8
+//上位机下发协议 14 bytes (与lower_downlink_message_contract.md对齐)
 typedef struct PCRecvData_1
 {
-	uint8_t Head;
-	int8_t Aim_v_x;
-	int8_t Aim_v_y;
-	float Aim_Yaw;
-	float Aim_Pitch;
-	uint8_t FireState : 2;
-	uint8_t CapState : 2;
-	uint8_t if_through_hole : 1;
-	uint8_t if_target_in_view : 1;
-	uint8_t RotateFreqMod : 2;
-	uint8_t tail;
-} PCRecvData_1;
+	uint8_t Head;           // '!' = 0x21
+	int8_t Aim_v_x;         // Velocity.X
+	int8_t Aim_v_y;         // Velocity.Y
+	float Aim_Yaw;          // 4 bytes
+	float Aim_Pitch;        // 4 bytes
+	uint8_t FireCode;       // FireCode位域 (bit0-1:FireStatus, bit2-3:CapState, bit4:HoleMode, bit5:AimMode, bit6-7:Rotate)
+	uint8_t Posture;        // 姿态: 1=进攻, 2=防御, 3=移动, 0=保留
+	uint8_t tail;           // 0x00
+} PCRecvData_1;  // sizeof == 14 bytes
 typedef struct PCSendData //
 {
     uint8_t start_flag;
@@ -140,20 +138,20 @@ typedef struct PCSendDataJudge
 {
 	uint8_t start_flag;
 	uint8_t data_pack_type;
-	
+
 	uint8_t is_game_start : 1;
 	uint8_t Heat_update : 1;
 	uint8_t Robot_Red_Blue : 1; //1 -> red ; 0 -> blue
 	uint16_t Enemy_outpost : 6; //前哨站血量
 	uint16_t self_outpost : 6;
-	uint8_t Sentry_HomeReturned_flag : 1;
+	uint8_t reserve_2bit : 2;  // 保留，不再使用sentry_posture
 
 	uint16_t bullet_remaining_num_17mm; //0x208
 	uint16_t stage_remain_time; //0x0001
-	
+
 	uint16_t self_blood;
 	ext_event_data_t event_data;
-	
+
 	uint8_t crc8;
 }PCSendDataJudge;
 typedef struct PCSendDataBlood_1
@@ -224,9 +222,10 @@ typedef struct PCSendDataExtended
 	uint8_t data_pack_type;
 
 	int16_t UWB_yaw_10;
+	uint8_t sentry_posture;  // 哨兵姿态: 1=进攻, 2=防御, 3=移动, 0=未知
+	uint8_t reserve_8;
 	uint16_t reserve_16;
 	uint32_t reserve_32;
-	uint32_t reserve_32_1;
 
 	uint8_t crc8;
 }PCSendDataExtended_t;
@@ -258,6 +257,7 @@ typedef struct{
 extern ARMOR_STATE_ENUM armor_state;
 extern float pc_pitch,pc_yaw;
 extern Nav_Cmd_t NAV_cmd;
+extern uint8_t current_posture;  // 当前姿态状态: 1=进攻, 2=防御, 3=移动, 0=未知
 
 void PCReceive(unsigned char *PCbuffer);
 void SendtoPC(uint8_t data_type);

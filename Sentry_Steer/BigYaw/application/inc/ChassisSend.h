@@ -60,7 +60,9 @@ typedef struct ChassisSendPack1
 	uint8_t cover_state : 1;
   uint8_t autoaim_id : 6; // 自瞄ID//这里还能少几位
 	uint8_t through_hole_flag : 1;	//过洞限底盘功率，舵跟随
-	
+	uint8_t sentry_posture : 2;  // 哨兵姿态: 1=进攻, 2=防御, 3=移动, 0=未知
+	uint8_t reserved_bits : 6;   // 保留位
+
   int16_t yaw_motor_angle; // 云台yaw轴电机角度
 
   int8_t robot_speed_x; // * 10 描述 x方向为云台正方向

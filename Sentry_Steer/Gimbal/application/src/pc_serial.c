@@ -123,6 +123,7 @@ float pc_pitch,pc_yaw;
 uint8_t PC_Shoot_flag;
 uint8_t last_shoot_flag;
 Nav_Cmd_t NAV_cmd;
+uint8_t current_posture = 0;  // 当前姿态状态: 1=进攻, 2=防御, 3=移动, 0=未知
 extern BigYawController big_yaw_controller;
 
 PC_StateControl PC_statecontrol;
@@ -196,16 +197,22 @@ void PCReceive(unsigned char *PCbuffer)
 		// 	big_yaw_controller.big_yaw_mode = pc_recv_data_1.if_target_in_view;
 		// }
 		// 暂时先不校验
-		pc_yaw = pc_recv_data_1.Aim_Yaw;	
+		pc_yaw = pc_recv_data_1.Aim_Yaw;
 		pc_pitch = pc_recv_data_1.Aim_Pitch;
 		NAV_cmd.Nav_Speed_x =  pc_recv_data_1.Aim_v_x/50.0f;//Aim_v_x是乘了50倍
 		NAV_cmd.Nav_Speed_y =  pc_recv_data_1.Aim_v_y/50.0f;
-		Shoot_Cmd.Shoot_State = pc_recv_data_1.FireState;
-		PC_statecontrol.CapState = pc_recv_data_1.CapState;
-		PC_statecontrol.RotateState = pc_recv_data_1.RotateFreqMod;
-		PC_statecontrol.if_through_hole = pc_recv_data_1.if_through_hole;
-		//PC_statecontrol.if_target_in_view = pc_recv_data_1.if_target_in_view;
-		big_yaw_controller.big_yaw_mode= pc_recv_data_1.if_target_in_view;
+		// FireCode解析: bit0-1=FireStatus, bit2-3=CapState, bit4=HoleMode, bit5=AimMode, bit6-7=Rotate
+		Shoot_Cmd.Shoot_State = pc_recv_data_1.FireCode & 0x03;  // bit0-1
+		PC_statecontrol.CapState = (pc_recv_data_1.FireCode >> 2) & 0x03;  // bit2-3
+		PC_statecontrol.if_through_hole = (pc_recv_data_1.FireCode >> 4) & 0x01;  // bit4
+		big_yaw_controller.big_yaw_mode = (pc_recv_data_1.FireCode >> 5) & 0x01;  // bit5
+		PC_statecontrol.RotateState = (pc_recv_data_1.FireCode >> 6) & 0x03;  // bit6-7
+
+		// 处理姿态字段: 1=进攻, 2=防御, 3=移动, 0=保留
+		if(pc_recv_data_1.Posture >= 1 && pc_recv_data_1.Posture <= 3)
+		{
+			current_posture = pc_recv_data_1.Posture;
+		}
 
 	}
 }
@@ -243,7 +250,7 @@ void Send2PCJudge(unsigned char* buff)
 	PC_send_data_judge.is_game_start = JudgeRecieveData.is_game_start;
 	PC_send_data_judge.Robot_Red_Blue = JudgeRecieveData.Robot_Red_Blue;
 	PC_send_data_judge.self_outpost = JudgeRecieveData.self_outpost;
-	PC_send_data_judge.Sentry_HomeReturned_flag = JudgeRecieveData.Sentry_HomeReturned_flag;
+	PC_send_data_judge.reserve_2bit = 0;  // 不再发送sentry_posture，移至EXTENDED包
 	PC_send_data_judge.stage_remain_time = JudgeRecieveData.stage_remain_time*2;
 	PC_send_data_judge.event_data = JudgeData_RFID.event_data;
 	PC_send_data_judge.Heat_update = 0;
@@ -327,14 +334,15 @@ void SendtoPCExtend(unsigned char* buff)
 	PCSendExtended.data_pack_type = JUDGE_PC_DATA_EXTENDED;//6
 
 	PCSendExtended.UWB_yaw_10 = JudgeRecieveData2.yaw_10;
+	PCSendExtended.sentry_posture = JudgeRecieveData.sentry_posture;  // 哨兵姿态: 1=进攻, 2=防御, 3=移动, 0=未知
+	PCSendExtended.reserve_8 = 0;
 	PCSendExtended.reserve_16 = 0;
 	PCSendExtended.reserve_32 = 0;
-	PCSendExtended.reserve_32_1 = 0;
 
 	PCSendExtended.crc8 = 0;
 	Append_CRC8_Check_Sum((unsigned char *)&PCSendExtended, PC_SEND_BLOOD_SIZE);//size == 12byte
 	memcpy(buff, (void *)&PCSendExtended, PC_SEND_BLOOD_SIZE);
-	
+
 }
 
 /**

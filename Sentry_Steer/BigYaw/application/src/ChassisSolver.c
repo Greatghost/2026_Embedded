@@ -415,8 +415,8 @@ void DJIRemoteUpdate(ChassisSolver *infantry)
 					 gimbal_controller.target_pitch_angle += (remote_controller.dji_remote.rc.ch[LEFT_CH_UD] - CH_MIDDLE) * MAX_SW_PITCH_SPEED / CH_RANGE * infantry->delta_t;
 
             // 底盘控制
-            chassis_solver.chassis_speed_x = (remote_controller.dji_remote.rc.ch[RIGHT_CH_LR] - CH_MIDDLE) * 1.0f / CH_RANGE;
-            chassis_solver.chassis_speed_y = (remote_controller.dji_remote.rc.ch[RIGHT_CH_UD] - CH_MIDDLE) * 1.0f / CH_RANGE;
+            chassis_solver.chassis_speed_x = (remote_controller.dji_remote.rc.ch[RIGHT_CH_UD] - CH_MIDDLE) * 1.0f / CH_RANGE;
+            chassis_solver.chassis_speed_y = (remote_controller.dji_remote.rc.ch[RIGHT_CH_LR] - CH_MIDDLE) * 1.0f / CH_RANGE;
             //chassis_solver.chassis_speed_w = -(remote_controller.dji_remote.rc.ch[LEFT_CH_LR] - CH_MIDDLE) * 1.0f / CH_RANGE;
             break;
         case Mid:
@@ -456,8 +456,8 @@ void DJIRemoteUpdate(ChassisSolver *infantry)
 //            gimbal_controller.target_pitch_angle += (remote_controller.dji_remote.rc.ch[LEFT_CH_UD] - CH_MIDDLE) * MAX_SW_PITCH_SPEED / CH_RANGE * infantry->delta_t;
 
             // 底盘控制
-						 chassis_solver.chassis_speed_x = (remote_controller.dji_remote.rc.ch[RIGHT_CH_LR] - CH_MIDDLE) * 1.0f / CH_RANGE;
-            chassis_solver.chassis_speed_y = (remote_controller.dji_remote.rc.ch[RIGHT_CH_UD] - CH_MIDDLE) * 1.0f / CH_RANGE;
+						 chassis_solver.chassis_speed_x = (remote_controller.dji_remote.rc.ch[RIGHT_CH_UD] - CH_MIDDLE) * 1.0f / CH_RANGE;
+            chassis_solver.chassis_speed_y = (remote_controller.dji_remote.rc.ch[RIGHT_CH_LR] - CH_MIDDLE) * 1.0f / CH_RANGE;
            chassis_solver.chassis_speed_w = 0.25f;
             // 检录要求变向小陀螺
 //            if (remote_controller.control_mode_action == CV_ROTATE)
@@ -489,8 +489,8 @@ void DJIRemoteUpdate(ChassisSolver *infantry)
 				gimbal_controller.target_pitch_angle += (remote_controller.dji_remote.rc.ch[LEFT_CH_UD] - CH_MIDDLE) * MAX_SW_PITCH_SPEED / CH_RANGE * infantry->delta_t;
 
             // 底盘控制
-            chassis_solver.chassis_speed_x = (remote_controller.dji_remote.rc.ch[RIGHT_CH_LR] - CH_MIDDLE) * 1.0f / CH_RANGE;
-            chassis_solver.chassis_speed_y = (remote_controller.dji_remote.rc.ch[RIGHT_CH_UD] - CH_MIDDLE) * 1.0f / CH_RANGE;
+            chassis_solver.chassis_speed_x = (remote_controller.dji_remote.rc.ch[RIGHT_CH_UD] - CH_MIDDLE) * 1.0f / CH_RANGE;
+            chassis_solver.chassis_speed_y = (remote_controller.dji_remote.rc.ch[RIGHT_CH_LR] - CH_MIDDLE) * 1.0f / CH_RANGE;
             if((remote_controller.dji_remote.rc.ch[RIGHT_CH_UD] - CH_MIDDLE) > 330)
             {
                 toggle_controller.is_shoot = TRUE;

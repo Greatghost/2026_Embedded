@@ -251,7 +251,8 @@ typedef struct
 	uint32_t sentry_bullet_claim : 11; //申请买弹量
 	uint32_t sentry_remote_bullet_claim_times : 4; //远程弹丸兑换次数
 	uint32_t sentry_remote_HP_claim_times : 4;  //远程买血次数
-	uint32_t reserve : 11;
+	uint32_t sentry_posture : 2;  //哨兵姿态: 1=进攻, 2=防御, 3=移动, 0=未知 (对应sentry_cmd bit21-22)
+	uint32_t reserve : 9;
 }Sentry_decision_referee_t;
 
 /* 0x020X --------------------------------------------------------------------*/
@@ -352,13 +353,24 @@ typedef struct // 0x20B ����������λ��
 	float standard_5_y;
 } ground_robot_position_t;
 
-typedef struct //0x20D
-{
-	uint32_t Sentry_info_1 : 19;
-	uint32_t isRevivableFree :1;
-	uint32_t Sentry_info_1_ : 12;
-	uint16_t _;
-}sentry_info_t;
+// 0x020D 哨兵信息 (RoboMaster 2026协议 V1.2.0)
+typedef struct {
+    // 字节0-3: sentry_info (4字节)
+    uint32_t sentry_bullet_claimed : 11;      // bit 0-10: 成功兑换的允许发弹量
+    uint32_t sentry_remote_bullet_times : 4;  // bit 11-14: 远程兑换发弹量次数
+    uint32_t sentry_remote_hp_times : 4;      // bit 15-18: 远程兑换血量次数
+    uint32_t sentry_can_free_revive : 1;      // bit 19: 是否可以免费复活
+    uint32_t sentry_can_instant_revive : 1;   // bit 20: 是否可以兑换立即复活
+    uint32_t sentry_instant_revive_cost : 10; // bit 21-30: 立即复活需要的金币数
+    uint32_t sentry_reserved : 1;             // bit 31: 保留
+
+    // 字节4-5: sentry_info_2 (2字节)
+    uint16_t sentry_disengaged : 1;           // bit 0: 是否处于脱战状态
+    uint16_t team_17mm_bullet_remaining : 11; // bit 1-11: 17mm弹量剩余可兑换数
+    uint16_t sentry_posture : 2;              // bit 12-13: 哨兵姿态 1=进攻, 2=防御, 3=移动
+    uint16_t rune_can_activate : 1;           // bit 14: 能量机关可激活
+    uint16_t sentry_reserved2 : 1;            // bit 15: 保留
+} sentry_info_t;
 
 
 typedef struct
@@ -702,6 +714,10 @@ extern RefereeDataUpdate referee_data_updater;
 extern Referee_t referee_data;
 
 extern uint8_t Radar_double_hurt_chance;
+
+// 哨兵决策数据结构体声明
+extern Sentry_decision_referee_t sentry_decision_referee;
+
 #define MAX_REFEREE_DATA_LEN 45
 
 #endif /* __REFEREE_H__ */

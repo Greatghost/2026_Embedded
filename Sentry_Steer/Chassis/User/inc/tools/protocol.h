@@ -51,6 +51,8 @@ typedef enum
   ROBOT_RFID_STATE_CMD_ID = 0x0209,    // 机器人RFID状态
   // DART_CLIENT_CMD_ID = 0x020A,         // 飞镖机器人客户端指令数据
 	GROUND_ROBOT_POSITION_ID = 0x020B,
+  SENTRY_INFO_CMD_ID = 0x020D,          // 哨兵信息
+  RADAR_INFO_CMD_ID = 0x020E,            // 雷达信息
   STUDENT_INTERACTIVE_DATA_CMD_ID = 0x0301, // 机器人间通信
   ROBOT_COMMAND_CMD_ID = 0x0303,            // 小地图下发信息标识
   // CLIENT_MAP_COMMAND_CMD_ID = 0x0305,       // 小地图接收信息标识

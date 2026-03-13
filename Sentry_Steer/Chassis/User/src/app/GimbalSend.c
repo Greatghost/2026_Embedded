@@ -177,8 +177,8 @@ void JudgeDataPack()
     JudgeData_ForSend1.Heat_update = 0x01;
 		JudgeData_ForSend1.shooter1_heat = referee_data.Power_Heat_Data.shooter_id1_17mm_cooling_heat;
     JudgeData_ForSend1.bullet_remaining_num_17mm = referee_data.Bullet_Remaining.bullet_remaining_num_17mm;
-    JudgeData_ForSend1.Sentry_HomeReturned_flag = 0;
-    JudgeData_ForSend1.shooter1_heat = referee_data.Power_Heat_Data.shooter_id1_17mm_cooling_heat;
+    // 从裁判系统0x020D获取哨兵姿态: 1=进攻, 2=防御, 3=移动, 0=未知
+    JudgeData_ForSend1.sentry_posture = referee_data.Sentry_info.sentry_posture;
     If_Game_Start = (referee_data.Game_Status.game_progress ==0x04)?1:0;
     JudgeData_ForSend1.is_game_start = If_Game_Start;
     JudgeData_ForSend1.stage_remain_time = referee_data.Game_Status.stage_remain_time/2 ;

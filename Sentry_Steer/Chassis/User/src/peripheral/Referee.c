@@ -251,6 +251,9 @@ void Referee_SolveFifoData(uint8_t *frame)
 	case GROUND_ROBOT_POSITION_ID:
 		memcpy(&referee_data.ground_robot_position,frame + index, sizeof(ground_robot_position_t));
 		break;
+	case SENTRY_INFO_CMD_ID:
+		memcpy(&referee_data.Sentry_info, frame + index, sizeof(sentry_info_t));
+		break;
 	case STUDENT_INTERACTIVE_DATA_CMD_ID:
 		memcpy(&referee_data.Robot_Interactive_Data, frame + index, sizeof(robot_interactive_data_t));
 		uint8_t sentry_id;

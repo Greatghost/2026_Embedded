@@ -168,7 +168,7 @@
         <Ww>
           <count>0</count>
           <WinNumber>1</WinNumber>
-          <ItemText>infantry,0x0A</ItemText>
+          <ItemText>infantry,0x10</ItemText>
         </Ww>
         <Ww>
           <count>1</count>
@@ -264,6 +264,11 @@
           <count>19</count>
           <WinNumber>1</WinNumber>
           <ItemText>move_symbol</ItemText>
+        </Ww>
+        <Ww>
+          <count>20</count>
+          <WinNumber>1</WinNumber>
+          <ItemText>online_count,0x0A</ItemText>
         </Ww>
       </WatchWindow1>
       <WatchWindow2>

@@ -88,6 +88,7 @@ void Sentry_Decision_Init(void)
 	sentry_decision_referee.sentry_bullet_claim =0;
 	sentry_decision_referee.sentry_remote_bullet_claim_times =0;
 	sentry_decision_referee.sentry_remote_HP_claim_times =0;
+	sentry_decision_referee.sentry_posture =0;  // 初始化姿态为未知
 	sentry_decision_referee.reserve = 0;
 }
 /**

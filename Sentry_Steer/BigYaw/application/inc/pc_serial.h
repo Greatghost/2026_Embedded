@@ -94,13 +94,11 @@ typedef struct PCRecvData_1
 	int8_t Aim_v_x;
 	int8_t Aim_v_y;
 	float Aim_Yaw;
-	int16_t Aim_Pitch;
-	uint8_t FireState : 2;
-	uint8_t FrictionState : 2; //开摩擦轮标志位
-	uint8_t ShootFreqMod : 2;
-	uint8_t RotateFreqMod : 2;
-	uint8_t crc8;
-} PCRecvData_1;
+	float Aim_Pitch;  // 修改为float，与上位机协议对齐
+	uint8_t FireCode; // FireCode位域
+	uint8_t Posture;  // 姿态字段: 1=进攻, 2=防御, 3=移动, 0=保留
+	uint8_t Tail;     // 尾部标志 0x00
+} PCRecvData_1; // sizeof == 14 bytes
 typedef struct PCSendData //数据顺序不能变,注意32字节对齐 //11 bytes
 {
     uint8_t start_flag;
@@ -120,21 +118,21 @@ typedef struct PCSendDataJudge
 {
 	uint8_t start_flag;
 	uint8_t data_pack_type;
-	
+
 	uint8_t is_game_start : 1;
 	uint8_t Heat_update : 1;
 	uint8_t Robot_Red_Blue : 1; //1 -> red ; 0 -> blue
 	uint16_t Enemy_outpost : 6; //敌方哨兵是否无敌
 	uint16_t self_outpost : 6;
-	uint8_t Sentry_HomeReturned_flag : 1;
+	uint8_t sentry_posture : 2;  // 哨兵姿态: 1=进攻, 2=防御, 3=移动, 0=未知
 
 	uint16_t bullet_remaining_num_17mm; //0x208
 	uint16_t stage_remain_time; //0x0001
-	
+
 	uint16_t self_blood;
 	int16_t UWB_x; //float*100 -> short
 	int16_t UWB_y;
-	
+
 	int8_t crc8;
 }PCSendDataJudge;
 #pragma pack(pop) //不进行字节对齐
@@ -165,7 +163,7 @@ typedef struct{
 	uint8_t Robot_Red_Blue : 1; //1 -> red ; 0 -> blue
 	uint8_t Enemy_outpost : 6; //敌方哨兵是否无敌
 	uint8_t self_outpost : 6;
-	uint8_t Sentry_HomeReturned_flag : 1;
+	uint8_t sentry_posture : 2;  // 哨兵姿态: 1=进攻, 2=防御, 3=移动, 0=未知
 	uint16_t shooter1_heat;
 	uint16_t bullet_remaining_num_17mm; //0x208
 	uint16_t stage_remain_time; //0x0001
@@ -203,11 +201,15 @@ typedef struct{
 extern ARMOR_STATE_ENUM armor_state;
 extern float pc_pitch,pc_yaw;
 extern Nav_Cmd_t NAV_cmd;
+extern uint8_t current_posture;  // 当前姿态状态: 1=进攻, 2=防御, 3=移动, 0=未知
+extern uint32_t sentry_cmd_shadow; // 裁判系统哨兵指令影子寄存器
 
 void PCReceive(unsigned char *PCbuffer);
 void SendtoPC(uint8_t data_type);
 void NAVReceive(uint8_t Buf[]);
 void SendtoNAV(void);
+void UpdateSentryPosture(uint8_t posture); // 更新哨兵姿态到裁判系统
+static inline uint32_t SetSentryPostureBits(uint32_t sentry_cmd, uint8_t posture);
 
 extern PCRecvData pc_recv_data;
 #endif

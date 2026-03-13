@@ -468,16 +468,16 @@ uint8_t chassis_control_check(){
     for(int i=0;i<4;i++)
     {
         offline_detector.wheel_3508_off_time[i]++;
-        if(offline_detector.wheel_3508_off_time[i] > 50) 
-        { 
+        if(offline_detector.wheel_3508_off_time[i] > 50)
+        {
             online_count = 0;
             return 0;
         }
         if(infantry.chassis_type == STEER_WHEEL)
         {
             offline_detector.steer_6020_off_time[i]++;
-            if(offline_detector.steer_6020_off_time[i] > 50) 
-            { 
+            if(offline_detector.steer_6020_off_time[i] > 50)
+            {
                 online_count = 0;
                 return 0;
             }

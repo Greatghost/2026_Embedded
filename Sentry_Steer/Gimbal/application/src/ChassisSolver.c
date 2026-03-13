@@ -547,8 +547,8 @@ void DJIRemoteUpdate(ChassisSolver *infantry)
 
     
             // 底盘控制
-                chassis_solver.chassis_speed_x = (remote_controller.dji_remote.rc.ch[RIGHT_CH_LR] - CH_MIDDLE) * 1.0f / CH_RANGE * MAX_X_SPEED;
-                chassis_solver.chassis_speed_y = (remote_controller.dji_remote.rc.ch[RIGHT_CH_UD] - CH_MIDDLE) * 1.0f / CH_RANGE * MAX_Y_SPEED;
+                chassis_solver.chassis_speed_x = (remote_controller.dji_remote.rc.ch[RIGHT_CH_UD] - CH_MIDDLE) * 1.0f / CH_RANGE * MAX_X_SPEED;
+                chassis_solver.chassis_speed_y = (remote_controller.dji_remote.rc.ch[RIGHT_CH_LR] - CH_MIDDLE) * 1.0f / CH_RANGE * MAX_Y_SPEED;
                 chassis_solver.chassis_speed_w = -1.0f * MAX_YAW_SPEED;
             // 检录要求变向小陀螺
             //   if (remote_controller.control_mode_action == CV_ROTATE)
@@ -582,8 +582,8 @@ void DJIRemoteUpdate(ChassisSolver *infantry)
 
     
             // 底盘控制
-                chassis_solver.chassis_speed_x = (remote_controller.dji_remote.rc.ch[RIGHT_CH_LR] - CH_MIDDLE) * 1.0f / CH_RANGE * MAX_X_SPEED;
-                chassis_solver.chassis_speed_y = (remote_controller.dji_remote.rc.ch[RIGHT_CH_UD] - CH_MIDDLE) * 1.0f / CH_RANGE * MAX_Y_SPEED;
+                chassis_solver.chassis_speed_x = (remote_controller.dji_remote.rc.ch[RIGHT_CH_UD] - CH_MIDDLE) * 1.0f / CH_RANGE * MAX_X_SPEED;
+                chassis_solver.chassis_speed_y = (remote_controller.dji_remote.rc.ch[RIGHT_CH_LR] - CH_MIDDLE) * 1.0f / CH_RANGE * MAX_Y_SPEED;
                 chassis_solver.chassis_speed_w = 0.3f * MAX_YAW_SPEED;
     
 				//            if((remote_controller.dji_remote.rc.ch[RIGHT_CH_UD] - CH_MIDDLE) > 330)
@@ -678,8 +678,8 @@ void DJIRemoteUpdate(ChassisSolver *infantry)
             gimbal_controller.target_pitch_angle += (remote_controller.dji_remote.rc.ch[LEFT_CH_UD] - CH_MIDDLE) * MAX_SW_PITCH_SPEED / CH_RANGE * infantry->delta_t;
 
             // 底盘控制
-            chassis_solver.chassis_speed_x = (remote_controller.dji_remote.rc.ch[RIGHT_CH_LR] - CH_MIDDLE) * 1.0f / CH_RANGE * MAX_X_SPEED;
-            chassis_solver.chassis_speed_y = (remote_controller.dji_remote.rc.ch[RIGHT_CH_UD] - CH_MIDDLE) * 1.0f / CH_RANGE * MAX_Y_SPEED;
+            chassis_solver.chassis_speed_x = (remote_controller.dji_remote.rc.ch[RIGHT_CH_UD] - CH_MIDDLE) * 1.0f / CH_RANGE * MAX_X_SPEED;
+            chassis_solver.chassis_speed_y = (remote_controller.dji_remote.rc.ch[RIGHT_CH_LR] - CH_MIDDLE) * 1.0f / CH_RANGE * MAX_Y_SPEED;
 						chassis_solver.chassis_speed_w = 0.f;
             break;
         case Mid:
@@ -717,8 +717,8 @@ void DJIRemoteUpdate(ChassisSolver *infantry)
                 gimbal_controller.target_pitch_angle += (remote_controller.dji_remote.rc.ch[LEFT_CH_UD] - CH_MIDDLE) * MAX_SW_PITCH_SPEED / CH_RANGE * infantry->delta_t;
 
             // 底盘控制
-								chassis_solver.chassis_speed_x = (remote_controller.dji_remote.rc.ch[RIGHT_CH_LR] - CH_MIDDLE) * 1.0f / CH_RANGE * MAX_X_SPEED;
-                chassis_solver.chassis_speed_y = (remote_controller.dji_remote.rc.ch[RIGHT_CH_UD] - CH_MIDDLE) * 1.0f / CH_RANGE * MAX_Y_SPEED;
+								chassis_solver.chassis_speed_x = (remote_controller.dji_remote.rc.ch[RIGHT_CH_UD] - CH_MIDDLE) * 1.0f / CH_RANGE * MAX_X_SPEED;
+                chassis_solver.chassis_speed_y = (remote_controller.dji_remote.rc.ch[RIGHT_CH_LR] - CH_MIDDLE) * 1.0f / CH_RANGE * MAX_Y_SPEED;
                 chassis_solver.chassis_speed_w = 0;//0.5f*MAX_YAW_SPEED;
 
             break;

@@ -114,6 +114,8 @@ float pc_pitch,pc_yaw;
 uint8_t PC_Shoot_flag;
 uint8_t last_shoot_flag;
 Nav_Cmd_t NAV_cmd;
+uint8_t current_posture = 0;  // 当前姿态状态: 1=进攻, 2=防御, 3=移动, 0=未知
+uint32_t sentry_cmd_shadow = 0; // 裁判系统哨兵指令影子寄存器
 
 
 //extern Shoot_Cmd_t Shoot_Cmd;
@@ -142,21 +144,55 @@ void PCReceive(unsigned char *PCbuffer)
 	// 		break;
 	// }
     LossUpdate(&global_debugger.pc_receive_debugger, 0.02);
-    if(PCbuffer[0] == '!' )
+
+    // 校验帧头和帧尾，长度为14字节
+    if(PCbuffer[0] == '!' && PCbuffer[13] == 0x00)
 	{
-		memcpy(&pc_recv_data_1,PCbuffer,PC_RECVBUF_SIZE);
-		pc_recv_data.yaw = pc_recv_data_1.Aim_Yaw;		
-		pc_recv_data.pitch = (pc_recv_data_1.Aim_Pitch/100.0f);
-		NAV_cmd.Nav_Speed_x =  pc_recv_data_1.Aim_v_x*20.0f;
-		NAV_cmd.Nav_Speed_y =  - pc_recv_data_1.Aim_v_y*20.0f;
-		ShootState = pc_recv_data_1.FireState;
+		memcpy(&pc_recv_data_1, PCbuffer, sizeof(PCRecvData_1));
+		pc_recv_data.yaw = pc_recv_data_1.Aim_Yaw;
+		pc_recv_data.pitch = pc_recv_data_1.Aim_Pitch;
+		NAV_cmd.Nav_Speed_x =  pc_recv_data_1.Aim_v_x * 20.0f;
+		NAV_cmd.Nav_Speed_y =  - pc_recv_data_1.Aim_v_y * 20.0f;
+		ShootState = pc_recv_data_1.FireCode & 0x03; // FireStatus: bit0-1
 		shootflg_test = ShootState;
 		//Shoot_Cmd.Friction_cmd = pc_recv_data_1.FrictionState; //暂时去掉
 		//Shoot_Cmd.Shoot_Freq_cmd = pc_recv_data_1.ShootFreqMod;
 		PC_Receive_Flag_2_Armor = 1;
         pc_recv_data.enemy_id = 1;//暂且写死
 
+        // 处理姿态字段
+        if(pc_recv_data_1.Posture >= 1 && pc_recv_data_1.Posture <= 3)
+        {
+            UpdateSentryPosture(pc_recv_data_1.Posture);
+        }
 	}
+}
+
+/**
+ * @brief 设置哨兵姿态位 (bit21-22)
+ * @param sentry_cmd 当前哨兵指令值
+ * @param posture 姿态值: 1=进攻, 2=防御, 3=移动
+ */
+static inline uint32_t SetSentryPostureBits(uint32_t sentry_cmd, uint8_t posture)
+{
+    const uint32_t mask = (0x3u << 21);  // bit21-22
+    uint32_t val = ((uint32_t)(posture & 0x3u) << 21);
+    return (sentry_cmd & ~mask) | val;
+}
+
+/**
+ * @brief 更新哨兵姿态到裁判系统
+ * @param posture 姿态值: 1=进攻, 2=防御, 3=移动
+ */
+void UpdateSentryPosture(uint8_t posture)
+{
+    if(posture >= 1 && posture <= 3)
+    {
+        current_posture = posture;
+        sentry_cmd_shadow = SetSentryPostureBits(sentry_cmd_shadow, posture);
+        // TODO: 这里可以调用裁判系统发送函数，将sentry_cmd_shadow发送出去
+        // 对应裁判链路 0x0301 + data_cmd_id=0x0120
+    }
 }
 
 /**
@@ -177,6 +213,8 @@ void SendtoPCPack(unsigned char *buff)
 	pc_send_data.vy = 0;
     pc_send_data.pitch = (short)gimbal_controller.gyro_pitch_angle * 100;
     pc_send_data.yaw = gimbal_controller.gyro_yaw_angle;
+    // 回传姿态状态到reserve0字段(低2bit)
+    pc_send_data.reserve0 = (current_posture & 0x03);
 	pc_send_data.crc8 = 0;
     //Append_CRC8_Check_Sum((unsigned char *)&pc_send_data, PC_SENDBUF_SIZE);
     memcpy(buff, (void *)&pc_send_data, PC_SENDBUF_SIZE);

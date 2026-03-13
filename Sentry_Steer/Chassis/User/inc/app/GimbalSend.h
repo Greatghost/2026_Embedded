@@ -30,7 +30,7 @@ typedef struct{
 	uint8_t Enemy_outpost : 6; //敌方哨兵是否无敌
 	uint8_t Robot_Red_Blue : 1; //1 -> red ; 0 -> blue
 	uint8_t self_outpost : 6;
-	uint8_t Sentry_HomeReturned_flag : 1;
+	uint8_t sentry_posture : 2;  // 哨兵姿态(来自裁判系统0x020D): 1=进攻, 2=防御, 3=移动, 0=未知
 	uint16_t shooter1_heat;
 	uint16_t bullet_remaining_num_17mm; //0x208
 	uint16_t stage_remain_time; //0x0001
