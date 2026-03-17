@@ -328,8 +328,12 @@ void set_robot_speed(Infantry *infantry)
 void wheels_accel(Infantry *infantry)
 {
     infantry->speed_yaw_max = 10.0f;
-    infantry->target_x_v = TD_Calculate(&infantry->x_v_td, infantry->receive_x_v);
-    infantry->target_y_v = TD_Calculate(&infantry->y_v_td, infantry->receive_y_v);
+    // infantry->target_x_v = TD_Calculate(&infantry->x_v_td, infantry->receive_x_v);
+    // infantry->target_y_v = TD_Calculate(&infantry->y_v_td, infantry->receive_y_v);
+
+    infantry->target_x_v = infantry->receive_x_v; //TD控制器有点问题，怎么调参都会导致速度抖动，暂时不使用TD
+    infantry->target_y_v = infantry->receive_y_v;
+
 
     if (remote_controller.control_mode_action == NOT_FOLLOW_GIMBAL || remote_controller.control_mode_action == CV_ROTATE) // 检录陀螺要变向
     {

@@ -57,12 +57,12 @@ void GimbalPidInit()
 #elif ROBOT == TIGER
 
  // pitch VOL LOOP
-	PID_Init(&gimbal_controller.pitch_angle_pid, 150.0f, 48.0f, 0.0f, 46.0f, 0.5f, 0.0f, 0, 0, 0, 0.02f, 1, DerivativeFilter | Integral_Limit| Trapezoid_Intergral);
-	PID_Init(&gimbal_controller.pitch_speed_pid, 3000, 1200, 0.1f, 48.0f, 2.0f, 0, 0, 0, 0.0018, 0, 1, Integral_Limit | Trapezoid_Intergral);
+	PID_Init(&gimbal_controller.pitch_angle_pid, 150.0f, 48.0f, 0.0f, 40.0f, 0.5f, 0.0f, 0, 0, 0, 0.02f, 1, DerivativeFilter | Integral_Limit| Trapezoid_Intergral);
+	PID_Init(&gimbal_controller.pitch_speed_pid, 15000, 1200, 0.1f, 30.0f, 1.0f, 0, 0, 0, 0.0018, 0, 1, Integral_Limit | Trapezoid_Intergral);
 	
 	// yaw GM6020 CURRENT LOOP
-	PID_Init(&gimbal_controller.small_yaw_angle_pid, 180.0, 0, 0.05, 48.0f, 0, 0.3f, 0, 0, 0.0, 0.0f, 1, DerivativeFilter);
-  PID_Init(&gimbal_controller.small_yaw_speed_pid, GM6020_MAX_CURRENT,1000, 0.5, 170.0f, 1.5f, 0, 0, 0, 0.f, 0, 1, Integral_Limit | Trapezoid_Intergral);
+	PID_Init(&gimbal_controller.small_yaw_angle_pid, 180.0, 0, 0.05, 25.0f, 0, 0.3f, 0, 0, 0.0, 0.0f, 1, DerivativeFilter);
+  PID_Init(&gimbal_controller.small_yaw_speed_pid, GM6020_MAX_CURRENT,1000, 0.5, 100.0f, 1.5f, 0, 0, 0, 0.f, 0, 1, Integral_Limit | Trapezoid_Intergral);
     
   // yaw DM MOTOR CURRENT LOOP
 	PID_Init(&gimbal_controller.big_yaw_angle_pid, 360.0, 0, 0.05, 32.0f, 0.f, 0.1f, 0, 0, 0.0, 0.02f, 1, DerivativeFilter);

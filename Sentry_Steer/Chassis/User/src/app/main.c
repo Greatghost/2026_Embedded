@@ -15,7 +15,8 @@ RCC_ClocksTypeDef get_rcc_clock;
 int main(void)
 {
     /* get clock frequency */
-    RCC_GetClocksFreq(&get_rcc_clock);
+
+	RCC_GetClocksFreq(&get_rcc_clock);
 
 #ifdef DEBUG_MODE
     SEGGER_RTT_Init();

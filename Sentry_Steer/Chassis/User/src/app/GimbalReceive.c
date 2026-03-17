@@ -28,7 +28,6 @@ void Gimbal_msgs_Decode1()
   enum GIMBAL_ACTION gimbal_action = (enum GIMBAL_ACTION)gimbal_receiver_pack1.gimbal_mode;
   enum SHOOT_ACTION shoot_action = (enum SHOOT_ACTION)gimbal_receiver_pack1.shoot_mode;
   enum CHASSIS_FORMAT chassis_format = (enum CHASSIS_FORMAT)gimbal_receiver_pack1.chassis_fromat;
-	enum BOMB_BAY_STATE bomb_bay = (enum BOMB_BAY_STATE)gimbal_receiver_pack1.cover_state;
 
   enum PowerControlState power_state = (enum PowerControlState)gimbal_receiver_pack1.super_power;
   enum FlyControlState fly_or_not = (enum FlyControlState)gimbal_receiver_pack1.fly_state;
@@ -39,7 +38,6 @@ void Gimbal_msgs_Decode1()
   setGimbalAction(gimbal_action);
   setShootAction(shoot_action);
 	setChassisFormat(chassis_format);
-	setBombBayState(bomb_bay);
 
   setSuperPower(power_state);
   setFlyMode(fly_or_not);

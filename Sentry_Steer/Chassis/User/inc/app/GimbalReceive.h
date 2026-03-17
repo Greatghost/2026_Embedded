@@ -38,6 +38,7 @@
 
 typedef struct GimbalReceivePack1
 {
+  // 第一个uint16_t位域: 16位 = 2字节
   uint16_t robot_state : 1;
   uint16_t control_type : 2;
   uint16_t control_mode_action : 3;
@@ -46,19 +47,22 @@ typedef struct GimbalReceivePack1
   uint16_t chassis_fromat : 1;
   uint16_t is_pc_on : 1;
   uint16_t super_power : 1;
-  uint16_t fly_state : 1;
+  uint16_t fly_state : 1;        // 共16位
 
-	uint8_t cover_state : 1;
-  uint8_t autoaim_id : 6; // 自瞄ID
-	uint8_t through_hole_flag : 1; //过洞缓速限制功率
-	uint8_t sentry_posture : 2;  // 哨兵姿态: 1=进攻, 2=防御, 3=移动, 0=未知
-	uint8_t reserved_bits : 6;   // 保留位
+  // 第二个uint8_t位域: 8位 = 1字节
+  uint8_t through_hole_flag : 1;
+  uint8_t sentry_posture : 2;    // 哨兵姿态: 1=进攻, 2=防御, 3=移动, 0=未知
+  uint8_t reserved_bits : 5;     // 共8位
 
-  int16_t yaw_motor_angle; // 云台yaw轴电机角度
+  // yaw_motor_angle: 2字节
+  int16_t yaw_motor_angle;       // 云台yaw轴电机角度
 
-  int8_t robot_speed_x; // * 10 描述 x方向为云台正方向
-  int8_t robot_speed_y; // * 10描述
-  int8_t robot_speed_w;
+  // 速度数据: 3字节
+  int8_t robot_speed_x;          // x方向速度
+  int8_t robot_speed_y;          // y方向速度
+  int8_t robot_speed_w;          // 小陀螺旋转速度
+
+  // 总计: 2 + 1 + 2 + 3 = 8字节
 } GimbalReceivePack1;
 
 #pragma pack(pop)

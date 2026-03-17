@@ -31,7 +31,7 @@ void ChassisTask(void *pvParameters)
         {
 						Pack_InfantryMode();//两帧合在一起，位置不够，去掉了传给底盘的PITCH角度(画UI用，先不画了)
 
-            memcpy(send_to_chassis_data[0], &chassis_send_pack1, 8); // 模式信息
+            memcpy(send_to_chassis_data[0], &chassis_send_pack1, 8); // 模式信息 (结构体大小为8字节)
 
             CanSend(&CHASSIS_CAN_COMM_CAN_Handlerx, send_to_chassis_data[0], SEND_TO_CHASSIS_CAN_ID_1, &chassis_tx_header[0], &chassis_send_wait_time[0]);
         }

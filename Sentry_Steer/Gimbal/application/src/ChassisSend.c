@@ -46,17 +46,15 @@ void Pack_InfantryMode()
 	chassis_send_pack1.is_pc_on = offline_detector.pc_state == PC_ON;
 	chassis_send_pack1.super_power = remote_controller.super_power_state;
 	chassis_send_pack1.fly_state = remote_controller.fly_state;
-	//chassis_send_pack1.cover_state = bomb_bay_controller.cover_state == BOMB_BAY_COVER_ON;
-	chassis_send_pack1.cover_state =  1;//哨兵无需该参数
-  chassis_send_pack1.autoaim_id = 0;//pc_recv_data.enemy_id;
   chassis_send_pack1.sentry_posture = current_posture;  // 哨兵姿态发送给底盘板
+  // through_hole_flag 在 ChassisSolver.c 中设置
 
   if (motor_communication[BIG_YAW_MOTOR].motor_type == DM_MOTOR)
     chassis_send_pack1.yaw_motor_angle = (int16_t)(gimbal_controller.DM_Big_Yaw_Motor.P_Receive * 90);
   else if (motor_communication[BIG_YAW_MOTOR].motor_type == GM6020)
     chassis_send_pack1.yaw_motor_angle = gimbal_controller.big_yaw_recv.angle;
 
-  chassis_send_pack1.robot_speed_x = (int8_t)(-chassis_solver.chassis_speed_x * 30.0f);
-  chassis_send_pack1.robot_speed_y = (int8_t)(-chassis_solver.chassis_speed_y * 30.0f);
+  chassis_send_pack1.robot_speed_x = (int8_t)(chassis_solver.chassis_speed_x * 30.0f);
+  chassis_send_pack1.robot_speed_y = (int8_t)(chassis_solver.chassis_speed_y * 30.0f);
   chassis_send_pack1.robot_speed_w = (int8_t)(chassis_solver.chassis_speed_w * 30.0f);
 }

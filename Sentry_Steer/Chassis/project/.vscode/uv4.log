@@ -1,7 +1,31 @@
-*** Using Compiler 'V5.06 update 6 (build 750)', folder: 'C:\Keil_v5\ARM\ARMCC\Bin'
-Build target 'HUST_infantry'
-compiling steer.c...
-linking...
-Program Size: Code=44532 RO-data=3288 RW-data=1116 ZI-data=26412  
-".\Objects\balanced_infantry.axf" - 0 Error(s), 0 Warning(s).
-Build Time Elapsed:  00:00:01
+Load "c:\\0001\\2026_Embedded-Sentry-New\\Sentry_Steer\\Chassis\\project\\Objects\\balanced_infantry.axf" 
+* JLink Info: Device "UNSPECIFIED" selected (0 KB flash, 0 KB RAM).
+Set JLink Project File to "c:\0001\2026_Embedded-Sentry-New\Sentry_Steer\Chassis\project\JLinkSettings.ini"* JLink Info: Device "UNSPECIFIED" selected (0 KB flash, 0 KB RAM).
+
+JLink info:
+------------
+DLL: V4.90 , compiled Jul 28 2014 10:35:20
+Firmware: J-Link ARM-OB STM32 compiled Aug 22 2012 19:52:04
+Hardware: V7.00
+S/N : 20090928 
+Feature(s) : JFlash, RDI, GDB, FlashDL, FlashBP 
+
+* JLink Info: Found SWD-DP with ID 0x2BA01477
+* JLink Info: Found Cortex-M4 r0p1, Little endian.
+* JLink Info: FPUnit: 6 code (BP) slots and 2 literal slots
+* JLink Info: TPIU fitted.
+* JLink Info: ETM fitted.
+ROMTableAddr = 0xE00FF003
+
+Target info:
+------------
+Device: STM32F405RGTx
+VTarget = 3.300V
+State of Pins: TCK: 0, TDI: 0, TDO: 1, TMS: 0, TRES: 1, TRST: 0
+Hardware-Breakpoints: 6
+Software-Breakpoints: 8192
+Watchpoints:          4
+JTAG speed: 1000 kHz
+
+Erase Failed!Error: Flash Download failed  -  "Cortex-M4"
+Flash Load finished at 16:51:06

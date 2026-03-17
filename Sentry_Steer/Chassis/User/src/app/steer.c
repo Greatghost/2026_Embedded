@@ -5,15 +5,15 @@ extern uint8_t speed_follow_enable_flag;
 void steer_pid_init()
 {
     // 舵向初始编码值设定
-    infantry.steer_init_encoder[STEER1] = 1643;
-    infantry.steer_init_encoder[STEER2] = 2366;
-    infantry.steer_init_encoder[STEER3] = 5148;
-    infantry.steer_init_encoder[STEER4] = 4377;
+    infantry.steer_init_encoder[STEER1] = 7708;
+    infantry.steer_init_encoder[STEER2] = 4450;
+    infantry.steer_init_encoder[STEER3] = 3331;
+    infantry.steer_init_encoder[STEER4] = 6621;
 
     // 轮毂电机安装方向
-    infantry.steer_wheel_install_direction[STEER1] = -1;
+    infantry.steer_wheel_install_direction[STEER1] = 1;
     infantry.steer_wheel_install_direction[STEER2] = 1;
-    infantry.steer_wheel_install_direction[STEER3] = 1;
+    infantry.steer_wheel_install_direction[STEER3] = -1;
     infantry.steer_wheel_install_direction[STEER4] = -1;
     // 轮子控制PID
     PID_Init(&infantry.wheels_pid[STEER1], C620_MAX_SEND_CURRENT, 600, 0, 10, 0.3, 0, 0, 0, 0, 0, 1, Integral_Limit);
@@ -39,9 +39,9 @@ void steer_pid_init()
 //    Feedforward_Init(&infantry.Steer_6020_FF, 7500, infantry.Steer_6020_FF_Coefficient, 0.004, 0, 0); // 15000
 	// 舵向控制PID
     PID_Init(&infantry.steers_angle_pid[STEER1], 720, 0, 0.05, 24, 0, 0, 0, 0, 0, 0, 1, NONE);
-    PID_Init(&infantry.steers_angle_pid[STEER2], 720, 0, 0.05, 22.5, 0, 0, 0, 0, 0, 0, 1, NONE);
-    PID_Init(&infantry.steers_angle_pid[STEER3], 720, 0, 0.05, 23.5, 0, 0, 0, 0, 0, 0, 1, NONE);
-    PID_Init(&infantry.steers_angle_pid[STEER4], 720, 0, 0.05, 23.5, 0, 0, 0, 0, 0, 0, 1, NONE);
+    PID_Init(&infantry.steers_angle_pid[STEER2], 720, 0, 0.05, 24, 0, 0, 0, 0, 0, 0, 1, NONE);
+    PID_Init(&infantry.steers_angle_pid[STEER3], 720, 0, 0.05, 24, 0, 0, 0, 0, 0, 0, 1, NONE);
+    PID_Init(&infantry.steers_angle_pid[STEER4], 720, 0, 0.05, 24, 0, 0, 0, 0, 0, 0, 1, NONE);
 
     PID_Init(&infantry.steers_speed_pid[STEER1], GM6020_MAX_CURRENT*4/5, 8000, 1.0, 10, 9, 0, 0, 0, 0, 0, 1, Integral_Limit);
     PID_Init(&infantry.steers_speed_pid[STEER2], GM6020_MAX_CURRENT*4/5, 8000, 1.0, 10, 9, 0, 0, 0, 0, 0, 1, Integral_Limit);
@@ -243,10 +243,10 @@ void steer_chassis_control(void)
             w_vector[STEER4].module = rotation_speed;
             // 底盘旋转6020角度朝向赋值 degree，根据旋转方向调整角度
             float angle_offset = (infantry.target_yaw_v >= 0) ? 0.0f : 180.0f; // 反转时角度翻转180度
-            w_vector[STEER1].angle = -135.0f + angle_offset;
-            w_vector[STEER2].angle = 135.0f + angle_offset;
-            w_vector[STEER3].angle = -45.0f + angle_offset;
-            w_vector[STEER4].angle = 45.0f + angle_offset;
+            w_vector[STEER1].angle = 135.0f + angle_offset;
+            w_vector[STEER2].angle = 45.0f + angle_offset;
+            w_vector[STEER3].angle = -135.0f + angle_offset;
+            w_vector[STEER4].angle = -45.0f + angle_offset;
 
 					
             /*执行向量加法,把转动、平动向量相加*/

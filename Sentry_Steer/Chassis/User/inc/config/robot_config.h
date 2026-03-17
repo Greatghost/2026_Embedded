@@ -34,7 +34,7 @@ typedef enum YAW_MOTOR_TYPE
 #define GIMBAL_FOLLOW_ZERO 19184 // 底盘跟随机械零点
 #elif ROBOT == TIGER
 #define GIMBAL_MOTOR_SIGN 1     // 云台电机方向，以逆时针为正
-#define GIMBAL_FOLLOW_ZERO 12062 // 底盘跟随机械零点
+#define GIMBAL_FOLLOW_ZERO 11100 // 底盘跟随机械零点
 
 #define CHASSIS_DEBUG 0
 
