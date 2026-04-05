@@ -99,6 +99,25 @@ void WBUS_Decode(volatile uint8_t rx_buffer[])
 }
 
 /**
+  * @brief  将WBUS双位拨杆通道值转换为开关位置
+  * @param  ch_value: WBUS通道值 (172-1811)
+  * @retval 开关位置 (0=Down, 1=Up)
+  * @note   CH5/CH8双位拨杆实际值: 向下~353, 向上~1694
+  *         以1000为分界进行判断
+  */
+uint8_t WBUS_GetTwoPositionSwitch(uint16_t ch_value)
+{
+    /* 双位拨杆位置判断阈值 */
+    /* 实测: 向下约353, 向上约1694 */
+    /* 以1000为分界 */
+    if (ch_value < 1000) {
+        return 0;  /* Down */
+    } else {
+        return 1;  /* Up */
+    }
+}
+
+/**
   * @brief  将WBUS拨杆通道值转换为DJI拨杆位置
   * @param  ch_value: WBUS通道值 (172-1811)
   * @retval 拨杆位置 (Up=1, Mid=3, Down=2)
@@ -139,6 +158,34 @@ uint16_t WBUS_MapToDJIChannel(uint16_t wbus_value)
 }
 
 /**
+  * @brief  根据CH5和CH8双位拨杆组合确定LEFT_SW位置
+  * @param  ch5_value: WBUS CH5通道值 (NUC模式选择)
+  * @param  ch8_value: WBUS CH8通道值 (遥控模式选择)
+  * @retval 拨杆位置 (Up=1, Mid=3, Down=2)
+  * @note   新映射逻辑：
+  *         - CH5向下(Down): 下电 (LEFT_SW = Down)
+  *         - CH5向上 + CH8向上: 遥控模式 (LEFT_SW = Up)
+  *         - CH5向上 + CH8向下: NUC模式 (LEFT_SW = Mid)
+  */
+uint8_t WBUS_GetLeftSwitchFromDualSwitches(uint16_t ch5_value, uint16_t ch8_value)
+{
+    uint8_t ch5_pos = WBUS_GetTwoPositionSwitch(ch5_value);
+    uint8_t ch8_pos = WBUS_GetTwoPositionSwitch(ch8_value);
+
+    /* CH5向下优先下电 */
+    if (ch5_pos == 0) {
+        return WBUS_SW_DOWN;  /* 下电 */
+    }
+
+    /* CH5向上时，根据CH8决定模式 */
+    if (ch8_pos == 1) {
+        return WBUS_SW_UP;    /* 遥控模式 */
+    } else {
+        return WBUS_SW_MID;   /* NUC模式 */
+    }
+}
+
+/**
   * @brief  更新remote_controller结构体 (兼容DJI遥控器格式)
   * @retval None
   * @note   将WBUS数据映射到DJI remote_controller结构:
@@ -146,8 +193,8 @@ uint16_t WBUS_MapToDJIChannel(uint16_t wbus_value)
   *         - WBUS CH2 -> rc.ch[RIGHT_CH_UD] (右摇杆上下)
   *         - WBUS CH3 -> rc.ch[LEFT_CH_LR] (左摇杆左右)
   *         - WBUS CH4 -> rc.ch[LEFT_CH_UD] (左摇杆上下)
-  *         - WBUS CH6 -> rc.s[RIGHT_SW] (右拨杆)
-  *         - WBUS CH7 -> rc.s[LEFT_SW] (左拨杆)
+  *         - WBUS CH7 -> rc.s[RIGHT_SW] (右拨杆, 三位拨杆)
+  *         - WBUS CH5+CH8 -> rc.s[LEFT_SW] (左拨杆, 由双位拨杆组合替代)
   */
 void WBUS_UpdateRemoteController(void)
 {
@@ -156,16 +203,48 @@ void WBUS_UpdateRemoteController(void)
     remote_controller.dji_remote.rc.ch[RIGHT_CH_UD] = WBUS_MapToDJIChannel(wbus_receiver.data.ch[WBUS_CH3]);
     remote_controller.dji_remote.rc.ch[LEFT_CH_LR]  = WBUS_MapToDJIChannel(wbus_receiver.data.ch[WBUS_CH1]);
     remote_controller.dji_remote.rc.ch[LEFT_CH_UD]  = WBUS_MapToDJIChannel(wbus_receiver.data.ch[WBUS_CH2]);
-    
-    /* 映射拨杆通道 (6/7 -> 左右拨杆) */
+
+    /* 映射右拨杆 (CH7, 三位拨杆) */
     remote_controller.dji_remote.rc.s[RIGHT_SW] = WBUS_GetSwitchPosition(wbus_receiver.data.ch[WBUS_CH7]);
-    remote_controller.dji_remote.rc.s[LEFT_SW]  = WBUS_GetSwitchPosition(wbus_receiver.data.ch[WBUS_CH6]);
-    
+
+    /* 映射左拨杆 (CH5+CH8组合, 替代已损坏的CH6三位拨杆) */
+    remote_controller.dji_remote.rc.s[LEFT_SW]  = WBUS_GetLeftSwitchFromDualSwitches(
+                                                      wbus_receiver.data.ch[WBUS_CH5],
+                                                      wbus_receiver.data.ch[WBUS_CH8]);
+
     /* 应用摇杆死区 (与原DJI遥控器相同) */
     for (int i = 0; i < 4; i++) {
         RemoteLimit(&remote_controller.dji_remote.rc.ch[i], 30);
     }
-    
+
+    /* 更新WBUS扩展通道数据 (用于调试) */
+    for (int i = 0; i < WBUS_CHANNEL_NUM; i++) {
+        remote_controller.dji_remote.rc.wbus_ch[i] = wbus_receiver.data.ch[i];
+    }
+    remote_controller.dji_remote.rc.wbus_ch5_pos = WBUS_GetTwoPositionSwitch(wbus_receiver.data.ch[WBUS_CH5]);
+    remote_controller.dji_remote.rc.wbus_ch8_pos = WBUS_GetTwoPositionSwitch(wbus_receiver.data.ch[WBUS_CH8]);
+
+    /* 遥控器离线检测：当任意通道值小于400时判定为离线 */
+    uint8_t remote_offline = 0;
+    for (int i = 0; i < 4; i++) {
+        if (remote_controller.dji_remote.rc.ch[i] < 400) {
+            remote_offline = 1;
+            break;
+        }
+    }
+
+    if (remote_offline) {
+        /* 遥控器离线安全处理：将摇杆设为中位，拨杆向下 */
+        for (int i = 0; i < 4; i++) {
+            remote_controller.dji_remote.rc.ch[i] = CH_MIDDLE;
+        }
+        remote_controller.dji_remote.rc.s[LEFT_SW] = Down;
+        remote_controller.dji_remote.rc.s[RIGHT_SW] = Down;
+        setRobotState(OFFLINE_MODE);
+        setGimbalAction(GIMBAL_POWERDOWN);
+        setShootAction(SHOOT_POWERDOWN_MODE);
+    }
+
     /* 可选: 映射其他WBUS通道到扩展功能 */
     /* remote_controller.dji_remote.rc.ch[4] = ... */
 }

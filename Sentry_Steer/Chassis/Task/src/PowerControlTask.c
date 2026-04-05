@@ -34,9 +34,8 @@ void PowerControlTask(void *pvParameters)
 	{
 		xLastWakeTime = xTaskGetTickCount();
 
-		// TODO:首先进行异常处理，万一不能收到裁判系统数据或者裁判系统数据离线
-		//referee_power = LIMIT_MAX_MIN(referee_data.Game_Robot_State.chassis_power_limit, 100, 30);
-		referee_power = 100;
+		// 从裁判系统读取底盘功率上限，限制范围30-200W
+		referee_power = LIMIT_MAX_MIN(referee_data.Game_Robot_State.chassis_power_limit, 200, 30);
 		uint8_t If_Game_Start = (referee_data.Game_Status.game_progress ==0x04)?1:0;
 		if(referee_data.Buff_Musk.remaining_energy == 0x0 && If_Game_Start) dynamic_referee_power = 20 + referee_data.Power_Heat_Data.buffer_energy /4;
 		else dynamic_referee_power = 100.0f + 1.0f*(referee_data.Power_Heat_Data.buffer_energy -40.0f);

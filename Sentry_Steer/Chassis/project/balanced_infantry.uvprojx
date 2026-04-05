@@ -838,14 +838,14 @@
               <FilePath>..\Task\src\ActionTask.c</FilePath>
             </File>
             <File>
-              <FileName>GimbalTask.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\Task\src\GimbalTask.c</FilePath>
-            </File>
-            <File>
               <FileName>PowerControlTask.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\Task\src\PowerControlTask.c</FilePath>
+            </File>
+            <File>
+              <FileName>GimbalTask.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Task\src\GimbalTask.c</FilePath>
             </File>
             <File>
               <FileName>RefereeTask.c</FileName>

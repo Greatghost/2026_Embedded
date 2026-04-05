@@ -144,7 +144,7 @@ typedef struct PCSendDataJudge
 	uint8_t Robot_Red_Blue : 1; //1 -> red ; 0 -> blue
 	uint16_t Enemy_outpost : 6; //前哨站血量
 	uint16_t self_outpost : 6;
-	uint8_t reserve_2bit : 2;  // 保留，不再使用sentry_posture
+	uint8_t reserve_1bit : 1;  // 保留
 
 	uint16_t bullet_remaining_num_17mm; //0x208
 	uint16_t stage_remain_time; //0x0001

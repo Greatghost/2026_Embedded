@@ -1,4 +1,5 @@
 #include "Offline_Task.h"
+#include "remote_control.h"
 
 OfflineDetector offline_detector;
 
@@ -60,16 +61,9 @@ void Offline_task(void *pvParameters)
             offline_detector.super_cap_state = SUPER_CAP_OFF;
          }
 			
-        // 遥控器
-        if (global_debugger.remote_debugger.recv_msgs_num != offline_detector.remote_receive_num)
-        {
-            offline_detector.remote_state = REMOTE_ON;
-            offline_detector.remote_receive_num = global_debugger.remote_debugger.recv_msgs_num;
-        }
-        else
-        {
-            offline_detector.remote_state = REMOTE_OFF;
-        }
+        // 遥控器离线状态已在RemoteReceive中检测处理
+        // 此处仅更新状态标志
+        offline_detector.remote_receive_num = global_debugger.remote_debugger.recv_msgs_num;
         vTaskDelay(pdMS_TO_TICKS(1000)); // 所有数据都应该超过5HZ
     }
 }

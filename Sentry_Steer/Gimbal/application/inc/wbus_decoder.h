@@ -45,10 +45,10 @@ extern "C" {
 #define WBUS_CH2                1   /* 通道2 -> DJI RIGHT_CH_UD */
 #define WBUS_CH3                2   /* 通道3 -> DJI LEFT_CH_LR */
 #define WBUS_CH4                3   /* 通道4 -> DJI LEFT_CH_UD */
-#define WBUS_CH5                4   /* 通道5 */
-#define WBUS_CH6                5   /* 通道6 -> DJI RIGHT_SW (右拨杆) */
-#define WBUS_CH7                6   /* 通道7 -> DJI LEFT_SW (左拨杆) */
-#define WBUS_CH8                7   /* 通道8 */
+#define WBUS_CH5                4   /* 通道5 -> 替代CH6的双位拨杆 (NUC模式选择) */
+#define WBUS_CH6                5   /* 通道6 (已损坏,不再使用) */
+#define WBUS_CH7                6   /* 通道7 -> DJI RIGHT_SW (右拨杆) */
+#define WBUS_CH8                7   /* 通道8 -> 替代CH6的双位拨杆 (遥控模式选择) */
 #define WBUS_CH9                8   /* 通道9 */
 #define WBUS_CH10               9   /* 通道10 */
 #define WBUS_CH11               10  /* 通道11 */
@@ -98,6 +98,8 @@ extern WBUS_Receiver_t wbus_receiver;
 void WBUS_Init(void);
 void WBUS_Decode(volatile uint8_t rx_buffer[]);
 uint8_t WBUS_GetSwitchPosition(uint16_t ch_value);
+uint8_t WBUS_GetTwoPositionSwitch(uint16_t ch_value);
+uint8_t WBUS_GetLeftSwitchFromDualSwitches(uint16_t ch5_value, uint16_t ch8_value);
 uint16_t WBUS_MapToDJIChannel(uint16_t wbus_value);
 void WBUS_UpdateRemoteController(void);
 uint8_t WBUS_IsConnected(void);

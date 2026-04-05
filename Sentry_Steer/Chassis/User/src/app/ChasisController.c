@@ -337,11 +337,13 @@ void wheels_accel(Infantry *infantry)
 
     if (remote_controller.control_mode_action == NOT_FOLLOW_GIMBAL || remote_controller.control_mode_action == CV_ROTATE) // 检录陀螺要变向
     {
-        infantry->target_yaw_v = TD_Calculate(&infantry->yaw_v_td, 2.0f*infantry->receive_yaw_v);
+        // infantry->target_yaw_v = TD_Calculate(&infantry->yaw_v_td, 2.0f*infantry->receive_yaw_v);
+        infantry->target_yaw_v = 2.0f * infantry->receive_yaw_v;
     }
     else
     {
-        infantry->target_yaw_v = TD_Calculate(&infantry->yaw_v_td, infantry->speed_yaw_max);
+        // infantry->target_yaw_v = TD_Calculate(&infantry->yaw_v_td, infantry->speed_yaw_max);
+        infantry->target_yaw_v = infantry->speed_yaw_max;
     }
 }
 

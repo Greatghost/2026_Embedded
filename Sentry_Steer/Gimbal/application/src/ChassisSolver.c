@@ -34,86 +34,83 @@ void changeSupplyMode()
 
 void PCStateControl() // 比赛专用
 {
-	if(JudgeRecieveData.is_game_start ==0)
+	// 暂时注释比赛开始检查
+	// if(JudgeRecieveData.is_game_start ==0)
+	// {
+	// 	setRobotState(CONTROL_MODE);
+    //     setControlModeAction(NOT_FOLLOW_GIMBAL);
+    //     setShootAction(SHOOT_FIRE_MODE);
+    //     setGimbalAction(GIMBAL_ACT_MODE);
+    //     setSuperPower(POWER_TO_BATTERY);
+	// 	chassis_solver.chassis_speed_x = 0.f;
+	// 	chassis_solver.chassis_speed_y = 0.f;
+	// 	chassis_solver.chassis_speed_w = 0.f;
+	// }
+	// else
 	{
 		setRobotState(CONTROL_MODE);
-    setControlModeAction(NOT_FOLLOW_GIMBAL);
-    setShootAction(SHOOT_FIRE_MODE);
-    setGimbalAction(GIMBAL_ACT_MODE);
-    setSuperPower(POWER_TO_BATTERY);
-		chassis_solver.chassis_speed_x = 0.f;
-		chassis_solver.chassis_speed_y = 0.f;
-		chassis_solver.chassis_speed_w = 0.f;
-	}
-	else
+
+		// 暂时注释血量检查
+		// if(JudgeRecieveData2.Self_blood == 0)
+		// {
+		// 	setControlModeAction(NOT_CONTROL_MODE);
+		// 	chassis_solver.chassis_speed_x = 0;
+		// 	chassis_solver.chassis_speed_y = 0;
+		// 	chassis_solver.chassis_speed_w = 0;
+		// 	return;
+		// }
+
+		if(fabsf(INS.Pitch) >80.0f || fabsf(INS.Roll) > 60.0f)
 		{
-			setRobotState(CONTROL_MODE);
-						if(JudgeRecieveData2.Self_blood == 0)
-						{
-							setControlModeAction(NOT_CONTROL_MODE);
-							 chassis_solver.chassis_speed_x = 0;
-               chassis_solver.chassis_speed_y = 0;
-							chassis_solver.chassis_speed_w = 0;
-							return;
-						}
-						
-						if(fabsf(INS.Pitch) >80.0f || fabsf(INS.Roll) > 60.0f)
-						{
-							setAllModeOff();//翻车检测
-							return;
-						}
-						
-							if(PC_statecontrol.if_through_hole == 1)
-            {
-                setControlModeAction(SPEED_FOLLOW);
-                chassis_solver.chassis_speed_w = 0.f;//底盘自行计算
-            }
-            else
-            {
-                if(PC_statecontrol.RotateState == 0)
-                {
-                    setControlModeAction(NOT_FOLLOW_GIMBAL);
-                    chassis_solver.chassis_speed_w = 0.f;//底盘自行计算
-                }
-                else
-                {
-                    setControlModeAction(CV_ROTATE);
-                    switch (PC_statecontrol.RotateState)
-                    {
-                    case 1:
-                        chassis_solver.chassis_speed_w = 0.35f * MAX_YAW_SPEED;
-                        break;
-                    case 2:
-                        chassis_solver.chassis_speed_w = 0.5f * MAX_YAW_SPEED;
-                        break;
-                    case 3:
-                        chassis_solver.chassis_speed_w = 0.9f * MAX_YAW_SPEED;
-                        break;
-                    
-                    default:
-                        chassis_solver.chassis_speed_w = 0.0f * MAX_YAW_SPEED;
-                        break;
-                    }
-                }
-            }
-                chassis_solver.chassis_speed_x = NAV_cmd.Nav_Speed_x;
-                chassis_solver.chassis_speed_y = NAV_cmd.Nav_Speed_y;
-						
-            
-            if(PC_statecontrol.CapState==1)
-			{
-                setSuperPower(POWER_TO_SuperPower);
-			}
-            else
-			{
-                setSuperPower(POWER_TO_BATTERY);
-			}
-			
-			setShootAction(SHOOT_AUTO_AIM_MODE); // 辅瞄爽打
-			setGimbalAction(GIMBAL_AUTO_AIM_MODE);
-			
+			setAllModeOff();//翻车检测
+			return;
 		}
-		
+
+		// 删除过洞模式检查，直接根据 RotateState 设置速度
+		if(PC_statecontrol.RotateState == 0)
+		{
+			setControlModeAction(NOT_FOLLOW_GIMBAL);
+			chassis_solver.chassis_speed_w = 0.f;
+		}
+		else
+		{
+			setControlModeAction(CV_ROTATE);
+			switch (PC_statecontrol.RotateState)
+			{
+			case 1:
+				chassis_solver.chassis_speed_w = 0.35f * MAX_YAW_SPEED;
+				break;
+			case 2:
+				chassis_solver.chassis_speed_w = 0.5f * MAX_YAW_SPEED;
+				break;
+			case 3:
+				chassis_solver.chassis_speed_w = 0.9f * MAX_YAW_SPEED;
+				break;
+
+			default:
+				chassis_solver.chassis_speed_w = 0.0f * MAX_YAW_SPEED;
+				break;
+			}
+		}
+
+		chassis_solver.chassis_speed_x = NAV_cmd.Nav_Speed_x;
+		chassis_solver.chassis_speed_y = NAV_cmd.Nav_Speed_y;
+
+
+		if(PC_statecontrol.CapState==1)
+		{
+			setSuperPower(POWER_TO_SuperPower);
+		}
+		else
+		{
+			setSuperPower(POWER_TO_BATTERY);
+		}
+
+		setShootAction(SHOOT_AUTO_AIM_MODE); // 辅瞄爽打
+		setGimbalAction(GIMBAL_AUTO_AIM_MODE);
+
+	}
+
 }
 
 void DJIKeyMouseUpdate(ChassisSolver *infantry)
@@ -584,7 +581,7 @@ void DJIRemoteUpdate(ChassisSolver *infantry)
             // 底盘控制
                 chassis_solver.chassis_speed_x = (remote_controller.dji_remote.rc.ch[RIGHT_CH_UD] - CH_MIDDLE) * 1.0f / CH_RANGE * MAX_X_SPEED;
                 chassis_solver.chassis_speed_y = (remote_controller.dji_remote.rc.ch[RIGHT_CH_LR] - CH_MIDDLE) * 1.0f / CH_RANGE * MAX_Y_SPEED;
-                chassis_solver.chassis_speed_w = 0.3f * MAX_YAW_SPEED;
+                chassis_solver.chassis_speed_w = 0.5f * MAX_YAW_SPEED;
     
 				//            if((remote_controller.dji_remote.rc.ch[RIGHT_CH_UD] - CH_MIDDLE) > 330)
 //            {
@@ -611,19 +608,7 @@ void DJIRemoteUpdate(ChassisSolver *infantry)
         switch (remote_controller.dji_remote.rc.s[RIGHT_SW])
         {
         case Down:
-            setRobotState(CONTROL_MODE);
-						if(PC_statecontrol.if_through_hole == 1)setControlModeAction(SPEED_FOLLOW);
-            else setControlModeAction(NOT_FOLLOW_GIMBAL);
-            setShootAction(SHOOT_POWERDOWN_MODE); // 先不打弹
-            setGimbalAction(GIMBAL_AUTO_AIM_MODE);
-            setSuperPower(POWER_TO_BATTERY);//暂时不能超电
-            
-            // 底盘往前vy正，向右vx正
-						// 
-                chassis_solver.chassis_speed_x = NAV_cmd.Nav_Speed_x;
-                chassis_solver.chassis_speed_y = NAV_cmd.Nav_Speed_y;
-                chassis_solver.chassis_speed_w = 0;
-
+            PCStateControl(); // NUC模式，允许旋转
             break;
         case Mid:
             PCStateControl(); //比赛专用

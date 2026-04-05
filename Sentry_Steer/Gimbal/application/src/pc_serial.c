@@ -250,7 +250,7 @@ void Send2PCJudge(unsigned char* buff)
 	PC_send_data_judge.is_game_start = JudgeRecieveData.is_game_start;
 	PC_send_data_judge.Robot_Red_Blue = JudgeRecieveData.Robot_Red_Blue;
 	PC_send_data_judge.self_outpost = JudgeRecieveData.self_outpost;
-	PC_send_data_judge.reserve_2bit = 0;  // 不再发送sentry_posture，移至EXTENDED包
+	PC_send_data_judge.reserve_1bit = 0;  // 不再发送sentry_posture，移至EXTENDED包
 	PC_send_data_judge.stage_remain_time = JudgeRecieveData.stage_remain_time*2;
 	PC_send_data_judge.event_data = JudgeData_RFID.event_data;
 	PC_send_data_judge.Heat_update = 0;

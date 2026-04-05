@@ -1,4 +1,5 @@
 #include "Offline_Task.h"
+#include "remote_control.h"
 
 OfflineDetector offline_detector;
 
@@ -22,16 +23,9 @@ void Offline_task(void *pvParameters)
             }
         }
 
-        //遥控器
-        if (global_debugger.remote_debugger.recv_msgs_num != offline_detector.remote_receive_num)
-        {
-            offline_detector.remote_state = REMOTE_ON;
-            offline_detector.remote_receive_num = global_debugger.remote_debugger.recv_msgs_num;
-        }
-        else
-        {
-            offline_detector.remote_state = REMOTE_OFF;
-        }
+        //遥控器离线状态已在RemoteReceive/WBUS_Decode中检测处理
+        //此处仅更新状态标志
+        offline_detector.remote_receive_num = global_debugger.remote_debugger.recv_msgs_num;
 
         // pitch电机
         if (global_debugger.gimbal_debugger[0].recv_msgs_num != offline_detector.pitch_motor_receive_num)

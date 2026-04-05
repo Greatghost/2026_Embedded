@@ -6,9 +6,9 @@ void steer_pid_init()
 {
     // 舵向初始编码值设定
     infantry.steer_init_encoder[STEER1] = 7708;
-    infantry.steer_init_encoder[STEER2] = 4450;
-    infantry.steer_init_encoder[STEER3] = 3331;
-    infantry.steer_init_encoder[STEER4] = 6621;
+    infantry.steer_init_encoder[STEER2] = 4350;
+    infantry.steer_init_encoder[STEER3] = 325;
+    infantry.steer_init_encoder[STEER4] = 6421;
 
     // 轮毂电机安装方向
     infantry.steer_wheel_install_direction[STEER1] = 1;
@@ -43,10 +43,10 @@ void steer_pid_init()
     PID_Init(&infantry.steers_angle_pid[STEER3], 720, 0, 0.05, 24, 0, 0, 0, 0, 0, 0, 1, NONE);
     PID_Init(&infantry.steers_angle_pid[STEER4], 720, 0, 0.05, 24, 0, 0, 0, 0, 0, 0, 1, NONE);
 
-    PID_Init(&infantry.steers_speed_pid[STEER1], GM6020_MAX_CURRENT*4/5, 8000, 1.0, 10, 9, 0, 0, 0, 0, 0, 1, Integral_Limit);
-    PID_Init(&infantry.steers_speed_pid[STEER2], GM6020_MAX_CURRENT*4/5, 8000, 1.0, 10, 9, 0, 0, 0, 0, 0, 1, Integral_Limit);
-    PID_Init(&infantry.steers_speed_pid[STEER3], GM6020_MAX_CURRENT*4/5, 8000, 1.0, 10, 9, 0, 0, 0, 0, 0, 1, Integral_Limit);
-    PID_Init(&infantry.steers_speed_pid[STEER4], GM6020_MAX_CURRENT*4/5, 8000, 1.0, 10, 9, 0, 0, 0, 0, 0, 1, Integral_Limit);
+    PID_Init(&infantry.steers_speed_pid[STEER1], GM6020_MAX_CURRENT*4/5, 8000, 1.0, 10, 3, 0, 0, 0, 0, 0, 1, Integral_Limit);
+    PID_Init(&infantry.steers_speed_pid[STEER2], GM6020_MAX_CURRENT*4/5, 8000, 1.0, 10, 3, 0, 0, 0, 0, 0, 1, Integral_Limit);
+    PID_Init(&infantry.steers_speed_pid[STEER3], GM6020_MAX_CURRENT*4/5, 8000, 1.0, 10, 3, 0, 0, 0, 0, 0, 1, Integral_Limit);
+    PID_Init(&infantry.steers_speed_pid[STEER4], GM6020_MAX_CURRENT*4/5, 8000, 1.0, 10, 3, 0, 0, 0, 0, 0, 1, Integral_Limit);
 
     // 6020前馈初始化
     infantry.Steer_6020_FF_Coefficient[0] = 8.0f;
@@ -58,10 +58,10 @@ void steer_pid_init()
     // 降低Kp以减少震荡，增加死区稳定性
     PID_Init(&infantry.turn_pid, 3.0, 0, 0.05f, 2.0f, 0, 0.05f, 0, 0, 0.001, 0.009, 1, DerivativeFilter | OutputFilter);
 
-		TD_Init(&infantry.steer_angle_td[0], 60000, 0.01);
-		TD_Init(&infantry.steer_angle_td[1], 60000, 0.01);
-		TD_Init(&infantry.steer_angle_td[2], 60000, 0.01);
-		TD_Init(&infantry.steer_angle_td[3], 60000, 0.01);
+		TD_Init(&infantry.steer_angle_td[0], 40000, 0.01);
+		TD_Init(&infantry.steer_angle_td[1], 40000, 0.01);
+		TD_Init(&infantry.steer_angle_td[2], 40000, 0.01);
+		TD_Init(&infantry.steer_angle_td[3], 40000, 0.01);
 }
 
 /**********************************************************************************************************

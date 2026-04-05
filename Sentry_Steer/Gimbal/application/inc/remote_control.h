@@ -110,6 +110,11 @@ typedef struct
     unsigned short poke;  // 拨轮（左上角）
 
     unsigned short Previous_rc_Right_SW; // 前一刻右边拨杆
+
+    /* WBUS扩展通道 (用于调试) */
+    unsigned short wbus_ch[16]; // WBUS原始通道值 CH1-CH16
+    unsigned short wbus_ch5_pos; // CH5位置 (0=Down, 1=Up)
+    unsigned short wbus_ch8_pos; // CH8位置 (0=Down, 1=Up)
 } Remote;
 
 #define CH_MIDDLE 1024

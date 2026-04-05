@@ -105,6 +105,31 @@ void RemoteReceive(volatile unsigned char rx_buffer[])
         RemoteLimit(&remote_controller.dji_remote.rc.ch[i], 30);
     }
 
+    /* 遥控器离线检测：当任意通道值小于400时判定为离线 */
+    uint8_t remote_offline = 0;
+    for (int i = 0; i < 4; i++)
+    {
+        if (remote_controller.dji_remote.rc.ch[i] < 400)
+        {
+            remote_offline = 1;
+            break;
+        }
+    }
+
+    if (remote_offline)
+    {
+        /* 遥控器离线安全处理：将摇杆设为中位，拨杆向下 */
+        for (int i = 0; i < 4; i++)
+        {
+            remote_controller.dji_remote.rc.ch[i] = CH_MIDDLE;
+        }
+        remote_controller.dji_remote.rc.s[LEFT_SW] = Down;
+        remote_controller.dji_remote.rc.s[RIGHT_SW] = Down;
+        setRobotState(OFFLINE_MODE);
+        setGimbalAction(GIMBAL_POWERDOWN);
+        setShootAction(SHOOT_POWERDOWN_MODE);
+    }
+
     // debug
     global_debugger.remote_debugger.dt = DWT_GetDeltaT(&global_debugger.remote_debugger.last_cnt);
     global_debugger.remote_debugger.recv_msgs_num++;

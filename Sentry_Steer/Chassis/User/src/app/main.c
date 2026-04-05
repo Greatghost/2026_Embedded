@@ -16,11 +16,11 @@ int main(void)
 {
     /* get clock frequency */
 
-	RCC_GetClocksFreq(&get_rcc_clock);
+ 	RCC_GetClocksFreq(&get_rcc_clock);
 
 #ifdef DEBUG_MODE
     SEGGER_RTT_Init();
-    LOG_CLEAR();
+    LOG_CLEAR();                                                                                    
 #ifdef JSCOPE_RTT_MODE
     JscopeRTTInit();
 #endif // JSCOPE_RTT_MODE
