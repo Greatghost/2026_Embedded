@@ -273,7 +273,7 @@ I (../components/motor/inc/DM_Motor.h)(0x69678762)
 I (../components/motor/inc/M2006.h)(0x69678762)
 I (../components/algorithm/inc/TD.h)(0x69678762)
 I (../config/gimbal_config.h)(0x69678762)
-I (../application/inc/pc_serial.h)(0x69BC8A6B)
+I (../application/inc/pc_serial.h)(0x69D3B7F4)
 I (../components/algorithm/inc/algorithmOfCRC.h)(0x69678762)
 I (../application/inc/ChassisGet.h)(0x69678762)
 I (../config/receive_data.h)(0x69B171FB)
@@ -2293,7 +2293,7 @@ I (../components/algorithm/inc/TD.h)(0x69678762)
 I (../config/gimbal_config.h)(0x69678762)
 I (../application/inc/ChassisSolver.h)(0x69678762)
 I (../Task/inc/Offline_Task.h)(0x69678762)
-I (../application/inc/pc_serial.h)(0x69BC8A6B)
+I (../application/inc/pc_serial.h)(0x69D3B7F4)
 I (../components/algorithm/inc/algorithmOfCRC.h)(0x69678762)
 I (../application/inc/ChassisGet.h)(0x69678762)
 I (../config/receive_data.h)(0x69B171FB)
@@ -2403,7 +2403,7 @@ I (../components/motor/inc/DM_Motor.h)(0x69678762)
 I (../components/motor/inc/M2006.h)(0x69678762)
 I (../components/algorithm/inc/TD.h)(0x69678762)
 I (../config/gimbal_config.h)(0x69678762)
-I (../application/inc/pc_serial.h)(0x69BC8A6B)
+I (../application/inc/pc_serial.h)(0x69D3B7F4)
 I (../components/algorithm/inc/algorithmOfCRC.h)(0x69678762)
 I (../application/inc/ChassisGet.h)(0x69678762)
 I (../config/receive_data.h)(0x69B171FB)
@@ -2565,8 +2565,8 @@ I (../components/motor/inc/DM_Motor.h)(0x69678762)
 I (../components/motor/inc/M2006.h)(0x69678762)
 I (../components/algorithm/inc/TD.h)(0x69678762)
 I (../config/gimbal_config.h)(0x69678762)
-F (..\application\src\pc_serial.c)(0x69BC8A9D)(--c99 -c --cpu Cortex-M4.fp -g -W -O0 --apcs=interwork --split_sections -I ../Inc -I ../Drivers/STM32F4xx_HAL_Driver/Inc -I ../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I ../Middlewares/Third_Party/FreeRTOS/Source/include -I ../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS -I ../Middlewares/Third_Party/FreeRTOS/Source/portable/RVDS/ARM_CM4F -I ../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I ../Drivers/CMSIS/Include -I ../Middlewares/ST/ARM/DSP/Inc -I ../application/inc -I ../bsp/boards/inc -I ../bsp/usb/inc -I ../components/algorithm/inc -I ../components/devices/inc -I ../components/tools/inc -I ../Drivers/USB -I ../Task/inc -I ../Drivers/FastMath -I ../components/motor/inc -I ../config-I.\RTE\_sentry_chassis_test-IC:\Keil_v5\ARM\PACK\ARM\CMSIS\5.4.0\CMSIS\Core\Include-IC:\Keil_v5\ARM\PACK\Keil\STM32F4xx_DFP\2.8.0\Drivers\CMSIS\Device\ST\STM32F4xx\Include-D__UVISION_VERSION="526" -D_RTE_ -DSTM32F407xx -DUSE_HAL_DRIVER -DSTM32F407xx -DUSE_HAL_DRIVER -DSTM32F407xx -DARM_MATH_CM4 -D__FPU_USED="1U" -D__FPU_PRESENT="1U" -D__CC_ARM -DARM_MATH_MATRIX_CHECK -DARM_MATH_ROUNDING-o sentry_chassis_test\pc_serial.o --omf_browse sentry_chassis_test\pc_serial.crf --depend sentry_chassis_test\pc_serial.d)
-I (../application/inc/pc_serial.h)(0x69BC8A6B)
+F (..\application\src\pc_serial.c)(0x69D3B83D)(--c99 -c --cpu Cortex-M4.fp -g -W -O0 --apcs=interwork --split_sections -I ../Inc -I ../Drivers/STM32F4xx_HAL_Driver/Inc -I ../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I ../Middlewares/Third_Party/FreeRTOS/Source/include -I ../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS -I ../Middlewares/Third_Party/FreeRTOS/Source/portable/RVDS/ARM_CM4F -I ../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I ../Drivers/CMSIS/Include -I ../Middlewares/ST/ARM/DSP/Inc -I ../application/inc -I ../bsp/boards/inc -I ../bsp/usb/inc -I ../components/algorithm/inc -I ../components/devices/inc -I ../components/tools/inc -I ../Drivers/USB -I ../Task/inc -I ../Drivers/FastMath -I ../components/motor/inc -I ../config-I.\RTE\_sentry_chassis_test-IC:\Keil_v5\ARM\PACK\ARM\CMSIS\5.4.0\CMSIS\Core\Include-IC:\Keil_v5\ARM\PACK\Keil\STM32F4xx_DFP\2.8.0\Drivers\CMSIS\Device\ST\STM32F4xx\Include-D__UVISION_VERSION="526" -D_RTE_ -DSTM32F407xx -DUSE_HAL_DRIVER -DSTM32F407xx -DUSE_HAL_DRIVER -DSTM32F407xx -DARM_MATH_CM4 -D__FPU_USED="1U" -D__FPU_PRESENT="1U" -D__CC_ARM -DARM_MATH_MATRIX_CHECK -DARM_MATH_ROUNDING-o sentry_chassis_test\pc_serial.o --omf_browse sentry_chassis_test\pc_serial.crf --depend sentry_chassis_test\pc_serial.d)
+I (../application/inc/pc_serial.h)(0x69D3B7F4)
 I (../components/algorithm/inc/algorithmOfCRC.h)(0x69678762)
 I (C:\Keil_v5\ARM\ARMCC\include\string.h)(0x599EDB3C)
 I (C:\Keil_v5\ARM\ARMCC\include\stdint.h)(0x599EDB3E)
@@ -3708,7 +3708,7 @@ I (../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_ll_usb.h)(0x69678762)
 I (../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_pcd_ex.h)(0x69678762)
 I (../Drivers/USB/usbd_core.h)(0x69678762)
 I (../Drivers/USB/usbd_ctlreq.h)(0x69678762)
-I (../application/inc/pc_serial.h)(0x69BC8A6B)
+I (../application/inc/pc_serial.h)(0x69D3B7F4)
 I (../components/algorithm/inc/algorithmOfCRC.h)(0x69678762)
 I (C:\Keil_v5\ARM\ARMCC\include\math.h)(0x599EDB3E)
 I (../Task/inc/ins_task.h)(0x69678762)
@@ -4225,7 +4225,7 @@ I (../components/motor/inc/DM_Motor.h)(0x69678762)
 I (../components/motor/inc/M2006.h)(0x69678762)
 I (../components/algorithm/inc/TD.h)(0x69678762)
 I (../config/gimbal_config.h)(0x69678762)
-I (../application/inc/pc_serial.h)(0x69BC8A6B)
+I (../application/inc/pc_serial.h)(0x69D3B7F4)
 I (../components/algorithm/inc/algorithmOfCRC.h)(0x69678762)
 I (../application/inc/ChassisGet.h)(0x69678762)
 I (../config/receive_data.h)(0x69B171FB)
@@ -4350,7 +4350,7 @@ I (../components/motor/inc/DM_Motor.h)(0x69678762)
 I (../components/motor/inc/M2006.h)(0x69678762)
 I (../components/algorithm/inc/TD.h)(0x69678762)
 I (../config/gimbal_config.h)(0x69678762)
-I (../application/inc/pc_serial.h)(0x69BC8A6B)
+I (../application/inc/pc_serial.h)(0x69D3B7F4)
 I (../components/algorithm/inc/algorithmOfCRC.h)(0x69678762)
 I (../application/inc/ChassisGet.h)(0x69678762)
 I (../config/receive_data.h)(0x69B171FB)
@@ -4519,7 +4519,7 @@ I (../Task/inc/Offline_Task.h)(0x69678762)
 I (../application/inc/BombBay.h)(0x69678762)
 I (../components/algorithm/inc/SystemIdentification.h)(0x69678762)
 I (../components/algorithm/inc/SignalGenerator.h)(0x69678762)
-I (../application/inc/pc_serial.h)(0x69BC8A6B)
+I (../application/inc/pc_serial.h)(0x69D3B7F4)
 I (../components/algorithm/inc/algorithmOfCRC.h)(0x69678762)
 I (../application/inc/ChassisGet.h)(0x69678762)
 I (../config/receive_data.h)(0x69B171FB)
@@ -4886,7 +4886,7 @@ I (../components/motor/inc/DM_Motor.h)(0x69678762)
 I (../components/motor/inc/M2006.h)(0x69678762)
 I (../components/algorithm/inc/TD.h)(0x69678762)
 I (../config/gimbal_config.h)(0x69678762)
-I (../application/inc/pc_serial.h)(0x69BC8A6B)
+I (../application/inc/pc_serial.h)(0x69D3B7F4)
 I (../components/algorithm/inc/algorithmOfCRC.h)(0x69678762)
 I (../application/inc/ChassisGet.h)(0x69678762)
 I (../config/receive_data.h)(0x69B171FB)

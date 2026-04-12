@@ -248,22 +248,17 @@
         <Ww>
           <count>18</count>
           <WinNumber>1</WinNumber>
-          <ItemText>PCSendDataBlood_1</ItemText>
+          <ItemText>pc_send_data_blood_1,0x0A</ItemText>
         </Ww>
         <Ww>
           <count>19</count>
           <WinNumber>1</WinNumber>
-          <ItemText>pc_send_data_blood_1,0x0A</ItemText>
+          <ItemText>PC_send_data_judge,0x10</ItemText>
         </Ww>
         <Ww>
           <count>20</count>
           <WinNumber>1</WinNumber>
-          <ItemText>PC_send_data_judge,0x10</ItemText>
-        </Ww>
-        <Ww>
-          <count>21</count>
-          <WinNumber>1</WinNumber>
-          <ItemText>chassis_pack_get_2</ItemText>
+          <ItemText>PCSendExtended,0x10</ItemText>
         </Ww>
       </WatchWindow1>
       <WatchWindow2>

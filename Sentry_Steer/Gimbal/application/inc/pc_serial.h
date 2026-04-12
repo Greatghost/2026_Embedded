@@ -219,13 +219,13 @@ typedef struct PCSendDataPosition
 typedef struct PCSendDataExtended
 {
 	uint8_t start_flag;
-	uint8_t data_pack_type;
+	uint8_t data_pack_type;  // = JUDGE_PC_DATA_EXTENDED = 6
 
 	int16_t UWB_yaw_10;
 	uint8_t sentry_posture;  // 哨兵姿态: 1=进攻, 2=防御, 3=移动, 0=未知
 	uint8_t reserve_8;
 	uint16_t reserve_16;
-	uint32_t reserve_32;
+	uint32_t gimbal_vel_data;  // 云台数据回传: byte0+byte1=大YAW速度(int16), 单位0.01deg/s; byte2+byte3=大YAW电机角度(int16), 单位0.01度(相对于底盘)
 
 	uint8_t crc8;
 }PCSendDataExtended_t;
