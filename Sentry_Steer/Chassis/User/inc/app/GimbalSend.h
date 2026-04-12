@@ -90,13 +90,24 @@ typedef struct{
 	Each_Robot_position_t Enemy[8];//0~7,但0,5,6不填
 }JudgeData_position_t;
 
+// 底盘速度数据包：通过舵电机角度和轮电机速度反解的底盘实际速度
+typedef struct ChassisSpeedPack
+{
+	int16_t chassis_x_v_100;    // 底盘x方向实际速度 * 100，单位0.01 m/s
+	int16_t chassis_y_v_100;    // 底盘y方向实际速度 * 100，单位0.01 m/s
+	int16_t chassis_yaw_v_100;  // 底盘角速度 * 100，单位0.01 rad/s
+	uint8_t reserve[2];         // 保留字节
+} ChassisSpeedPack_t;
+
 
 
 #pragma pack(pop)
 
 extern GimbalSendPack_1 gimbal_pack_send_1;
+extern ChassisSpeedPack_t chassis_speed_pack_send;
 
 void GimbalSendPack(void);
 void JudgeDataCanSend(void);
+void ChassisSpeedPack(void);  // 底盘速度数据打包发送
 
 #endif // !_GIMBAL_SEND_H

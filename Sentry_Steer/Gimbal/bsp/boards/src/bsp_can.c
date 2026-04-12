@@ -40,6 +40,18 @@ volatile uint8_t Blood_update = 0;
 	HAL_CAN_ConfigFilter(&hcan1, &can_filter_st);
 	HAL_CAN_Start(&hcan1);
 	HAL_CAN_ActivateNotification(&hcan1, CAN_IT_RX_FIFO1_MSG_PENDING);
+	// CAN 1 FIFO1 第二个过滤器（接收底盘速度数据）
+	can_filter_st.FilterBank = 2;
+	can_filter_st.FilterActivation = ENABLE;
+	can_filter_st.FilterMode = CAN_FILTERMODE_IDLIST;
+	can_filter_st.FilterScale = CAN_FILTERSCALE_16BIT;
+	can_filter_st.FilterIdHigh = GET_CHASSIS_SPEED_CAN_ID << 5;
+	can_filter_st.FilterIdLow = 0x000 << 5;  // 保留
+	can_filter_st.FilterMaskIdHigh = 0x000 << 5;  // 保留
+	can_filter_st.FilterMaskIdLow = 0x000 << 5;  // 保留
+	can_filter_st.FilterFIFOAssignment = CAN_RX_FIFO1;
+	can_filter_st.SlaveStartFilterBank = 14;
+	HAL_CAN_ConfigFilter(&hcan1, &can_filter_st);
 	// CAN 2 FIFO0 接收中断
 	can_filter_st.FilterBank = 15;
 	can_filter_st.FilterActivation = ENABLE;
@@ -223,10 +235,15 @@ void MotorReceive(CAN_HandleTypeDef *hcan, CAN_RxHeaderTypeDef *rx_header, uint8
 	}
 	else if (hcan->Instance == CHASSIS_CAN_COMM_CANx && rx_header->StdId == SEND_TO_GIMBAL_POSITION_DATA_CAN_ID)
 	{
-		
+
 		if(0 < temp_CAN_msg_type && temp_CAN_msg_type < 9) memcpy(&JudgeData_position.Friend[temp_CAN_msg_type],data,8);
 		else if (100<=temp_CAN_msg_type && temp_CAN_msg_type < 109) memcpy(&JudgeData_position.Enemy[temp_CAN_msg_type-100],data,8);
-		
+
+	}
+	else if (hcan->Instance == CHASSIS_CAN_COMM_CANx && rx_header->StdId == GET_CHASSIS_SPEED_CAN_ID)
+	{
+		// 底盘速度数据接收：通过舵电机角度和轮电机速度反解的底盘实际速度
+		memcpy(&chassis_speed_recv, data, sizeof(ChassisSpeedRecv_t));
 	}
 }
 

@@ -37,11 +37,18 @@ void ChasisControl_task(void *pvParameters)
 
         get_sensors_info(&infantry.sensors_info);
 
+        // 舵轮正运动学：计算底盘实际速度（通过舵角度和轮速度反解）
+        if (infantry.chassis_type == STEER_WHEEL)
+        {
+            steer_pos_kinematics();
+        }
+
         set_robot_speed(&infantry);
 
         wheels_accel(&infantry);
 
         main_control(&infantry);
+        // steer_angle_debug();  // 舵轮角度调试：90°方波跳跃调参（调参时取消注释，同时注释掉上面的main_control）
 
         wheels_power_limit(&infantry);
 

@@ -19,6 +19,15 @@ typedef struct ChassisGetPack_1
   uint16_t bullet_speed;
 } ChassisGetPack_1;
 
+// 底盘速度接收数据结构：通过舵电机角度和轮电机速度反解的底盘实际速度
+typedef struct ChassisSpeedRecv
+{
+  int16_t chassis_x_v_100;    // 底盘x方向实际速度 * 100，单位0.01 m/s
+  int16_t chassis_y_v_100;    // 底盘y方向实际速度 * 100，单位0.01 m/s
+  int16_t chassis_yaw_v_100;  // 底盘角速度 * 100，单位0.01 rad/s
+  uint8_t reserve[2];         // 保留字节
+} ChassisSpeedRecv_t;
+
 // debug
 // typedef struct ChassisGetPack_2
 // {
@@ -31,6 +40,7 @@ typedef struct ChassisGetPack_1
 #pragma pack(pop)
 
 extern ChassisGetPack_1 chassis_pack_get_1;
+extern ChassisSpeedRecv_t chassis_speed_recv;  // 底盘速度接收数据
 //extern ChassisGetPack_2 chassis_pack_get_2;
 
 #endif // !_CHASSIS_GET_H

@@ -338,12 +338,11 @@ void SendtoPCExtend(unsigned char* buff)
 	PCSendExtended.reserve_8 = 0;
 	PCSendExtended.reserve_16 = 0;
 
-		// 云台数据回传到gimbal_vel_data字段
-		// byte0+byte1: 大YAW速度 (int16) = big_yaw_gyro_speed * 100, 单位0.01deg/s
-		// byte2+byte3: 大YAW电机角度 (int16) = DM_Big_Yaw_Motor.P_Receive * 100, 单位0.01度(相对于底盘)
-		int16_t big_yaw_vel_raw = (int16_t)(big_yaw_controller.big_yaw_gyro_speed * 100.0f);
-		int16_t big_yaw_angle_raw = (int16_t)(gimbal_controller.DM_Big_Yaw_Motor.P_Receive * 100.0f);
-		PCSendExtended.gimbal_vel_data = ((uint32_t)(big_yaw_vel_raw & 0xFFFF)) | ((uint32_t)(big_yaw_angle_raw & 0xFFFF) << 16);
+		// 底盘速度数据回传到gimbal_vel_data字段（通过舵电机角度与轮电机速度反解）
+		// byte0+byte1: 底盘x方向速度 (int16) = chassis_x_v_100, 单位0.01 m/s
+		// byte2+byte3: 底盘y方向速度 (int16) = chassis_y_v_100, 单位0.01 m/s
+		// 注：原gimbal_vel_data字段改为存储底盘速度数据
+		PCSendExtended.gimbal_vel_data = ((uint32_t)(chassis_speed_recv.chassis_x_v_100 & 0xFFFF)) | ((uint32_t)(chassis_speed_recv.chassis_y_v_100 & 0xFFFF) << 16);
 
 	PCSendExtended.crc8 = 0;
 	Append_CRC8_Check_Sum((unsigned char *)&PCSendExtended, PC_SEND_BLOOD_SIZE);//size == 12byte

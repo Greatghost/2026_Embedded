@@ -1,4 +1,5 @@
 #include "GimbalSend.h"
+#include "ChasisController.h"  // 引入infantry结构体
 
 GimbalSendPack_1 gimbal_pack_send_1;
 JudgeData_ForSend1_t JudgeData_ForSend1;
@@ -7,6 +8,7 @@ JudgeBloodData_ForSend1_t JudgeBloodData_ForSend1,JudgeBloodData_ForSend2;
 JudgeData_Buff_t JudgeData_Buff;
 JudgeData_RFID_t JudgeData_RFID;
 JudgeData_position_t JudgeData_position;
+ChassisSpeedPack_t chassis_speed_pack_send;  // 底盘速度数据包
 extern NingCapController cap_controller;
 uint8_t radar_msg_update_flag;
 
@@ -30,6 +32,36 @@ void GimbalSendPack()
 
   gimbal_pack_send_1.bullet_speed = (uint16_t)bullet_spd_100;
 }
+
+/**
+ * @brief 底盘速度数据打包：通过舵电机角度和轮电机速度反解的底盘实际速度
+ * @note 底盘坐标系：x向右，y向前，yaw逆时针为正
+ *       infantry.x_v, y_v 单位为m/s，yaw_v单位为rad/s
+ */
+void ChassisSpeedPack(void)
+{
+  // 将底盘速度乘100发送，单位0.01 m/s / 0.01 rad/s
+  chassis_speed_pack_send.chassis_x_v_100 = (int16_t)(infantry.x_v * 100.0f);
+  chassis_speed_pack_send.chassis_y_v_100 = (int16_t)(infantry.y_v * 100.0f);
+  chassis_speed_pack_send.chassis_yaw_v_100 = (int16_t)(infantry.yaw_v * 100.0f);
+  chassis_speed_pack_send.reserve[0] = 0;
+  chassis_speed_pack_send.reserve[1] = 0;
+}
+
+/**
+ * @brief 底盘速度数据发送（CAN2）
+ */
+void Can2SendChassisSpeed(void)
+{
+  CanTxMsg tx_message;
+  tx_message.IDE = CAN_ID_STD;
+  tx_message.RTR = CAN_RTR_DATA;
+  tx_message.DLC = 0x08;
+  tx_message.StdId = SEND_TO_GIMBAL_CHASSIS_SPEED_CAN_ID;
+  memcpy(tx_message.Data, &chassis_speed_pack_send, sizeof(ChassisSpeedPack_t));
+  CAN_Transmit(CAN2, &tx_message);
+}
+
 void JudgeDataBloodPack(){
   if(JudgeData_ForSend1.Robot_Red_Blue == 1)
       {
@@ -300,10 +332,11 @@ int16_t send_count = 0;
 void JudgeDataCanSend(void)
 {
   // 5ms执行一侧
-  
+
   SendToGimbalPack();
   JudgeDataPack();
-	
+  ChassisSpeedPack();  // 底盘速度数据打包
+
   if(send_count %10 == 0) Can2Send1(&JudgeData_ForSend1);// 20hz
   if(send_count % 10 ==6) CanSend(GIMBAL_CAN_COMM_CANx, send_to_gimbal_data, SEND_TO_GIMBAL_CAN_ID_1, 8);
   if(send_count % 10 == 3) Can2Send2(&JudgeData_ForSend2);//20hz
@@ -312,6 +345,7 @@ void JudgeDataCanSend(void)
   if(send_count % 21 == 4) Can2Send4_Buff(&JudgeData_Buff);//10hz,RFIDandBuff
   if(send_count % 21 == 8) Can2Send4_RFID(&JudgeData_RFID);//
   if(send_count % 21 == 16) Can2Send5();//10hz,POS
+  if(send_count % 10 == 2) Can2SendChassisSpeed();  // 50hz发送底盘速度数据
   if(send_count == 3000) //3390是公倍数
   {
     send_count = -1;

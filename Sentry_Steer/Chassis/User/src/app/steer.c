@@ -285,3 +285,144 @@ void steer_chassis_control(void)
         }
     }
 }
+
+/**
+ * @brief 舵轮正运动学：从舵电机角度和轮电机速度反解底盘相对于云台的实际速度
+ * @note 完全对应逆运动学 steer_chassis_control 的逻辑，并包含坐标变换
+ *
+ *       【逆运动学】steer_vector[i] = add_vector(robot_vector, w_vector[i])
+ *       【正运动学】先平均得到平动分量，再从轮速中减去平动，最后计算yaw
+ *
+ *       【yaw切线角度】与逆运动学w_vector.angle一致
+ *       STEER1=135°, STEER2=45°, STEER3=-135°, STEER4=-45°
+ *
+ *       【坐标变换】
+ *       云台→底盘：chassis_x = target_x*cos + target_y*sin
+ *                  chassis_y = target_y*cos - target_x*sin
+ *       底盘→云台：gimbal_x = chassis_x*cos - chassis_y*sin
+ *                  gimbal_y = chassis_x*sin + chassis_y*cos
+ */
+void steer_pos_kinematics(void)
+{
+    float wheel_speed_m_s[4];     // 四个轮的物理线速度
+    float steer_angle_rad[4];     // 四个舵轮的物理角度
+
+    // 四个舵轮yaw切线方向角度（与逆运动学w_vector.angle一致）
+    // STEER1=135°, STEER2=45°, STEER3=-135°, STEER4=-45°
+    float tangent_angle_rad[4] = {135.0f * DEG2R_RATIO, 45.0f * DEG2R_RATIO, -135.0f * DEG2R_RATIO, -45.0f * DEG2R_RATIO};
+
+    // 第一步：计算每个轮的物理线速度和舵轮角度
+    for (int i = 0; i < 4; i++)
+    {
+        // 单位转换：度/s → m/s
+        float wheel_speed_deg_s = infantry.sensors_info.wheels_decode[i].speed;
+        wheel_speed_m_s[i] = wheel_speed_deg_s * STEER_DEGEREE_S_TO_MS;
+
+        // 安装方向修正
+        wheel_speed_m_s[i] *= infantry.steer_wheel_install_direction[i];
+
+        // 计算舵轮物理角度
+        float encoder_offset_deg = (infantry.sensors_info.steer_recv[i].angle - infantry.steer_init_encoder[i]) / 8192.0f * 360.0f;
+        steer_angle_rad[i] = encoder_offset_deg * DEG2R_RATIO;
+    }
+
+    // 第二步：平均计算平动分量（yaw分量平均为0）
+    float vx_chassis_sum = 0.0f;
+    float vy_chassis_sum = 0.0f;
+    for (int i = 0; i < 4; i++)
+    {
+        vx_chassis_sum += wheel_speed_m_s[i] * arm_sin_f32(steer_angle_rad[i]);
+        vy_chassis_sum += wheel_speed_m_s[i] * arm_cos_f32(steer_angle_rad[i]);
+    }
+    float vx_chassis = vx_chassis_sum / 4.0f;
+    float vy_chassis = vy_chassis_sum / 4.0f;
+
+    // 第三步：计算yaw贡献（从轮速中减去平动分量，再投影到切线）
+    float yaw_sum = 0.0f;
+    for (int i = 0; i < 4; i++)
+    {
+        // 平动分量：robot_vector 在该舵轮方向的分量
+        float robot_speed_contribution = vx_chassis * arm_sin_f32(steer_angle_rad[i]) + vy_chassis * arm_cos_f32(steer_angle_rad[i]);
+
+        // yaw分量：轮速 - 平动分量
+        float yaw_speed_component = wheel_speed_m_s[i] - robot_speed_contribution;
+
+        // yaw贡献 = yaw分量 * cos(steer_angle - tangent_angle) / radius
+        float angle_diff = steer_angle_rad[i] - tangent_angle_rad[i];
+        float yaw_contribution = yaw_speed_component * arm_cos_f32(angle_diff) / STEER_INFANTRY_RADIUS;
+        yaw_sum += yaw_contribution;
+    }
+
+    // 第四步：输出结果
+    infantry.yaw_v = yaw_sum / 4.0f;
+
+    // 第五步：底盘坐标系 → 云台坐标系
+    infantry.x_v = vx_chassis * infantry.cos_dir - vy_chassis * infantry.sin_dir;
+    infantry.y_v = vx_chassis * infantry.sin_dir + vy_chassis * infantry.cos_dir;
+}
+
+/**
+ * @brief 舵轮角度调试函数：90°方波跳跃调参
+ * @note 调参时只动一个舵轮，其他舵电机和全部轮电机不动
+ *       方波周期由STEER_DEBUG_SQUARE_PERIOD定义，幅度±90°
+ *       使用方法：
+ *       1. 在ChasisControlTask.c中取消注释steer_angle_debug()调用，注释掉main_control()
+ *       2. 修改STEER_DEBUG_TARGET_STEER选择调试的舵轮
+ *       3. 观察舵轮响应，调整steer_pid_init中的PID参数
+ *       4. 调参完成后恢复main_control()调用，注释掉steer_angle_debug()
+ */
+void steer_angle_debug(void)
+{
+    static uint32_t debug_time_cnt = 0;  // 时间计数器(ms)
+    static uint8_t square_state = 0;     // 方波状态：0=低，1=高
+    float target_angle;                   // 目标角度
+
+    // 方波周期计算，每STEER_DEBUG_SQUARE_PERIOD毫秒翻转一次
+    debug_time_cnt += 1;  // 每次调用增加1ms（假设任务周期1ms）
+
+    if (debug_time_cnt >= STEER_DEBUG_SQUARE_PERIOD)
+    {
+        debug_time_cnt = 0;
+        square_state = !square_state;  // 翻转方波状态
+    }
+
+    // 计算目标角度：基准角度 ± 幅度
+    if (square_state == 0)
+    {
+        target_angle = STEER_DEBUG_ANGLE_BASE - STEER_DEBUG_ANGLE_AMPLITUDE;  // -90°
+    }
+    else
+    {
+        target_angle = STEER_DEBUG_ANGLE_BASE + STEER_DEBUG_ANGLE_AMPLITUDE;  // +90°
+    }
+
+    // 所有轮电机输出为0（底盘不移动）
+    for (int i = 0; i < 4; i++)
+    {
+        infantry.excute_info.wheels_set_current[i] = 0.0f;
+    }
+
+    // 目标舵轮执行角度控制，其他舵电机输出为0
+    for (int i = 0; i < 4; i++)
+    {
+        if (i == STEER_DEBUG_TARGET_STEER)
+        {
+            // 目标舵轮：执行角度PID控制
+            // 计算速度设定点（角度PID输出）
+            infantry.Steer_Speed_Setpoint[i] = PID_Calculate(&infantry.steers_angle_pid[i],
+                                                             infantry.sensors_info.steer_decode[i].angle,
+                                                             target_angle);
+            // 计算电流输出（速度PID + 前馈）
+            infantry.steers_set_current = PID_Calculate(&infantry.steers_speed_pid[i],
+                                                        infantry.sensors_info.steer_decode[i].speed,
+                                                        infantry.Steer_Speed_Setpoint[i])
+                                          + Feedforward_Calculate(&infantry.Steer_6020_FF, infantry.Steer_Speed_Setpoint[i]);
+            infantry.excute_info.steers_set_current[i] = infantry.steers_set_current;
+        }
+        else
+        {
+            // 其他舵轮：输出为0
+            infantry.excute_info.steers_set_current[i] = 0.0f;
+        }
+    }
+}

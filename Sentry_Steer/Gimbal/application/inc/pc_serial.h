@@ -225,7 +225,7 @@ typedef struct PCSendDataExtended
 	uint8_t sentry_posture;  // 哨兵姿态: 1=进攻, 2=防御, 3=移动, 0=未知
 	uint8_t reserve_8;
 	uint16_t reserve_16;
-	uint32_t gimbal_vel_data;  // 云台数据回传: byte0+byte1=大YAW速度(int16), 单位0.01deg/s; byte2+byte3=大YAW电机角度(int16), 单位0.01度(相对于底盘)
+	uint32_t gimbal_vel_data;  // 底盘速度数据: byte0+byte1=底盘x速度(int16), 单位0.01 m/s; byte2+byte3=底盘y速度(int16), 单位0.01 m/s (通过舵电机角度与轮电机速度反解)
 
 	uint8_t crc8;
 }PCSendDataExtended_t;
