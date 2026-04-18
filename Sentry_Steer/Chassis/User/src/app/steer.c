@@ -5,10 +5,10 @@ extern uint8_t speed_follow_enable_flag;
 void steer_pid_init()
 {
     // 舵向初始编码值设定
-    infantry.steer_init_encoder[STEER1] = 7708;
-    infantry.steer_init_encoder[STEER2] = 4350;
-    infantry.steer_init_encoder[STEER3] = 325;
-    infantry.steer_init_encoder[STEER4] = 6421;
+    infantry.steer_init_encoder[STEER1] = 3753;
+    infantry.steer_init_encoder[STEER2] = 3116;
+    infantry.steer_init_encoder[STEER3] = 1676;
+    infantry.steer_init_encoder[STEER4] = 2535;
 
     // 轮毂电机安装方向
     infantry.steer_wheel_install_direction[STEER1] = 1;
@@ -362,9 +362,9 @@ void steer_pos_kinematics(void)
 }
 
 /**
- * @brief 舵轮角度调试函数：90°方波跳跃调参
+ * @brief 舵轮角度调试函数：方波跳变调参
  * @note 调参时只动一个舵轮，其他舵电机和全部轮电机不动
- *       方波周期由STEER_DEBUG_SQUARE_PERIOD定义，幅度±90°
+ *       方波跳变用于测试PID阶跃响应
  *       使用方法：
  *       1. 在ChasisControlTask.c中取消注释steer_angle_debug()调用，注释掉main_control()
  *       2. 修改STEER_DEBUG_TARGET_STEER选择调试的舵轮
@@ -373,27 +373,38 @@ void steer_pos_kinematics(void)
  */
 void steer_angle_debug(void)
 {
-    static uint32_t debug_time_cnt = 0;  // 时间计数器(ms)
-    static uint8_t square_state = 0;     // 方波状态：0=低，1=高
-    float target_angle;                   // 目标角度
+    static uint32_t debug_time_cnt = 0;      // 时间计数器(ms)
+    static uint8_t square_state = 0;         // 方波状态：0=低，1=高
+    static int16_t init_encoder_value = 0;   // 初始编码器值（原始值，不累积）
+    static uint8_t init_flag = 0;            // 初始化标志
+    float target_angle;                       // 目标角度
+    float current_angle_offset;               // 当前相对偏移角度
+
+    // 第一次调用时记录初始编码器值
+    if (init_flag == 0)
+    {
+        init_encoder_value = infantry.sensors_info.steer_recv[STEER_DEBUG_TARGET_STEER].angle;
+        init_flag = 1;
+    }
+
+    // 时间计数，假设任务周期1ms
+    debug_time_cnt += 1;
 
     // 方波周期计算，每STEER_DEBUG_SQUARE_PERIOD毫秒翻转一次
-    debug_time_cnt += 1;  // 每次调用增加1ms（假设任务周期1ms）
-
     if (debug_time_cnt >= STEER_DEBUG_SQUARE_PERIOD)
     {
         debug_time_cnt = 0;
         square_state = !square_state;  // 翻转方波状态
     }
 
-    // 计算目标角度：基准角度 ± 幅度
+    // 计算目标角度：基准角度 ± 幅度（相对于初始位置）
     if (square_state == 0)
     {
-        target_angle = STEER_DEBUG_ANGLE_BASE - STEER_DEBUG_ANGLE_AMPLITUDE;  // -90°
+        target_angle = STEER_DEBUG_ANGLE_BASE - STEER_DEBUG_ANGLE_AMPLITUDE;  // -45°
     }
     else
     {
-        target_angle = STEER_DEBUG_ANGLE_BASE + STEER_DEBUG_ANGLE_AMPLITUDE;  // +90°
+        target_angle = STEER_DEBUG_ANGLE_BASE + STEER_DEBUG_ANGLE_AMPLITUDE;  // +45°
     }
 
     // 所有轮电机输出为0（底盘不移动）
@@ -407,10 +418,22 @@ void steer_angle_debug(void)
     {
         if (i == STEER_DEBUG_TARGET_STEER)
         {
-            // 目标舵轮：执行角度PID控制
+            // 使用原始编码器值计算相对角度（单圈范围内）
+            int16_t current_encoder = infantry.sensors_info.steer_recv[i].angle;
+            int16_t encoder_offset = current_encoder - init_encoder_value;
+
+            // 处理编码器过零（单圈范围内，±半圈）
+            if (encoder_offset > 4096)       // 超过半圈正向
+                encoder_offset -= 8192;
+            else if (encoder_offset < -4096) // 超过半圈负向
+                encoder_offset += 8192;
+
+            // 转换为角度
+            current_angle_offset = encoder_offset / 8192.0f * 360.0f;
+
             // 计算速度设定点（角度PID输出）
             infantry.Steer_Speed_Setpoint[i] = PID_Calculate(&infantry.steers_angle_pid[i],
-                                                             infantry.sensors_info.steer_decode[i].angle,
+                                                             current_angle_offset,
                                                              target_angle);
             // 计算电流输出（速度PID + 前馈）
             infantry.steers_set_current = PID_Calculate(&infantry.steers_speed_pid[i],

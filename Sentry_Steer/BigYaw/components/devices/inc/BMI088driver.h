@@ -52,10 +52,10 @@
 
 // ���ֶ��޸�
 #if ROBOT == GOBLIN
-#define GxOFFSET 0.00326016981f
-#define GyOFFSET -0.00328232953f
-#define GzOFFSET 0.00043462668f
-#define gNORM   9.80783272
+#define GxOFFSET 0.00120246271f
+#define GyOFFSET 0.00139143935f
+#define GzOFFSET 0.0010568439f
+#define gNORM   9.5913229f
 #endif
 
 typedef struct

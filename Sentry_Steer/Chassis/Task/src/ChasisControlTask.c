@@ -48,7 +48,7 @@ void ChasisControl_task(void *pvParameters)
         wheels_accel(&infantry);
 
         main_control(&infantry);
-        // steer_angle_debug();  // 舵轮角度调试：90°方波跳跃调参（调参时取消注释，同时注释掉上面的main_control）
+        //steer_angle_debug();  // 舵轮角度调试：90°方波跳跃调参（调参时取消注释，同时注释掉上面的main_control）
 
         wheels_power_limit(&infantry);
 

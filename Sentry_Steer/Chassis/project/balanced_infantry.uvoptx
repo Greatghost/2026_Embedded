@@ -120,7 +120,7 @@
         <SetRegEntry>
           <Number>0</Number>
           <Key>DLGUARM</Key>
-          <Name></Name>
+          <Name>?</Name>
         </SetRegEntry>
         <SetRegEntry>
           <Number>0</Number>
@@ -264,6 +264,11 @@
           <count>19</count>
           <WinNumber>1</WinNumber>
           <ItemText>encoder_offset_deg</ItemText>
+        </Ww>
+        <Ww>
+          <count>20</count>
+          <WinNumber>1</WinNumber>
+          <ItemText>target_angle</ItemText>
         </Ww>
       </WatchWindow1>
       <WatchWindow2>

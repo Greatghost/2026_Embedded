@@ -67,8 +67,8 @@
 
 #define GIMBAL_PITCH_MOTOR_SIGN 1.0f // 云台PITCH电机方向，向上为正
 
-#define GIMBAL_ANGLE_MIN 172.0f // 电机角软限位
-#define GIMBAL_ANGLE_MAX 212.0f
+#define GIMBAL_ANGLE_MIN 50.0f // 电机角软限位
+#define GIMBAL_ANGLE_MAX 120.0f
 
 #define GIMBAL_PITCH_COMP 4000.0f        // 暂不使用
 #define GIMBAL_PITCH_COMP_COEF 1.0f      // 暂不使用
@@ -79,8 +79,8 @@
 #define GIMBAL_SMALL_YAW_GYRO_SIGN 1.0f        // 用来标记gyro的方向，逆时针为正
 #define GIMBAL_SMALL_YAW_POS_FORWARD_COEF 0.6f // 角度环前馈系数
 #define GIMBAL_SMALL_YAW_SPEED_FORWARD_COEF 0.f
-#define GIMBAL_SMALL_YAW_LIMIT_LEFG 39.0f    //小yaw电机角左限位
-#define GIMBAL_SMALL_YAW_LIMIT_RIGHT -42.0f       //小yaw电机角右限位
+#define GIMBAL_SMALL_YAW_LIMIT_LEFG 45.0f    //小yaw电机角左限位
+#define GIMBAL_SMALL_YAW_LIMIT_RIGHT -45.0f       //小yaw电机角右限位
 #define GIMBAL_SMALL_YAW_ZERO_POINT 0.0f //小yaw电机零点
 
 

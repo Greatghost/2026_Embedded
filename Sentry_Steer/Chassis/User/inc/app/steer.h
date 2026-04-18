@@ -23,14 +23,14 @@
 
 /* 舵轮角度调试参数（调参时修改） */
 #define STEER_DEBUG_TARGET_STEER  STEER1      // 调试的目标舵轮编号
-#define STEER_DEBUG_SQUARE_PERIOD 2000        // 方波周期(ms)，半周期时间
-#define STEER_DEBUG_ANGLE_BASE    0.0f        // 方波基准角度(度)
-#define STEER_DEBUG_ANGLE_AMPLITUDE 90.0f     // 方波幅度(度)，跳跃±90°
+#define STEER_DEBUG_SQUARE_PERIOD 2000        // 正弦波周期(ms)，完整振荡一次的时间
+#define STEER_DEBUG_ANGLE_BASE    0.0f        // 基准角度(度)
+#define STEER_DEBUG_ANGLE_AMPLITUDE 45.0f     // 正弦波幅度(度)，±45°振荡
 
 void steer_pid_init(void);
 void steer_inv_kinematics(void);
 void steer_chassis_control(void);
 void steer_pos_kinematics(void);  // 舵轮正运动学：从舵角度和轮速度反解底盘速度
-void steer_angle_debug(void);     // 舵轮角度调试函数：90°方波跳跃调参
+void steer_angle_debug(void);     // 舵轮角度调试函数：正弦波振荡调参
 
 #endif
