@@ -15,7 +15,49 @@
 #include "gimbal_config.h"
 #include "ZeroCheck.h"
 #include "my_filter.h"
+#include "SignalGenerator.h"
 
+/*==============================================================================
+ *                          云台测试结构体定义
+ *============================================================================*/
+typedef struct CostFunction
+{
+    float ise;               // ISE: 误差平方积分 ∫e²dt
+    float control_cost;      // 控制量惩罚 ∫λ*u²dt
+    float total_cost;        // 总目标函数 J = ISE + control_cost
+    float cycle_time;        // 当前周期累计时间 (s)
+    float max_error;         // 当前周期最大误差
+    float final_error;       // 当前周期结束时的误差
+    uint8_t cycle_complete;  // 周期完成标志：周期切换时置1，下一周期开始时清零
+} CostFunction_t;
+
+/* 云台测试结构体 */
+typedef struct GimbalTest
+{
+    SquareWave pitch_square;      // Pitch方波信号发生器
+    SquareWave small_yaw_square;  // 小Yaw方波信号发生器
+
+    // 目标函数计算（当前周期）
+    CostFunction_t pitch_cost;    // Pitch目标函数
+    CostFunction_t yaw_cost;      // Yaw目标函数
+
+    // 周期追踪
+    uint16_t last_pitch_cycle;    // 上一个Pitch周期计数（用于检测周期切换）
+    uint16_t last_yaw_cycle;      // 上一个Yaw周期计数
+
+    // 历史记录（上一个完整周期的代价）
+    float last_pitch_ise;         // 上一个Pitch周期ISE
+    float last_pitch_control;     // 上一个Pitch周期控制量代价
+    float last_pitch_max_error;   // 上一个Pitch周期最大误差
+    float last_yaw_ise;           // 上一个Yaw周期ISE
+    float last_yaw_control;       // 上一个Yaw周期控制量代价
+    float last_yaw_max_error;     // 上一个Yaw周期最大误差
+
+} GimbalTest_t;
+
+/*==============================================================================
+ *                          云台控制器结构体定义
+ *============================================================================*/
 typedef struct GimbalController
 {
   //// 弹舱盖
@@ -99,6 +141,9 @@ typedef struct GimbalController
   float pitch_max_gyro_angle;
   float pitch_min_gyro_angle;
 
+  // 云台测试模块
+  GimbalTest_t gimbal_test;
+
 } GimbalController;
 
 #define GIMBAL_INIT_WAIT_TIME  150
@@ -130,6 +175,11 @@ void updateGyro(void);
 void limitPitchAngle(void);
 float GimbalPitchComp(void);
 float Gimbal_Pitch_Calculate(float set_point);
+
+// 云台测试模块
+void GimbalTestInit(GimbalTest_t *test);
+void GimbalTestResetCost(GimbalTest_t *test);
+void GimbalTestRunPitchCost(GimbalTest_t *test, float error, float control, float delta_t);
 
 // Yaw
 float Gimbal_Big_Yaw_Calculate(float set_point);

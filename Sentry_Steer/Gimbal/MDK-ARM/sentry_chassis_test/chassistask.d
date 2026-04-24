@@ -103,6 +103,7 @@ sentry_chassis_test\chassistask.o: ../components/motor/inc/DM_Motor.h
 sentry_chassis_test\chassistask.o: ../components/motor/inc/M2006.h
 sentry_chassis_test\chassistask.o: ../components/algorithm/inc/TD.h
 sentry_chassis_test\chassistask.o: ../config/gimbal_config.h
+sentry_chassis_test\chassistask.o: ../components/algorithm/inc/SignalGenerator.h
 sentry_chassis_test\chassistask.o: ../application/inc/pc_serial.h
 sentry_chassis_test\chassistask.o: ../components/algorithm/inc/algorithmOfCRC.h
 sentry_chassis_test\chassistask.o: ../application/inc/ChassisGet.h
@@ -116,4 +117,3 @@ sentry_chassis_test\chassistask.o: ../application/inc/FrictionWheel.h
 sentry_chassis_test\chassistask.o: ../components/motor/inc/M3508.h
 sentry_chassis_test\chassistask.o: ../application/inc/ToggleBullet.h
 sentry_chassis_test\chassistask.o: ../config/toggle_config.h
-sentry_chassis_test\chassistask.o: ../components/algorithm/inc/SignalGenerator.h

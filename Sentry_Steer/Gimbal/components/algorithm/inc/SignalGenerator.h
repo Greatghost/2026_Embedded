@@ -52,4 +52,19 @@ typedef struct SawToothWave
 void SawToothInit(SawToothWave *saw_tooth_wave, float amplitude, float start_time, uint16_t T, float initial_value);
 float SawWaveRun(SawToothWave *saw_tooth_wave, float delta_t);
 
+/* 方波信号发生器 - 用于PID自动调参 */
+typedef struct SquareWave
+{
+    uint16_t T;              // 单个周期长度 (ms)
+    float low_value;         // 低值
+    float high_value;        // 高值
+    float start_time;        // 开始时间
+    float time;              // 当前时间
+    uint16_t cycle_count;    // 经过了几个周期
+    uint8_t  is_high;        // 当前是否为高值状态
+} SquareWave;
+
+void SquareWaveInit(SquareWave *square_wave, float low_value, float high_value, float start_time, uint16_t T);
+float SquareWaveRun(SquareWave *square_wave, float delta_t);
+
 #endif // !_SIGNAL_H

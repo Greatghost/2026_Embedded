@@ -63,13 +63,13 @@ enum LEG_ACTION
 
 enum GIMBAL_ACTION
 {
-    GIMBAL_POWERDOWN, // 云台掉电模式
-    GIMBAL_ACT_MODE,
-    GIMBAL_AUTO_AIM_MODE,
-    GIMBAL_TEST_MODE,
-    GIMBAL_SI_MODE,         // 云台系统辨识模式
-    GIMBAL_SMALL_BUFF_MODE, // 打符模式
-    GIMBAL_BIG_BUFF_MODE,   // 大符
+    GIMBAL_POWERDOWN,        // 云台掉电模式
+    GIMBAL_ACT_MODE,         // 云台运动模式
+    GIMBAL_AUTO_AIM_MODE,    // 自瞄模式
+    GIMBAL_TEST_MODE,        // 测试模式
+    GIMBAL_SI_MODE,          // 云台系统辨识模式
+    GIMBAL_SMALL_BUFF_MODE,  // 打符模式
+    GIMBAL_BIG_BUFF_MODE,    // 大符
 };
 
 enum SHOOT_ACTION

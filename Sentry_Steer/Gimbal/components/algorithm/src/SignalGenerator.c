@@ -86,3 +86,61 @@ float SawWaveRun(SawToothWave *saw_tooth_wave, float delta_t)
     saw_tooth_wave->out += saw_tooth_wave->slope * delta_t;
     return saw_tooth_wave->out;
 }
+
+/**
+ * @brief  方波信号初始化
+ * @param  square_wave: 方波结构体指针
+ * @param  low_value: 低值
+ * @param  high_value: 高值
+ * @param  start_time: 开始时间 (s)
+ * @param  T: 周期 (ms)
+ */
+void SquareWaveInit(SquareWave *square_wave, float low_value, float high_value, float start_time, uint16_t T)
+{
+    square_wave->T = T;
+    square_wave->low_value = low_value;
+    square_wave->high_value = high_value;
+    square_wave->start_time = start_time;
+    square_wave->time = 0;
+    square_wave->cycle_count = 0;
+    square_wave->is_high = 0;
+}
+
+/**
+ * @brief  方波信号运行
+ * @param  square_wave: 方波结构体指针
+ * @param  delta_t: 时间增量 (s)
+ * @return 当前方波输出值
+ */
+float SquareWaveRun(SquareWave *square_wave, float delta_t)
+{
+    square_wave->time += delta_t;
+
+    if (square_wave->time < square_wave->start_time)
+    {
+        square_wave->is_high = 0;
+        return square_wave->low_value;
+    }
+
+    // 计算从启动后经过的总时间
+    float elapsed_time = square_wave->time - square_wave->start_time;
+    // 计算当前周期数
+    float period_in_seconds = (float)square_wave->T / 1000.0f;
+    square_wave->cycle_count = (uint16_t)(elapsed_time / period_in_seconds);
+
+    // 计算在当前周期内的时间位置
+    float time_in_cycle = elapsed_time - (float)square_wave->cycle_count * period_in_seconds;
+    float half_period = period_in_seconds / 2.0f; // 半周期 (s)
+
+    // 前半周期为低值，后半周期为高值
+    if (time_in_cycle >= half_period)
+    {
+        square_wave->is_high = 1;
+        return square_wave->high_value;
+    }
+    else
+    {
+        square_wave->is_high = 0;
+        return square_wave->low_value;
+    }
+}

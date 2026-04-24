@@ -54,12 +54,12 @@ void GimbalPidInit()
 #elif ROBOT == TIGER
 
     // pitch VOL LOOP
-	PID_Init(&gimbal_controller.pitch_angle_pid, 150.0f, 48.0f, 0.0f, 40.0f, 0.5f, 0.0f, 0, 0, 0, 0.02f, 1, DerivativeFilter | Integral_Limit| Trapezoid_Intergral);
-	PID_Init(&gimbal_controller.pitch_speed_pid, 15000, 1200, 0.1f, 30.0f, 1.0f, 0, 0, 0, 0.0018, 0, 1, Integral_Limit | Trapezoid_Intergral);
+	PID_Init(&gimbal_controller.pitch_angle_pid, 150.0f, 48.0f, 0.0f, 40.0f, 0.0f, 0.0f, 0, 0, 0, 0.02f, 1, DerivativeFilter | Integral_Limit| Trapezoid_Intergral);
+	PID_Init(&gimbal_controller.pitch_speed_pid, 15000, 1200, 0.1f, 35.0f, 1.0f, 0, 0, 0, 0.0018, 0, 1, Integral_Limit | Trapezoid_Intergral);
 
     // yaw GM6020 CURRENT LOOP
-    PID_Init(&gimbal_controller.small_yaw_angle_pid, 180.0, 0, 0.05, 20.0f, 0, 0.0f, 0, 0, 0.0, 0.0f, 1, DerivativeFilter);
-    PID_Init(&gimbal_controller.small_yaw_speed_pid, GM6020_MAX_CURRENT, 1000, 0.5, 80.0f, 1.0f, 0, 0, 0, 0.f, 0, 1, Integral_Limit | Trapezoid_Intergral);
+    PID_Init(&gimbal_controller.small_yaw_angle_pid, 180.0, 0, 0.05, 60.0f, 0, 0.0f, 0, 0, 0.0, 0.0f, 1, DerivativeFilter);
+    PID_Init(&gimbal_controller.small_yaw_speed_pid, GM6020_MAX_CURRENT, 1000, 0.5, 120.0f, 30.0f, 0, 0, 0, 0.f, 0, 1, Integral_Limit | Trapezoid_Intergral);
 
     // yaw DM MOTOR CURRENT LOOP
     PID_Init(&gimbal_controller.big_yaw_angle_pid, 360.0, 0, 0.05, 32.0f, 0.f, 0.1f, 0, 0, 0.0, 0.02f, 1, DerivativeFilter);
@@ -97,10 +97,14 @@ void GimbalPidInit()
  */
 float Gimbal_Pitch_Calculate(float set_point)
 {
-    // pitch 三环
+    // pitch 三环 + 重力补偿前馈
     gimbal_controller.set_pitch_angle = set_point;
     gimbal_controller.set_pitch_speed = PID_Calculate(&gimbal_controller.pitch_angle_pid, gimbal_controller.gyro_pitch_angle, gimbal_controller.set_pitch_angle);
     gimbal_controller.set_pitch_current = GIMBAL_PITCH_MOTOR_SIGN * PID_Calculate(&gimbal_controller.pitch_speed_pid, gimbal_controller.gyro_pitch_speed, gimbal_controller.set_pitch_speed);
+
+    // 添加重力补偿前馈
+    gimbal_controller.set_pitch_current += GimbalPitchComp();
+
     return gimbal_controller.set_pitch_current;
 }
 
@@ -308,29 +312,29 @@ void updateGyro()
 }
 
 /**
- * @brief 由于重力补偿的作用，云台需要施加一个非线性力抵消重力影响，该力需要根据实际来进行测定
+ * @brief 重力补偿 - 使用多项式模型拟合静止电流
+ *        val(x) = p1*x^4 + p2*x^3 + p3*x^2 + p4*x + p5
+ *        x: pitch角度(度), val: 补偿电流值
  */
 float GimbalPitchComp()
 {
-    // //记得每调一台车都需要重新更新参数
-    // const static float pitch_comp[5] = {0.1399, -0.9144, -10.2, 9.038, -3337};
-    // float x[4];
+    // 多项式系数 (Poly4拟合结果)
+    const static float p1 = -0.001067f;
+    const static float p2 =  0.06629f;
+    const static float p3 = -1.35f;
+    const static float p4 =  21.58f;
+    const static float p5 =  974.5f;
 
-    // //解析静止时的非线性函数，只能大致补偿，然后靠PID的I使最终无静差
-    // //低于一定角度或高于一定角度，根据测量结果，输出应大致不变
-    // x[3] = LIMIT_MAX_MIN(gimbal_controller.gyro_pitch_angle, 8, -12);
-    // x[2] = x[3] * x[3];
-    // x[1] = x[2] * x[3];
-    // x[0] = x[1] * x[3];
+    float x = gimbal_controller.gyro_pitch_angle;
 
-    // float sum = pitch_comp[4];
-    // for (int i = 0; i < 4; i++)
-    // {
-    //     sum += x[i] * pitch_comp[i];
-    // }
-    // iir(&gimbal_controller.comp_pitch_current, sum * GIMBAL_PITCH_COMP_COEF, 0.7);
-    // return gimbal_controller.comp_pitch_current;
-    iir(&gimbal_controller.comp_pitch_current, GIMBAL_PITCH_COMP * arm_cos_f32(gimbal_controller.gyro_pitch_angle * ANGLE_TO_RAD_COEF) * GIMBAL_PITCH_COMP_COEF, 0.7);
+    // 多项式计算: p1*x^4 + p2*x^3 + p3*x^2 + p4*x + p5
+    float x2 = x * x;
+    float x3 = x2 * x;
+    float x4 = x3 * x;
+    float comp_current = p1 * x4 + p2 * x3 + p3 * x2 + p4 * x + p5;
+
+    // IIR滤波平滑输出
+    iir(&gimbal_controller.comp_pitch_current, comp_current, 0.7f);
     return gimbal_controller.comp_pitch_current;
 }
 
@@ -361,6 +365,121 @@ void Schmitt_PID_changer()
     //        gimbal_controller.pitch_speed_pid.Ki = 8.0f;
 
     //		}
+}
+
+/*==============================================================================
+ *                          云台测试模块实现
+ *============================================================================*/
+
+extern GimbalController gimbal_controller;
+
+/**
+ * @brief  云台测试模块初始化
+ */
+void GimbalTestInit(GimbalTest_t *test)
+{
+    // 初始化方波信号发生器
+    SquareWaveInit(&test->pitch_square, GIMBAL_SQUARE_LOW_ANGLE, GIMBAL_SQUARE_HIGH_ANGLE,
+                   0.5f, GIMBAL_SQUARE_PERIOD_MS);
+    SquareWaveInit(&test->small_yaw_square, GIMBAL_SQUARE_LOW_ANGLE, GIMBAL_SQUARE_HIGH_ANGLE,
+                   0.5f, GIMBAL_SQUARE_PERIOD_MS);
+
+    // 初始化目标函数
+    GimbalTestResetCost(test);
+
+    // 初始化周期追踪
+    test->last_pitch_cycle = 0;
+    test->last_yaw_cycle = 0;
+
+    // 初始化历史记录
+    test->last_pitch_ise = 0;
+    test->last_pitch_control = 0;
+    test->last_pitch_max_error = 0;
+    test->last_yaw_ise = 0;
+    test->last_yaw_control = 0;
+    test->last_yaw_max_error = 0;
+}
+
+/**
+ * @brief  重置目标函数累加器（清零当前周期）
+ */
+void GimbalTestResetCost(GimbalTest_t *test)
+{
+    test->pitch_cost.ise = 0;
+    test->pitch_cost.control_cost = 0;
+    test->pitch_cost.total_cost = 0;
+    test->pitch_cost.cycle_time = 0;
+    test->pitch_cost.max_error = 0;
+    test->pitch_cost.final_error = 0;
+
+    test->yaw_cost.ise = 0;
+    test->yaw_cost.control_cost = 0;
+    test->yaw_cost.total_cost = 0;
+    test->yaw_cost.cycle_time = 0;
+    test->yaw_cost.max_error = 0;
+    test->yaw_cost.final_error = 0;
+}
+
+/**
+ * @brief  运行Pitch目标函数计算
+ *         每个周期开始时自动清零，周期结束时保存结果到历史记录
+ * @param  test: 测试结构体指针
+ * @param  error: 误差 (target - measure)
+ * @param  control: 控制量输出
+ * @param  delta_t: 时间步长
+ */
+void GimbalTestRunPitchCost(GimbalTest_t *test, float error, float control, float delta_t)
+{
+    CostFunction_t *cost = &test->pitch_cost;
+    uint16_t current_cycle = test->pitch_square.cycle_count;
+
+    // 检测周期切换：新周期开始（周期 = 低→高→低，共5秒）
+    if (current_cycle != test->last_pitch_cycle)
+    {
+        // 保存上一个周期的结果（如果有累积数据）
+        if (cost->cycle_time > 0.1f)  // 至少累积了0.1秒的数据才保存
+        {
+            test->last_pitch_ise = cost->ise;
+            test->last_pitch_control = cost->control_cost;
+            test->last_pitch_max_error = cost->max_error;
+        }
+
+        // 清零当前周期（开始新周期）
+        cost->ise = 0;
+        cost->control_cost = 0;
+        cost->total_cost = 0;
+        cost->cycle_time = 0;
+        cost->max_error = 0;
+        cost->final_error = 0;
+
+        // 标记周期完成（放在清零之后，表示上一个周期已完成）
+        cost->cycle_complete = 1;
+    }
+
+    // 更新周期追踪
+    test->last_pitch_cycle = current_cycle;
+
+    // ISE累加: ∫e²dt
+    cost->ise += error * error * delta_t;
+
+    // 控制量惩罚累加: ∫λ*u²dt
+    cost->control_cost += GIMBAL_COST_LAMBDA * control * control * delta_t;
+
+    // 更新最大误差
+    float abs_error = fabsf(error);
+    if (abs_error > cost->max_error)
+    {
+        cost->max_error = abs_error;
+    }
+
+    // 记录当前误差
+    cost->final_error = error;
+
+    // 更新时间
+    cost->cycle_time += delta_t;
+
+    // 计算总目标函数
+    cost->total_cost = cost->ise + cost->control_cost;
 }
 
 /**

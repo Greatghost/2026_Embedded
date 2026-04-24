@@ -100,3 +100,4 @@ sentry_chassis_test\gimbal.o: ../components/motor/inc/DM_Motor.h
 sentry_chassis_test\gimbal.o: ../components/motor/inc/M2006.h
 sentry_chassis_test\gimbal.o: ../components/algorithm/inc/TD.h
 sentry_chassis_test\gimbal.o: ../config/gimbal_config.h
+sentry_chassis_test\gimbal.o: ../components/algorithm/inc/SignalGenerator.h

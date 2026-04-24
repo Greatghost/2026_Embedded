@@ -103,6 +103,7 @@ sentry_chassis_test\shoottask.o: ../components/motor/inc/DM_Motor.h
 sentry_chassis_test\shoottask.o: ../components/motor/inc/M2006.h
 sentry_chassis_test\shoottask.o: ../components/algorithm/inc/TD.h
 sentry_chassis_test\shoottask.o: ../config/gimbal_config.h
+sentry_chassis_test\shoottask.o: ../components/algorithm/inc/SignalGenerator.h
 sentry_chassis_test\shoottask.o: ../application/inc/pc_serial.h
 sentry_chassis_test\shoottask.o: ../components/algorithm/inc/algorithmOfCRC.h
 sentry_chassis_test\shoottask.o: ../application/inc/ChassisGet.h
@@ -112,7 +113,6 @@ sentry_chassis_test\shoottask.o: ../application/inc/ToggleBullet.h
 sentry_chassis_test\shoottask.o: ../config/toggle_config.h
 sentry_chassis_test\shoottask.o: ../application/inc/ChassisSend.h
 sentry_chassis_test\shoottask.o: ../application/inc/ChassisSolver.h
-sentry_chassis_test\shoottask.o: ../components/algorithm/inc/SignalGenerator.h
 sentry_chassis_test\shoottask.o: ../bsp/boards/inc/bsp_can.h
 sentry_chassis_test\shoottask.o: ../application/inc/FrictionWheel.h
 sentry_chassis_test\shoottask.o: ../components/motor/inc/M3508.h

@@ -107,12 +107,12 @@ sentry_chassis_test\pc_serial.o: ../components/motor/inc/DM_Motor.h
 sentry_chassis_test\pc_serial.o: ../components/motor/inc/M2006.h
 sentry_chassis_test\pc_serial.o: ../components/algorithm/inc/TD.h
 sentry_chassis_test\pc_serial.o: ../config/gimbal_config.h
+sentry_chassis_test\pc_serial.o: ../components/algorithm/inc/SignalGenerator.h
 sentry_chassis_test\pc_serial.o: ../application/inc/pc_serial.h
 sentry_chassis_test\pc_serial.o: ../application/inc/ToggleBullet.h
 sentry_chassis_test\pc_serial.o: ../config/toggle_config.h
 sentry_chassis_test\pc_serial.o: ../application/inc/ChassisSend.h
 sentry_chassis_test\pc_serial.o: ../application/inc/ChassisSolver.h
-sentry_chassis_test\pc_serial.o: ../components/algorithm/inc/SignalGenerator.h
 sentry_chassis_test\pc_serial.o: ../bsp/boards/inc/bsp_can.h
 sentry_chassis_test\pc_serial.o: ../application/inc/FrictionWheel.h
 sentry_chassis_test\pc_serial.o: ../components/motor/inc/M3508.h

@@ -7,8 +7,8 @@ void steer_pid_init()
     // 舵向初始编码值设定
     infantry.steer_init_encoder[STEER1] = 3753;
     infantry.steer_init_encoder[STEER2] = 3116;
-    infantry.steer_init_encoder[STEER3] = 1676;
-    infantry.steer_init_encoder[STEER4] = 2535;
+    infantry.steer_init_encoder[STEER3] = 1700;
+    infantry.steer_init_encoder[STEER4] = 2400;
 
     // 轮毂电机安装方向
     infantry.steer_wheel_install_direction[STEER1] = 1;

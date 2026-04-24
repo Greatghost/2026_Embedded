@@ -101,12 +101,12 @@ sentry_chassis_test\gimbaltask.o: ../components/motor/inc/DM_Motor.h
 sentry_chassis_test\gimbaltask.o: ../components/motor/inc/M2006.h
 sentry_chassis_test\gimbaltask.o: ../components/algorithm/inc/TD.h
 sentry_chassis_test\gimbaltask.o: ../config/gimbal_config.h
+sentry_chassis_test\gimbaltask.o: ../components/algorithm/inc/SignalGenerator.h
 sentry_chassis_test\gimbaltask.o: ../application/inc/FrictionWheel.h
 sentry_chassis_test\gimbaltask.o: ../components/motor/inc/M3508.h
 sentry_chassis_test\gimbaltask.o: ../Task/inc/Offline_Task.h
 sentry_chassis_test\gimbaltask.o: ../application/inc/BombBay.h
 sentry_chassis_test\gimbaltask.o: ../components/algorithm/inc/SystemIdentification.h
-sentry_chassis_test\gimbaltask.o: ../components/algorithm/inc/SignalGenerator.h
 sentry_chassis_test\gimbaltask.o: ../application/inc/pc_serial.h
 sentry_chassis_test\gimbaltask.o: ../components/algorithm/inc/algorithmOfCRC.h
 sentry_chassis_test\gimbaltask.o: ../application/inc/ChassisGet.h

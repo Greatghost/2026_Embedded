@@ -4,6 +4,39 @@
 #include "robot_config.h"
 
 /*==============================================================================
+ *                          云台测试模式控制宏
+ *============================================================================*/
+/* 测试配置选项 (用于预处理条件判断) */
+#define GIMBAL_CONFIG_NORMAL          0       // 正常控制模式
+#define GIMBAL_CONFIG_PITCH_SQUARE    1       // Pitch轴方波测试
+#define GIMBAL_CONFIG_SMALLYAW_SQUARE 2       // 小Yaw轴方波测试
+
+/* 测试配置选择:
+ *   = 0: 正常控制模式 (跟随遥控器/上位机)
+ *   = 1: Pitch轴方波测试 (±5°, 5秒周期) - 用于PID参数手动观察
+ *   = 2: 小Yaw轴方波测试 (±5°, 5秒周期) - 用于PID参数手动观察
+ *
+ * 控制断开标志:
+ *   = 1: 目标角度不再自动更新，用于debug手动设置（重力补偿标定）
+ *   = 0: 正常模式，目标角度由遥控器/上位机更新
+ *
+ * 方波测试参数:
+ *   GIMBAL_SQUARE_LOW_ANGLE:  方波低角度值 (度)
+ *   GIMBAL_SQUARE_HIGH_ANGLE: 方波高角度值 (度)
+ *   GIMBAL_SQUARE_PERIOD_MS:  方波周期 (ms)
+ */
+
+#define GIMBAL_TEST_CONFIG            0       // 0-正常控制, 1-Pitch方波测试, 2-小Yaw方波测试
+#define GIMBAL_CONTROL_DISCONNECT     0       // 0-正常更新目标角度, 1-目标角度保持不变
+
+#define GIMBAL_SQUARE_LOW_ANGLE     -5.0f   // 方波低角度 (度)
+#define GIMBAL_SQUARE_HIGH_ANGLE    5.0f    // 方波高角度 (度)
+#define GIMBAL_SQUARE_PERIOD_MS     5000    // 方波周期 (ms) - 5秒
+
+/* 目标函数计算系数 */
+#define GIMBAL_COST_LAMBDA          0.0001f // 控制量惩罚系数 λ
+
+/*==============================================================================
  *                          遥控器协议配置
  *============================================================================*/
 /* 遥控器协议选择宏定义: 1-使用WBUS协议, 0-使用DJI遥控器协议 */
@@ -67,8 +100,8 @@
 
 #define GIMBAL_PITCH_MOTOR_SIGN 1.0f // 云台PITCH电机方向，向上为正
 
-#define GIMBAL_ANGLE_MIN 50.0f // 电机角软限位
-#define GIMBAL_ANGLE_MAX 120.0f
+#define GIMBAL_ANGLE_MIN 90.0f // 电机角软限位
+#define GIMBAL_ANGLE_MAX 150.0f
 
 #define GIMBAL_PITCH_COMP 4000.0f        // 暂不使用
 #define GIMBAL_PITCH_COMP_COEF 1.0f      // 暂不使用
@@ -79,9 +112,9 @@
 #define GIMBAL_SMALL_YAW_GYRO_SIGN 1.0f        // 用来标记gyro的方向，逆时针为正
 #define GIMBAL_SMALL_YAW_POS_FORWARD_COEF 0.6f // 角度环前馈系数
 #define GIMBAL_SMALL_YAW_SPEED_FORWARD_COEF 0.f
-#define GIMBAL_SMALL_YAW_LIMIT_LEFG 45.0f    //小yaw电机角左限位
-#define GIMBAL_SMALL_YAW_LIMIT_RIGHT -45.0f       //小yaw电机角右限位
-#define GIMBAL_SMALL_YAW_ZERO_POINT 0.0f //小yaw电机零点
+#define GIMBAL_SMALL_YAW_LIMIT_LEFG 165.0f    //小yaw电机角左限位
+#define GIMBAL_SMALL_YAW_LIMIT_RIGHT 75.0f       //小yaw电机角右限位
+#define GIMBAL_SMALL_YAW_ZERO_POINT 120.0f //小yaw电机零点
 
 
 #define GIMBAL_BIG_YAW_MOTOR_SIGN 1.0f       // 用来标记电机的方向，逆时针为正，达妙电机不是逆时针为正？？

@@ -103,6 +103,7 @@ sentry_chassis_test\bsp_can.o: ../components/algorithm/inc/kalman_filter.h
 sentry_chassis_test\bsp_can.o: ../components/motor/inc/DM_Motor.h
 sentry_chassis_test\bsp_can.o: ../components/algorithm/inc/TD.h
 sentry_chassis_test\bsp_can.o: ../config/gimbal_config.h
+sentry_chassis_test\bsp_can.o: ../components/algorithm/inc/SignalGenerator.h
 sentry_chassis_test\bsp_can.o: ../application/inc/ToggleBullet.h
 sentry_chassis_test\bsp_can.o: ../config/toggle_config.h
 sentry_chassis_test\bsp_can.o: ../application/inc/ChassisGet.h
