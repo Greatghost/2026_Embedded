@@ -272,9 +272,9 @@ I (../components/algorithm/inc/my_filter.h)(0x69678762)
 I (../components/motor/inc/DM_Motor.h)(0x69678762)
 I (../components/motor/inc/M2006.h)(0x69678762)
 I (../components/algorithm/inc/TD.h)(0x69678762)
-I (../config/gimbal_config.h)(0x69EA18A0)
+I (../config/gimbal_config.h)(0x69F0D87C)
 I (../components/algorithm/inc/SignalGenerator.h)(0x69E38F90)
-I (../application/inc/pc_serial.h)(0x69E79E5A)
+I (../application/inc/pc_serial.h)(0x69EC8222)
 I (../components/algorithm/inc/algorithmOfCRC.h)(0x69678762)
 I (../application/inc/ChassisGet.h)(0x69DB5540)
 I (../config/receive_data.h)(0x69B171FB)
@@ -751,7 +751,7 @@ I (../config/can_send_config.h)(0x69678762)
 I (../components/motor/inc/Motor_Typdef.h)(0x69678762)
 I (../config/robot_config.h)(0x69678762)
 I (../config/can_config.h)(0x69DB54E0)
-I (../config/gimbal_config.h)(0x69EA18A0)
+I (../config/gimbal_config.h)(0x69F0D87C)
 F (../Src/usb_otg.c)(0x69678762)(--c99 -c --cpu Cortex-M4.fp -g -W -O0 --apcs=interwork --split_sections -I ../Inc -I ../Drivers/STM32F4xx_HAL_Driver/Inc -I ../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I ../Middlewares/Third_Party/FreeRTOS/Source/include -I ../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS -I ../Middlewares/Third_Party/FreeRTOS/Source/portable/RVDS/ARM_CM4F -I ../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I ../Drivers/CMSIS/Include -I ../Middlewares/ST/ARM/DSP/Inc -I ../application/inc -I ../bsp/boards/inc -I ../bsp/usb/inc -I ../components/algorithm/inc -I ../components/devices/inc -I ../components/tools/inc -I ../Drivers/USB -I ../Task/inc -I ../Drivers/FastMath -I ../components/motor/inc -I ../config-I.\RTE\_sentry_chassis_test-IC:\Keil_v5\ARM\PACK\ARM\CMSIS\5.4.0\CMSIS\Core\Include-IC:\Keil_v5\ARM\PACK\Keil\STM32F4xx_DFP\2.8.0\Drivers\CMSIS\Device\ST\STM32F4xx\Include-D__UVISION_VERSION="526" -D_RTE_ -DSTM32F407xx -DUSE_HAL_DRIVER -DSTM32F407xx -DUSE_HAL_DRIVER -DSTM32F407xx -DARM_MATH_CM4 -D__FPU_USED="1U" -D__FPU_PRESENT="1U" -D__CC_ARM -DARM_MATH_MATRIX_CHECK -DARM_MATH_ROUNDING-o sentry_chassis_test\usb_otg.o --omf_browse sentry_chassis_test\usb_otg.crf --depend sentry_chassis_test\usb_otg.d)
 F (../Src/stm32f4xx_it.c)(0x69678762)(--c99 -c --cpu Cortex-M4.fp -g -W -O0 --apcs=interwork --split_sections -I ../Inc -I ../Drivers/STM32F4xx_HAL_Driver/Inc -I ../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I ../Middlewares/Third_Party/FreeRTOS/Source/include -I ../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS -I ../Middlewares/Third_Party/FreeRTOS/Source/portable/RVDS/ARM_CM4F -I ../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I ../Drivers/CMSIS/Include -I ../Middlewares/ST/ARM/DSP/Inc -I ../application/inc -I ../bsp/boards/inc -I ../bsp/usb/inc -I ../components/algorithm/inc -I ../components/devices/inc -I ../components/tools/inc -I ../Drivers/USB -I ../Task/inc -I ../Drivers/FastMath -I ../components/motor/inc -I ../config-I.\RTE\_sentry_chassis_test-IC:\Keil_v5\ARM\PACK\ARM\CMSIS\5.4.0\CMSIS\Core\Include-IC:\Keil_v5\ARM\PACK\Keil\STM32F4xx_DFP\2.8.0\Drivers\CMSIS\Device\ST\STM32F4xx\Include-D__UVISION_VERSION="526" -D_RTE_ -DSTM32F407xx -DUSE_HAL_DRIVER -DSTM32F407xx -DUSE_HAL_DRIVER -DSTM32F407xx -DARM_MATH_CM4 -D__FPU_USED="1U" -D__FPU_PRESENT="1U" -D__CC_ARM -DARM_MATH_MATRIX_CHECK -DARM_MATH_ROUNDING-o sentry_chassis_test\stm32f4xx_it.o --omf_browse sentry_chassis_test\stm32f4xx_it.crf --depend sentry_chassis_test\stm32f4xx_it.d)
 I (../Inc/main.h)(0x69678762)
@@ -2290,11 +2290,11 @@ I (../components/algorithm/inc/my_filter.h)(0x69678762)
 I (../components/motor/inc/DM_Motor.h)(0x69678762)
 I (../components/motor/inc/M2006.h)(0x69678762)
 I (../components/algorithm/inc/TD.h)(0x69678762)
-I (../config/gimbal_config.h)(0x69EA18A0)
+I (../config/gimbal_config.h)(0x69F0D87C)
 I (../components/algorithm/inc/SignalGenerator.h)(0x69E38F90)
 I (../application/inc/ChassisSolver.h)(0x69678762)
 I (../Task/inc/Offline_Task.h)(0x69678762)
-I (../application/inc/pc_serial.h)(0x69E79E5A)
+I (../application/inc/pc_serial.h)(0x69EC8222)
 I (../components/algorithm/inc/algorithmOfCRC.h)(0x69678762)
 I (../application/inc/ChassisGet.h)(0x69DB5540)
 I (../config/receive_data.h)(0x69B171FB)
@@ -2402,9 +2402,9 @@ I (../components/algorithm/inc/my_filter.h)(0x69678762)
 I (../components/motor/inc/DM_Motor.h)(0x69678762)
 I (../components/motor/inc/M2006.h)(0x69678762)
 I (../components/algorithm/inc/TD.h)(0x69678762)
-I (../config/gimbal_config.h)(0x69EA18A0)
+I (../config/gimbal_config.h)(0x69F0D87C)
 I (../components/algorithm/inc/SignalGenerator.h)(0x69E38F90)
-I (../application/inc/pc_serial.h)(0x69E79E5A)
+I (../application/inc/pc_serial.h)(0x69EC8222)
 I (../components/algorithm/inc/algorithmOfCRC.h)(0x69678762)
 I (../application/inc/ChassisGet.h)(0x69DB5540)
 I (../config/receive_data.h)(0x69B171FB)
@@ -2468,7 +2468,7 @@ I (../components/tools/inc/ZeroCheck.h)(0x69678762)
 I (../components/algorithm/inc/my_filter.h)(0x69678762)
 I (../components/motor/inc/M3508.h)(0x69678762)
 I (../config/robot_config.h)(0x69678762)
-F (..\application\src\Gimbal.c)(0x69E8AC23)(--c99 -c --cpu Cortex-M4.fp -g -W -O0 --apcs=interwork --split_sections -I ../Inc -I ../Drivers/STM32F4xx_HAL_Driver/Inc -I ../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I ../Middlewares/Third_Party/FreeRTOS/Source/include -I ../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS -I ../Middlewares/Third_Party/FreeRTOS/Source/portable/RVDS/ARM_CM4F -I ../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I ../Drivers/CMSIS/Include -I ../Middlewares/ST/ARM/DSP/Inc -I ../application/inc -I ../bsp/boards/inc -I ../bsp/usb/inc -I ../components/algorithm/inc -I ../components/devices/inc -I ../components/tools/inc -I ../Drivers/USB -I ../Task/inc -I ../Drivers/FastMath -I ../components/motor/inc -I ../config-I.\RTE\_sentry_chassis_test-IC:\Keil_v5\ARM\PACK\ARM\CMSIS\5.4.0\CMSIS\Core\Include-IC:\Keil_v5\ARM\PACK\Keil\STM32F4xx_DFP\2.8.0\Drivers\CMSIS\Device\ST\STM32F4xx\Include-D__UVISION_VERSION="526" -D_RTE_ -DSTM32F407xx -DUSE_HAL_DRIVER -DSTM32F407xx -DUSE_HAL_DRIVER -DSTM32F407xx -DARM_MATH_CM4 -D__FPU_USED="1U" -D__FPU_PRESENT="1U" -D__CC_ARM -DARM_MATH_MATRIX_CHECK -DARM_MATH_ROUNDING-o sentry_chassis_test\gimbal.o --omf_browse sentry_chassis_test\gimbal.crf --depend sentry_chassis_test\gimbal.d)
+F (..\application\src\Gimbal.c)(0x69F0D878)(--c99 -c --cpu Cortex-M4.fp -g -W -O0 --apcs=interwork --split_sections -I ../Inc -I ../Drivers/STM32F4xx_HAL_Driver/Inc -I ../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I ../Middlewares/Third_Party/FreeRTOS/Source/include -I ../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS -I ../Middlewares/Third_Party/FreeRTOS/Source/portable/RVDS/ARM_CM4F -I ../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I ../Drivers/CMSIS/Include -I ../Middlewares/ST/ARM/DSP/Inc -I ../application/inc -I ../bsp/boards/inc -I ../bsp/usb/inc -I ../components/algorithm/inc -I ../components/devices/inc -I ../components/tools/inc -I ../Drivers/USB -I ../Task/inc -I ../Drivers/FastMath -I ../components/motor/inc -I ../config-I.\RTE\_sentry_chassis_test-IC:\Keil_v5\ARM\PACK\ARM\CMSIS\5.4.0\CMSIS\Core\Include-IC:\Keil_v5\ARM\PACK\Keil\STM32F4xx_DFP\2.8.0\Drivers\CMSIS\Device\ST\STM32F4xx\Include-D__UVISION_VERSION="526" -D_RTE_ -DSTM32F407xx -DUSE_HAL_DRIVER -DSTM32F407xx -DUSE_HAL_DRIVER -DSTM32F407xx -DARM_MATH_CM4 -D__FPU_USED="1U" -D__FPU_PRESENT="1U" -D__CC_ARM -DARM_MATH_MATRIX_CHECK -DARM_MATH_ROUNDING-o sentry_chassis_test\gimbal.o --omf_browse sentry_chassis_test\gimbal.crf --depend sentry_chassis_test\gimbal.d)
 I (../application/inc/Gimbal.h)(0x69E3C4F4)
 I (C:\Keil_v5\ARM\ARMCC\include\math.h)(0x599EDB3E)
 I (../components/algorithm/inc/pid.h)(0x69678762)
@@ -2564,10 +2564,10 @@ I (../components/algorithm/inc/kalman_filter.h)(0x69678762)
 I (../components/motor/inc/DM_Motor.h)(0x69678762)
 I (../components/motor/inc/M2006.h)(0x69678762)
 I (../components/algorithm/inc/TD.h)(0x69678762)
-I (../config/gimbal_config.h)(0x69EA18A0)
+I (../config/gimbal_config.h)(0x69F0D87C)
 I (../components/algorithm/inc/SignalGenerator.h)(0x69E38F90)
-F (..\application\src\pc_serial.c)(0x69E79E48)(--c99 -c --cpu Cortex-M4.fp -g -W -O0 --apcs=interwork --split_sections -I ../Inc -I ../Drivers/STM32F4xx_HAL_Driver/Inc -I ../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I ../Middlewares/Third_Party/FreeRTOS/Source/include -I ../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS -I ../Middlewares/Third_Party/FreeRTOS/Source/portable/RVDS/ARM_CM4F -I ../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I ../Drivers/CMSIS/Include -I ../Middlewares/ST/ARM/DSP/Inc -I ../application/inc -I ../bsp/boards/inc -I ../bsp/usb/inc -I ../components/algorithm/inc -I ../components/devices/inc -I ../components/tools/inc -I ../Drivers/USB -I ../Task/inc -I ../Drivers/FastMath -I ../components/motor/inc -I ../config-I.\RTE\_sentry_chassis_test-IC:\Keil_v5\ARM\PACK\ARM\CMSIS\5.4.0\CMSIS\Core\Include-IC:\Keil_v5\ARM\PACK\Keil\STM32F4xx_DFP\2.8.0\Drivers\CMSIS\Device\ST\STM32F4xx\Include-D__UVISION_VERSION="526" -D_RTE_ -DSTM32F407xx -DUSE_HAL_DRIVER -DSTM32F407xx -DUSE_HAL_DRIVER -DSTM32F407xx -DARM_MATH_CM4 -D__FPU_USED="1U" -D__FPU_PRESENT="1U" -D__CC_ARM -DARM_MATH_MATRIX_CHECK -DARM_MATH_ROUNDING-o sentry_chassis_test\pc_serial.o --omf_browse sentry_chassis_test\pc_serial.crf --depend sentry_chassis_test\pc_serial.d)
-I (../application/inc/pc_serial.h)(0x69E79E5A)
+F (..\application\src\pc_serial.c)(0x69EC821B)(--c99 -c --cpu Cortex-M4.fp -g -W -O0 --apcs=interwork --split_sections -I ../Inc -I ../Drivers/STM32F4xx_HAL_Driver/Inc -I ../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I ../Middlewares/Third_Party/FreeRTOS/Source/include -I ../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS -I ../Middlewares/Third_Party/FreeRTOS/Source/portable/RVDS/ARM_CM4F -I ../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I ../Drivers/CMSIS/Include -I ../Middlewares/ST/ARM/DSP/Inc -I ../application/inc -I ../bsp/boards/inc -I ../bsp/usb/inc -I ../components/algorithm/inc -I ../components/devices/inc -I ../components/tools/inc -I ../Drivers/USB -I ../Task/inc -I ../Drivers/FastMath -I ../components/motor/inc -I ../config-I.\RTE\_sentry_chassis_test-IC:\Keil_v5\ARM\PACK\ARM\CMSIS\5.4.0\CMSIS\Core\Include-IC:\Keil_v5\ARM\PACK\Keil\STM32F4xx_DFP\2.8.0\Drivers\CMSIS\Device\ST\STM32F4xx\Include-D__UVISION_VERSION="526" -D_RTE_ -DSTM32F407xx -DUSE_HAL_DRIVER -DSTM32F407xx -DUSE_HAL_DRIVER -DSTM32F407xx -DARM_MATH_CM4 -D__FPU_USED="1U" -D__FPU_PRESENT="1U" -D__CC_ARM -DARM_MATH_MATRIX_CHECK -DARM_MATH_ROUNDING-o sentry_chassis_test\pc_serial.o --omf_browse sentry_chassis_test\pc_serial.crf --depend sentry_chassis_test\pc_serial.d)
+I (../application/inc/pc_serial.h)(0x69EC8222)
 I (../components/algorithm/inc/algorithmOfCRC.h)(0x69678762)
 I (C:\Keil_v5\ARM\ARMCC\include\string.h)(0x599EDB3C)
 I (C:\Keil_v5\ARM\ARMCC\include\stdint.h)(0x599EDB3E)
@@ -2669,7 +2669,7 @@ I (../components/algorithm/inc/my_filter.h)(0x69678762)
 I (../components/motor/inc/DM_Motor.h)(0x69678762)
 I (../components/motor/inc/M2006.h)(0x69678762)
 I (../components/algorithm/inc/TD.h)(0x69678762)
-I (../config/gimbal_config.h)(0x69EA18A0)
+I (../config/gimbal_config.h)(0x69F0D87C)
 I (../components/algorithm/inc/SignalGenerator.h)(0x69E38F90)
 I (../application/inc/ToggleBullet.h)(0x69678762)
 I (../config/toggle_config.h)(0x69678762)
@@ -2724,7 +2724,7 @@ I (../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_uart.h)(0x69678762)
 I (../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_pcd.h)(0x69678762)
 I (../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_ll_usb.h)(0x69678762)
 I (../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_pcd_ex.h)(0x69678762)
-I (../config/gimbal_config.h)(0x69EA18A0)
+I (../config/gimbal_config.h)(0x69F0D87C)
 I (../config/robot_config.h)(0x69678762)
 I (../application/inc/wbus_decoder.h)(0x69BA4177)
 I (../Inc/main.h)(0x69678762)
@@ -3001,7 +3001,7 @@ I (../components/algorithm/inc/QuaternionEKF.h)(0x69678762)
 I (../components/algorithm/inc/kalman_filter.h)(0x69678762)
 I (../components/motor/inc/DM_Motor.h)(0x69678762)
 I (../components/algorithm/inc/TD.h)(0x69678762)
-I (../config/gimbal_config.h)(0x69EA18A0)
+I (../config/gimbal_config.h)(0x69F0D87C)
 I (../components/algorithm/inc/SignalGenerator.h)(0x69E38F90)
 I (../application/inc/ToggleBullet.h)(0x69678762)
 I (../config/toggle_config.h)(0x69678762)
@@ -3255,7 +3255,7 @@ I (../config/can_send_config.h)(0x69678762)
 I (../components/motor/inc/Motor_Typdef.h)(0x69678762)
 I (../config/robot_config.h)(0x69678762)
 I (../config/can_config.h)(0x69DB54E0)
-I (../config/gimbal_config.h)(0x69EA18A0)
+I (../config/gimbal_config.h)(0x69F0D87C)
 F (..\bsp\boards\src\bsp_spi.c)(0x69678762)(--c99 -c --cpu Cortex-M4.fp -g -W -O0 --apcs=interwork --split_sections -I ../Inc -I ../Drivers/STM32F4xx_HAL_Driver/Inc -I ../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I ../Middlewares/Third_Party/FreeRTOS/Source/include -I ../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS -I ../Middlewares/Third_Party/FreeRTOS/Source/portable/RVDS/ARM_CM4F -I ../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I ../Drivers/CMSIS/Include -I ../Middlewares/ST/ARM/DSP/Inc -I ../application/inc -I ../bsp/boards/inc -I ../bsp/usb/inc -I ../components/algorithm/inc -I ../components/devices/inc -I ../components/tools/inc -I ../Drivers/USB -I ../Task/inc -I ../Drivers/FastMath -I ../components/motor/inc -I ../config-I.\RTE\_sentry_chassis_test-IC:\Keil_v5\ARM\PACK\ARM\CMSIS\5.4.0\CMSIS\Core\Include-IC:\Keil_v5\ARM\PACK\Keil\STM32F4xx_DFP\2.8.0\Drivers\CMSIS\Device\ST\STM32F4xx\Include-D__UVISION_VERSION="526" -D_RTE_ -DSTM32F407xx -DUSE_HAL_DRIVER -DSTM32F407xx -DUSE_HAL_DRIVER -DSTM32F407xx -DARM_MATH_CM4 -D__FPU_USED="1U" -D__FPU_PRESENT="1U" -D__CC_ARM -DARM_MATH_MATRIX_CHECK -DARM_MATH_ROUNDING-o sentry_chassis_test\bsp_spi.o --omf_browse sentry_chassis_test\bsp_spi.crf --depend sentry_chassis_test\bsp_spi.d)
 I (../bsp/boards/inc/bsp_spi.h)(0x69678762)
 I (../components/tools/inc/struct_typedef.h)(0x69678762)
@@ -3481,7 +3481,7 @@ I (../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_ll_usb.h)(0x69678762)
 I (../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_pcd_ex.h)(0x69678762)
 I (..\Drivers\USB\usbd_core.h)(0x69678762)
 I (..\Drivers\USB\usbd_ctlreq.h)(0x69678762)
-F (..\components\motor\src\DM_Motor.c)(0x69678762)(--c99 -c --cpu Cortex-M4.fp -g -W -O0 --apcs=interwork --split_sections -I ../Inc -I ../Drivers/STM32F4xx_HAL_Driver/Inc -I ../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I ../Middlewares/Third_Party/FreeRTOS/Source/include -I ../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS -I ../Middlewares/Third_Party/FreeRTOS/Source/portable/RVDS/ARM_CM4F -I ../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I ../Drivers/CMSIS/Include -I ../Middlewares/ST/ARM/DSP/Inc -I ../application/inc -I ../bsp/boards/inc -I ../bsp/usb/inc -I ../components/algorithm/inc -I ../components/devices/inc -I ../components/tools/inc -I ../Drivers/USB -I ../Task/inc -I ../Drivers/FastMath -I ../components/motor/inc -I ../config-I.\RTE\_sentry_chassis_test-IC:\Keil_v5\ARM\PACK\ARM\CMSIS\5.4.0\CMSIS\Core\Include-IC:\Keil_v5\ARM\PACK\Keil\STM32F4xx_DFP\2.8.0\Drivers\CMSIS\Device\ST\STM32F4xx\Include-D__UVISION_VERSION="526" -D_RTE_ -DSTM32F407xx -DUSE_HAL_DRIVER -DSTM32F407xx -DUSE_HAL_DRIVER -DSTM32F407xx -DARM_MATH_CM4 -D__FPU_USED="1U" -D__FPU_PRESENT="1U" -D__CC_ARM -DARM_MATH_MATRIX_CHECK -DARM_MATH_ROUNDING-o sentry_chassis_test\dm_motor.o --omf_browse sentry_chassis_test\dm_motor.crf --depend sentry_chassis_test\dm_motor.d)
+F (..\components\motor\src\DM_Motor.c)(0x69F0D840)(--c99 -c --cpu Cortex-M4.fp -g -W -O0 --apcs=interwork --split_sections -I ../Inc -I ../Drivers/STM32F4xx_HAL_Driver/Inc -I ../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I ../Middlewares/Third_Party/FreeRTOS/Source/include -I ../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS -I ../Middlewares/Third_Party/FreeRTOS/Source/portable/RVDS/ARM_CM4F -I ../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I ../Drivers/CMSIS/Include -I ../Middlewares/ST/ARM/DSP/Inc -I ../application/inc -I ../bsp/boards/inc -I ../bsp/usb/inc -I ../components/algorithm/inc -I ../components/devices/inc -I ../components/tools/inc -I ../Drivers/USB -I ../Task/inc -I ../Drivers/FastMath -I ../components/motor/inc -I ../config-I.\RTE\_sentry_chassis_test-IC:\Keil_v5\ARM\PACK\ARM\CMSIS\5.4.0\CMSIS\Core\Include-IC:\Keil_v5\ARM\PACK\Keil\STM32F4xx_DFP\2.8.0\Drivers\CMSIS\Device\ST\STM32F4xx\Include-D__UVISION_VERSION="526" -D_RTE_ -DSTM32F407xx -DUSE_HAL_DRIVER -DSTM32F407xx -DUSE_HAL_DRIVER -DSTM32F407xx -DARM_MATH_CM4 -D__FPU_USED="1U" -D__FPU_PRESENT="1U" -D__CC_ARM -DARM_MATH_MATRIX_CHECK -DARM_MATH_ROUNDING-o sentry_chassis_test\dm_motor.o --omf_browse sentry_chassis_test\dm_motor.crf --depend sentry_chassis_test\dm_motor.d)
 I (../components/motor/inc/DM_Motor.h)(0x69678762)
 I (../Inc/can.h)(0x69678762)
 I (../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h)(0x69678762)
@@ -3710,7 +3710,7 @@ I (../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_ll_usb.h)(0x69678762)
 I (../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_pcd_ex.h)(0x69678762)
 I (../Drivers/USB/usbd_core.h)(0x69678762)
 I (../Drivers/USB/usbd_ctlreq.h)(0x69678762)
-I (../application/inc/pc_serial.h)(0x69E79E5A)
+I (../application/inc/pc_serial.h)(0x69EC8222)
 I (../components/algorithm/inc/algorithmOfCRC.h)(0x69678762)
 I (C:\Keil_v5\ARM\ARMCC\include\math.h)(0x599EDB3E)
 I (../Task/inc/ins_task.h)(0x69678762)
@@ -3765,7 +3765,7 @@ I (../components/algorithm/inc/my_filter.h)(0x69678762)
 I (../components/motor/inc/DM_Motor.h)(0x69678762)
 I (../components/motor/inc/M2006.h)(0x69678762)
 I (../components/algorithm/inc/TD.h)(0x69678762)
-I (../config/gimbal_config.h)(0x69EA18A0)
+I (../config/gimbal_config.h)(0x69F0D87C)
 I (../components/algorithm/inc/SignalGenerator.h)(0x69E38F90)
 I (../application/inc/ToggleBullet.h)(0x69678762)
 I (../config/toggle_config.h)(0x69678762)
@@ -4226,9 +4226,9 @@ I (../components/algorithm/inc/my_filter.h)(0x69678762)
 I (../components/motor/inc/DM_Motor.h)(0x69678762)
 I (../components/motor/inc/M2006.h)(0x69678762)
 I (../components/algorithm/inc/TD.h)(0x69678762)
-I (../config/gimbal_config.h)(0x69EA18A0)
+I (../config/gimbal_config.h)(0x69F0D87C)
 I (../components/algorithm/inc/SignalGenerator.h)(0x69E38F90)
-I (../application/inc/pc_serial.h)(0x69E79E5A)
+I (../application/inc/pc_serial.h)(0x69EC8222)
 I (../components/algorithm/inc/algorithmOfCRC.h)(0x69678762)
 I (../application/inc/ChassisGet.h)(0x69DB5540)
 I (../config/receive_data.h)(0x69B171FB)
@@ -4351,9 +4351,9 @@ I (../components/algorithm/inc/my_filter.h)(0x69678762)
 I (../components/motor/inc/DM_Motor.h)(0x69678762)
 I (../components/motor/inc/M2006.h)(0x69678762)
 I (../components/algorithm/inc/TD.h)(0x69678762)
-I (../config/gimbal_config.h)(0x69EA18A0)
+I (../config/gimbal_config.h)(0x69F0D87C)
 I (../components/algorithm/inc/SignalGenerator.h)(0x69E38F90)
-I (../application/inc/pc_serial.h)(0x69E79E5A)
+I (../application/inc/pc_serial.h)(0x69EC8222)
 I (../components/algorithm/inc/algorithmOfCRC.h)(0x69678762)
 I (../application/inc/ChassisGet.h)(0x69DB5540)
 I (../config/receive_data.h)(0x69B171FB)
@@ -4417,7 +4417,7 @@ I (../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_uart.h)(0x69678762)
 I (../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_pcd.h)(0x69678762)
 I (../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_ll_usb.h)(0x69678762)
 I (../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_pcd_ex.h)(0x69678762)
-F (..\Task\src\GimbalTask.c)(0x69EB678E)(--c99 -c --cpu Cortex-M4.fp -g -W -O0 --apcs=interwork --split_sections -I ../Inc -I ../Drivers/STM32F4xx_HAL_Driver/Inc -I ../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I ../Middlewares/Third_Party/FreeRTOS/Source/include -I ../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS -I ../Middlewares/Third_Party/FreeRTOS/Source/portable/RVDS/ARM_CM4F -I ../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I ../Drivers/CMSIS/Include -I ../Middlewares/ST/ARM/DSP/Inc -I ../application/inc -I ../bsp/boards/inc -I ../bsp/usb/inc -I ../components/algorithm/inc -I ../components/devices/inc -I ../components/tools/inc -I ../Drivers/USB -I ../Task/inc -I ../Drivers/FastMath -I ../components/motor/inc -I ../config-I.\RTE\_sentry_chassis_test-IC:\Keil_v5\ARM\PACK\ARM\CMSIS\5.4.0\CMSIS\Core\Include-IC:\Keil_v5\ARM\PACK\Keil\STM32F4xx_DFP\2.8.0\Drivers\CMSIS\Device\ST\STM32F4xx\Include-D__UVISION_VERSION="526" -D_RTE_ -DSTM32F407xx -DUSE_HAL_DRIVER -DSTM32F407xx -DUSE_HAL_DRIVER -DSTM32F407xx -DARM_MATH_CM4 -D__FPU_USED="1U" -D__FPU_PRESENT="1U" -D__CC_ARM -DARM_MATH_MATRIX_CHECK -DARM_MATH_ROUNDING-o sentry_chassis_test\gimbaltask.o --omf_browse sentry_chassis_test\gimbaltask.crf --depend sentry_chassis_test\gimbaltask.d)
+F (..\Task\src\GimbalTask.c)(0x69F0CCAE)(--c99 -c --cpu Cortex-M4.fp -g -W -O0 --apcs=interwork --split_sections -I ../Inc -I ../Drivers/STM32F4xx_HAL_Driver/Inc -I ../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I ../Middlewares/Third_Party/FreeRTOS/Source/include -I ../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS -I ../Middlewares/Third_Party/FreeRTOS/Source/portable/RVDS/ARM_CM4F -I ../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I ../Drivers/CMSIS/Include -I ../Middlewares/ST/ARM/DSP/Inc -I ../application/inc -I ../bsp/boards/inc -I ../bsp/usb/inc -I ../components/algorithm/inc -I ../components/devices/inc -I ../components/tools/inc -I ../Drivers/USB -I ../Task/inc -I ../Drivers/FastMath -I ../components/motor/inc -I ../config-I.\RTE\_sentry_chassis_test-IC:\Keil_v5\ARM\PACK\ARM\CMSIS\5.4.0\CMSIS\Core\Include-IC:\Keil_v5\ARM\PACK\Keil\STM32F4xx_DFP\2.8.0\Drivers\CMSIS\Device\ST\STM32F4xx\Include-D__UVISION_VERSION="526" -D_RTE_ -DSTM32F407xx -DUSE_HAL_DRIVER -DSTM32F407xx -DUSE_HAL_DRIVER -DSTM32F407xx -DARM_MATH_CM4 -D__FPU_USED="1U" -D__FPU_PRESENT="1U" -D__CC_ARM -DARM_MATH_MATRIX_CHECK -DARM_MATH_ROUNDING-o sentry_chassis_test\gimbaltask.o --omf_browse sentry_chassis_test\gimbaltask.crf --depend sentry_chassis_test\gimbaltask.d)
 I (../Task/inc/GimbalTask.h)(0x69678762)
 I (../Inc/FreeRTOSConfig.h)(0x69678762)
 I (C:\Keil_v5\ARM\ARMCC\include\stdint.h)(0x599EDB3E)
@@ -4514,14 +4514,14 @@ I (../components/algorithm/inc/kalman_filter.h)(0x69678762)
 I (../components/motor/inc/DM_Motor.h)(0x69678762)
 I (../components/motor/inc/M2006.h)(0x69678762)
 I (../components/algorithm/inc/TD.h)(0x69678762)
-I (../config/gimbal_config.h)(0x69EA18A0)
+I (../config/gimbal_config.h)(0x69F0D87C)
 I (../components/algorithm/inc/SignalGenerator.h)(0x69E38F90)
 I (../application/inc/FrictionWheel.h)(0x69BF86E7)
 I (../components/motor/inc/M3508.h)(0x69678762)
 I (../Task/inc/Offline_Task.h)(0x69678762)
 I (../application/inc/BombBay.h)(0x69678762)
 I (../components/algorithm/inc/SystemIdentification.h)(0x69678762)
-I (../application/inc/pc_serial.h)(0x69E79E5A)
+I (../application/inc/pc_serial.h)(0x69EC8222)
 I (../components/algorithm/inc/algorithmOfCRC.h)(0x69678762)
 I (../application/inc/ChassisGet.h)(0x69DB5540)
 I (../config/receive_data.h)(0x69B171FB)
@@ -4788,7 +4788,7 @@ I (../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_uart.h)(0x69678762)
 I (../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_pcd.h)(0x69678762)
 I (../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_ll_usb.h)(0x69678762)
 I (../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_pcd_ex.h)(0x69678762)
-F (..\Task\src\ShootTask.c)(0x69EB6B5C)(--c99 -c --cpu Cortex-M4.fp -g -W -O0 --apcs=interwork --split_sections -I ../Inc -I ../Drivers/STM32F4xx_HAL_Driver/Inc -I ../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I ../Middlewares/Third_Party/FreeRTOS/Source/include -I ../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS -I ../Middlewares/Third_Party/FreeRTOS/Source/portable/RVDS/ARM_CM4F -I ../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I ../Drivers/CMSIS/Include -I ../Middlewares/ST/ARM/DSP/Inc -I ../application/inc -I ../bsp/boards/inc -I ../bsp/usb/inc -I ../components/algorithm/inc -I ../components/devices/inc -I ../components/tools/inc -I ../Drivers/USB -I ../Task/inc -I ../Drivers/FastMath -I ../components/motor/inc -I ../config-I.\RTE\_sentry_chassis_test-IC:\Keil_v5\ARM\PACK\ARM\CMSIS\5.4.0\CMSIS\Core\Include-IC:\Keil_v5\ARM\PACK\Keil\STM32F4xx_DFP\2.8.0\Drivers\CMSIS\Device\ST\STM32F4xx\Include-D__UVISION_VERSION="526" -D_RTE_ -DSTM32F407xx -DUSE_HAL_DRIVER -DSTM32F407xx -DUSE_HAL_DRIVER -DSTM32F407xx -DARM_MATH_CM4 -D__FPU_USED="1U" -D__FPU_PRESENT="1U" -D__CC_ARM -DARM_MATH_MATRIX_CHECK -DARM_MATH_ROUNDING-o sentry_chassis_test\shoottask.o --omf_browse sentry_chassis_test\shoottask.crf --depend sentry_chassis_test\shoottask.d)
+F (..\Task\src\ShootTask.c)(0x69EF66DC)(--c99 -c --cpu Cortex-M4.fp -g -W -O0 --apcs=interwork --split_sections -I ../Inc -I ../Drivers/STM32F4xx_HAL_Driver/Inc -I ../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I ../Middlewares/Third_Party/FreeRTOS/Source/include -I ../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS -I ../Middlewares/Third_Party/FreeRTOS/Source/portable/RVDS/ARM_CM4F -I ../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I ../Drivers/CMSIS/Include -I ../Middlewares/ST/ARM/DSP/Inc -I ../application/inc -I ../bsp/boards/inc -I ../bsp/usb/inc -I ../components/algorithm/inc -I ../components/devices/inc -I ../components/tools/inc -I ../Drivers/USB -I ../Task/inc -I ../Drivers/FastMath -I ../components/motor/inc -I ../config-I.\RTE\_sentry_chassis_test-IC:\Keil_v5\ARM\PACK\ARM\CMSIS\5.4.0\CMSIS\Core\Include-IC:\Keil_v5\ARM\PACK\Keil\STM32F4xx_DFP\2.8.0\Drivers\CMSIS\Device\ST\STM32F4xx\Include-D__UVISION_VERSION="526" -D_RTE_ -DSTM32F407xx -DUSE_HAL_DRIVER -DSTM32F407xx -DUSE_HAL_DRIVER -DSTM32F407xx -DARM_MATH_CM4 -D__FPU_USED="1U" -D__FPU_PRESENT="1U" -D__CC_ARM -DARM_MATH_MATRIX_CHECK -DARM_MATH_ROUNDING-o sentry_chassis_test\shoottask.o --omf_browse sentry_chassis_test\shoottask.crf --depend sentry_chassis_test\shoottask.d)
 I (../Task/inc/ShootTask.h)(0x69678762)
 I (../Inc/FreeRTOSConfig.h)(0x69678762)
 I (C:\Keil_v5\ARM\ARMCC\include\stdint.h)(0x599EDB3E)
@@ -4887,9 +4887,9 @@ I (../components/algorithm/inc/my_filter.h)(0x69678762)
 I (../components/motor/inc/DM_Motor.h)(0x69678762)
 I (../components/motor/inc/M2006.h)(0x69678762)
 I (../components/algorithm/inc/TD.h)(0x69678762)
-I (../config/gimbal_config.h)(0x69EA18A0)
+I (../config/gimbal_config.h)(0x69F0D87C)
 I (../components/algorithm/inc/SignalGenerator.h)(0x69E38F90)
-I (../application/inc/pc_serial.h)(0x69E79E5A)
+I (../application/inc/pc_serial.h)(0x69EC8222)
 I (../components/algorithm/inc/algorithmOfCRC.h)(0x69678762)
 I (../application/inc/ChassisGet.h)(0x69DB5540)
 I (../config/receive_data.h)(0x69B171FB)
@@ -4993,7 +4993,7 @@ I (../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_ll_usb.h)(0x69678762)
 I (../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_pcd_ex.h)(0x69678762)
 I (..\config\robot_config.h)(0x69678762)
 F (..\config\can_send_config.h)(0x69678762)()
-F (..\config\gimbal_config.h)(0x69EA18A0)()
+F (..\config\gimbal_config.h)(0x69F0D87C)()
 F (..\config\robot_config.h)(0x69678762)()
 F (..\config\toggle_config.h)(0x69678762)()
 F (../Middlewares/ST/ARM/DSP/Lib/arm_cortexM4l_math.lib)(0x69678762)()

@@ -224,7 +224,7 @@ typedef struct PCSendDataExtended
 	int16_t UWB_yaw_10;
 	uint8_t sentry_posture;  // 哨兵姿态: 1=进攻, 2=防御, 3=移动, 0=未知
 	uint8_t reserve_8;
-	uint32_t gimbal_vel_data1;  // 大YAW陀螺仪角度 + 底盘w速度: byte0+byte1=大YAW角度*10(int16)单位0.1度, byte2+byte3=底盘角速度*100(int16)单位0.01rad/s
+	uint32_t gimbal_vel_data1;  // 小YAW偏差角度 + 底盘w速度: byte0+byte1=小YAW偏差角度*10(int16)单位0.1度, byte2+byte3=底盘角速度*100(int16)单位0.01rad/s
 	uint32_t gimbal_vel_data2;  // 底盘速度数据: byte0+byte1=底盘x速度(int16), 单位0.01 m/s; byte2+byte3=底盘y速度(int16), 单位0.01 m/s (通过舵电机角度与轮电机速度反解)
 
 	uint8_t crc8;

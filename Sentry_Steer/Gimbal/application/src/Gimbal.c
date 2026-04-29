@@ -54,12 +54,12 @@ void GimbalPidInit()
 #elif ROBOT == TIGER
 
     // pitch VOL LOOP
-	PID_Init(&gimbal_controller.pitch_angle_pid, 150.0f, 48.0f, 0.0f, 40.0f, 0.0f, 0.0f, 0, 0, 0, 0.02f, 1, DerivativeFilter | Integral_Limit| Trapezoid_Intergral);
+	PID_Init(&gimbal_controller.pitch_angle_pid, 500.0f, 48.0f, 0.0f, 40.0f, 0.0f, 0.0f, 0, 0, 0, 0.02f, 1, DerivativeFilter | Integral_Limit| Trapezoid_Intergral);
 	PID_Init(&gimbal_controller.pitch_speed_pid, 15000, 1200, 0.1f, 35.0f, 1.0f, 0, 0, 0, 0.0018, 0, 1, Integral_Limit | Trapezoid_Intergral);
 
     // yaw GM6020 CURRENT LOOP
-    PID_Init(&gimbal_controller.small_yaw_angle_pid, 180.0, 0, 0.05, 60.0f, 0, 0.0f, 0, 0, 0.0, 0.0f, 1, DerivativeFilter);
-    PID_Init(&gimbal_controller.small_yaw_speed_pid, GM6020_MAX_CURRENT, 1000, 0.5, 120.0f, 30.0f, 0, 0, 0, 0.f, 0, 1, Integral_Limit | Trapezoid_Intergral);
+    PID_Init(&gimbal_controller.small_yaw_angle_pid, 100.0, 0, 0.05, 15.0f, 0, 0.0f, 0, 0, 0.0, 0.0f, 1, DerivativeFilter);
+    PID_Init(&gimbal_controller.small_yaw_speed_pid, GM6020_MAX_CURRENT, 5000, 0.5, 120.0f, 80.0f, 0, 0, 0, 0.f, 0, 1, Integral_Limit | Trapezoid_Intergral);
 
     // yaw DM MOTOR CURRENT LOOP
     PID_Init(&gimbal_controller.big_yaw_angle_pid, 360.0, 0, 0.05, 32.0f, 0.f, 0.1f, 0, 0, 0.0, 0.02f, 1, DerivativeFilter);
@@ -102,8 +102,10 @@ float Gimbal_Pitch_Calculate(float set_point)
     gimbal_controller.set_pitch_speed = PID_Calculate(&gimbal_controller.pitch_angle_pid, gimbal_controller.gyro_pitch_angle, gimbal_controller.set_pitch_angle);
     gimbal_controller.set_pitch_current = GIMBAL_PITCH_MOTOR_SIGN * PID_Calculate(&gimbal_controller.pitch_speed_pid, gimbal_controller.gyro_pitch_speed, gimbal_controller.set_pitch_speed);
 
-    // 添加重力补偿前馈
+    // 添加重力补偿前馈,调试模式下可以关闭重力补偿以观察重力对系统的影响
+    #if GIMBAL_CONTROL_DISCONNECT == 0
     gimbal_controller.set_pitch_current += GimbalPitchComp();
+    #endif
 
     return gimbal_controller.set_pitch_current;
 }
@@ -318,12 +320,12 @@ void updateGyro()
  */
 float GimbalPitchComp()
 {
-    // 多项式系数 (Poly4拟合结果)
-    const static float p1 = -0.001067f;
-    const static float p2 =  0.06629f;
-    const static float p3 = -1.35f;
-    const static float p4 =  21.58f;
-    const static float p5 =  974.5f;
+    // 多项式系数 (Poly4拟合结果 - 2026/04/28更新)
+    const static float p1 =  0.0001f;
+    const static float p2 =  0.0111f;
+    const static float p3 = -1.5359f;
+    const static float p4 =  52.829f;
+    const static float p5 =  585.75f;
 
     float x = gimbal_controller.gyro_pitch_angle;
 

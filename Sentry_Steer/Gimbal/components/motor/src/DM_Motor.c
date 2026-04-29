@@ -31,11 +31,11 @@ void DM_Motor_Control(DM_MIT *Motor, uint8_t *send_data, DM_MODE mode)
 	}
 	else
 	{
-		LIMIT_MAX_MIN(Motor->P_des, +Motor->P_Max, -Motor->P_Max);
-		LIMIT_MAX_MIN(Motor->V_des, +Motor->V_Max, -Motor->V_Max);
-		LIMIT_MAX_MIN(Motor->t_ff, +Motor->T_Max * 1000 - 1, -Motor->T_Max * 1000 + 1);
-		LIMIT_MAX_MIN(Motor->Kd, 5, 0);
-		LIMIT_MAX_MIN(Motor->Kp, 500, 0);
+		Motor->P_des = LIMIT_MAX_MIN(Motor->P_des, +Motor->P_Max, -Motor->P_Max);
+		Motor->V_des = LIMIT_MAX_MIN(Motor->V_des, +Motor->V_Max, -Motor->V_Max);
+		Motor->t_ff = LIMIT_MAX_MIN(Motor->t_ff, +Motor->T_Max * 1000 - 1, -Motor->T_Max * 1000 + 1);
+		Motor->Kd = LIMIT_MAX_MIN(Motor->Kd, 5, 0);
+		Motor->Kp = LIMIT_MAX_MIN(Motor->Kp, 500, 0);
 
 		Motor->Send_P_des = (uint16_t)((Motor->P_des) / Motor->P_Max * (DM_P_Data_MAX / 2) + DM_P_Data_MAX / 2);
 		Motor->Send_V_des = (uint16_t)((Motor->V_des) / Motor->V_Max * (DM_V_Data_MAX / 2) + DM_V_Data_MAX / 2);

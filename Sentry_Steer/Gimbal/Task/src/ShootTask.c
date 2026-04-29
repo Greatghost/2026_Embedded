@@ -272,13 +272,13 @@ uint8_t Firecode_CheckFireRequest(const uint8_t last, const uint8_t now) {
 	}
 
     
-    //if(chassis_pack_get_1.is_shootable > 0)
-    //{
+    if(chassis_pack_get_1.is_shootable > 0)
+    {
 //        uint8_t i_aimed_target = fabsf(gimbal_controller.gyro_pitch_angle - pc_pitch) < 1.2f && fabsf(gimbal_controller.gyro_yaw_angle - pc_yaw) < 1.5f;
 			uint8_t i_aimed_target = fabsf(gimbal_controller.gyro_pitch_angle - pc_pitch) < 1.0f && fabsf(gimbal_controller.gyro_yaw_angle - pc_yaw) < 1.0f;
      
 			AA_Shootable = i_aimed_target && aa_fire_req_lvl > 0;
-    //}
+    }
     Shoot_Pos_Cal();
     
     

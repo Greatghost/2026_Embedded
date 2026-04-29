@@ -304,30 +304,30 @@ void set_robot_speed(Infantry *infantry)
 
     // 根据设置的功率计算出设定速度，注意保持speed_x_max 与 speed_y_max 与 speed_yaw_max * wheel_radius基本同值
     // 因为该参数需要关联到功率控制部分，所以要保证在跑满功率的前提下给大，但过大会导致部分机器人轮子打滑，所以需要控制
-    // if (infantry->chassis_type == STEER_WHEEL)
-    // {
-    //     infantry->speed_x_max = (infantry->set_power - 50.0f) * 0.06f + 4.8f;
-    //     infantry->speed_y_max = (infantry->set_power - 50.0f) * 0.06f + 4.8f;
-    //     infantry->speed_yaw_max = (infantry->set_power - 50.0f) * 0.21f + 16.0f;
-    // }
-    // else if (infantry->chassis_type == MECANUM_WHEEL)
-    // {
-    //     infantry->speed_x_max = (infantry->set_power - 50.0f) * 0.06f + 4.8f; // 因为后面还有功率控制，这个设定值本质上是为了控制不同功率速度的大致给定
-    //     infantry->speed_y_max = (infantry->set_power - 50.0f) * 0.06f + 4.8f;
-    //     infantry->speed_yaw_max = (infantry->set_power - 50.0f) * 0.21f + 16.0f;
-    // }
-    // else if (infantry->chassis_type == OMNI_WHEEL)
-    // {
-	// 		infantry->speed_x_max = (infantry->set_power - 50.0f) * 0.06f + 4.8f; // 经测试，不同功率时，平地、上坡以及飞坡均能吃满set_power
-    //     infantry->speed_y_max = (infantry->set_power - 50.0f) * 0.06f + 4.8f;
-    //     infantry->speed_yaw_max = (infantry->set_power - 50.0f) * 0.21f + 16.0f;
-    // }
+    if (infantry->chassis_type == STEER_WHEEL)
+    {
+        infantry->speed_x_max = (infantry->set_power - 50.0f) * 0.06f + 4.8f;
+        infantry->speed_y_max = (infantry->set_power - 50.0f) * 0.06f + 4.8f;
+        infantry->speed_yaw_max = (infantry->set_power - 50.0f) * 0.21f + 16.0f;
+    }
+    else if (infantry->chassis_type == MECANUM_WHEEL)
+    {
+        infantry->speed_x_max = (infantry->set_power - 50.0f) * 0.06f + 4.8f; // 因为后面还有功率控制，这个设定值本质上是为了控制不同功率速度的大致给定
+        infantry->speed_y_max = (infantry->set_power - 50.0f) * 0.06f + 4.8f;
+        infantry->speed_yaw_max = (infantry->set_power - 50.0f) * 0.21f + 16.0f;
+    }
+    else if (infantry->chassis_type == OMNI_WHEEL)
+    {
+			infantry->speed_x_max = (infantry->set_power - 50.0f) * 0.06f + 4.8f; // 经测试，不同功率时，平地、上坡以及飞坡均能吃满set_power
+        infantry->speed_y_max = (infantry->set_power - 50.0f) * 0.06f + 4.8f;
+        infantry->speed_yaw_max = (infantry->set_power - 50.0f) * 0.21f + 16.0f;
+    }
 }
 
 // 加速策略
 void wheels_accel(Infantry *infantry)
 {
-    infantry->speed_yaw_max = 10.0f;
+    // infantry->speed_yaw_max = 10.0f;
     // infantry->target_x_v = TD_Calculate(&infantry->x_v_td, infantry->receive_x_v);
     // infantry->target_y_v = TD_Calculate(&infantry->y_v_td, infantry->receive_y_v);
 
@@ -338,7 +338,7 @@ void wheels_accel(Infantry *infantry)
     if (remote_controller.control_mode_action == NOT_FOLLOW_GIMBAL || remote_controller.control_mode_action == CV_ROTATE) // 检录陀螺要变向
     {
         // infantry->target_yaw_v = TD_Calculate(&infantry->yaw_v_td, 2.0f*infantry->receive_yaw_v);
-        infantry->target_yaw_v = 2.0f * infantry->receive_yaw_v;
+        infantry->target_yaw_v = 8.0f * infantry->receive_yaw_v;
     }
     else
     {

@@ -27,7 +27,8 @@
  */
 
 #define GIMBAL_TEST_CONFIG            0       // 0-正常控制, 1-Pitch方波测试, 2-小Yaw方波测试
-#define GIMBAL_CONTROL_DISCONNECT     0       // 0-正常更新目标角度, 1-目标角度保持不变
+#define GIMBAL_CONTROL_DISCONNECT     0       
+// 0-正常更新目标角度, 1-目标角度保持不变,ozone修改gimbal_controller.target_pitch_angle并监控 gimbal_controller.gyro_pitch_angle和gimbal_controller.set_pitch_current
 
 #define GIMBAL_SQUARE_LOW_ANGLE     -5.0f   // 方波低角度 (度)
 #define GIMBAL_SQUARE_HIGH_ANGLE    5.0f    // 方波高角度 (度)
@@ -100,8 +101,8 @@
 
 #define GIMBAL_PITCH_MOTOR_SIGN 1.0f // 云台PITCH电机方向，向上为正
 
-#define GIMBAL_ANGLE_MIN 90.0f // 电机角软限位
-#define GIMBAL_ANGLE_MAX 150.0f
+#define GIMBAL_ANGLE_MIN 33.0f // 电机角软限位
+#define GIMBAL_ANGLE_MAX 93.0f
 
 #define GIMBAL_PITCH_COMP 4000.0f        // 暂不使用
 #define GIMBAL_PITCH_COMP_COEF 1.0f      // 暂不使用

@@ -336,11 +336,11 @@ void SendtoPCExtend(unsigned char* buff)
 	PCSendExtended.UWB_yaw_10 = JudgeRecieveData2.yaw_10;
 	PCSendExtended.sentry_posture = JudgeRecieveData.sentry_posture;  // 哨兵姿态: 1=进攻, 2=防御, 3=移动, 0=未知
 	PCSendExtended.reserve_8 = 0;
-	// gimbal_vel_data1: 大YAW陀螺仪角度 + 底盘w速度
-		// byte0+byte1: 大YAW陀螺仪角度 * 10 (int16), 单位0.1度
+	// gimbal_vel_data1: 小YAW相对于小YAW电机零点的偏差角度 + 底盘w速度
+		// byte0+byte1: 小YAW相对于电机零点偏差角度 * 10 (int16), 单位0.1度
 		// byte2+byte3: 底盘角速度 * 100 (int16), 单位0.01 rad/s
-		int16_t big_yaw_angle_10 = (int16_t)(big_yaw_controller.dealed_big_yaw_gyro * 10.0f);
-		PCSendExtended.gimbal_vel_data1 = ((uint32_t)(big_yaw_angle_10 & 0xFFFF)) | ((uint32_t)(chassis_speed_recv.chassis_yaw_v_100 & 0xFFFF) << 16);
+		int16_t small_yaw_offset_angle_10 = (int16_t)(big_yaw_controller.big_yaw_gyro_bias * 10.0f);
+		PCSendExtended.gimbal_vel_data1 = ((uint32_t)(small_yaw_offset_angle_10 & 0xFFFF)) | ((uint32_t)(chassis_speed_recv.chassis_yaw_v_100 & 0xFFFF) << 16);
 
 		// 底盘速度数据回传到gimbal_vel_data字段（通过舵电机角度与轮电机速度反解）
 		// byte0+byte1: 底盘x方向速度 (int16) = chassis_x_v_100, 单位0.01 m/s
