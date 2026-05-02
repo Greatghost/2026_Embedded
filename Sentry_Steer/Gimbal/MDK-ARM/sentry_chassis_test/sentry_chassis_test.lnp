@@ -88,6 +88,8 @@
 "sentry_chassis_test\usbd_cdc_if.o"
 "sentry_chassis_test\usbd_conf.o"
 "sentry_chassis_test\usbd_desc.o"
+"sentry_chassis_test\bsp_buzzer.o"
+"sentry_chassis_test\bsp_led_1.o"
 "sentry_chassis_test\bmi088driver.o"
 "sentry_chassis_test\bmi088middleware.o"
 "sentry_chassis_test\ist8310driver.o"

@@ -113,8 +113,31 @@ typedef struct Motor_SendReceive_Debugger
 
 typedef struct Referee_Debugger
 {
-    uint16_t err_msgs_num;
-    uint16_t recv_msgs_num;
+    uint16_t err_msgs_num;        // CRC校验失败计数
+    uint16_t recv_msgs_num;       // 总接收计数
+
+    // 裁判系统各CMD_ID接收计数
+    uint16_t cmd_0x0001_num;      // 比赛状态
+    uint16_t cmd_0x0003_num;      // 友方血量
+    uint16_t cmd_0x0101_num;      // 场地事件
+    uint16_t cmd_0x0105_num;      // 飞镖时间
+    uint16_t cmd_0x0201_num;      // 机器人状态(裁判系统)
+    uint16_t cmd_0x0202_num;      // 功率热量
+    uint16_t cmd_0x0203_num;      // 机器人位置
+    uint16_t cmd_0x0204_num;      // BUFF数据
+    uint16_t cmd_0x0206_num;      // 受伤数据
+    uint16_t cmd_0x0207_num;      // 射击数据
+    uint16_t cmd_0x0208_num;      // 弹丸剩余
+    uint16_t cmd_0x0209_num;      // RFID状态
+    uint16_t cmd_0x020B_num;      // 地面机器人位置
+    uint16_t cmd_0x020D_num;      // 哨兵信息
+    uint16_t cmd_0x0301_num;      // 机器人交互数据
+    uint16_t cmd_0x0303_num;      // 机器人控制指令
+
+    // 雷达站数据计数(通过0x0301传输)
+    uint16_t radar_0x0201_num;    // 雷达预警信息
+    uint16_t radar_0x0202_num;    // 雷达位置信息
+    uint16_t radar_0x0205_num;    // 雷达血量信息
 } Referee_Debugger;
 
 typedef struct GlobalDebugger

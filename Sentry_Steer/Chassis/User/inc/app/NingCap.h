@@ -7,7 +7,7 @@
 // 首先定义一个变量
 uint8_t can_data[8]; //CAN发送数据
 SuperCapSendData cap_send_data;
-SendCapPack(&cap_send_data,60);  //给定60W充电
+SendCapPack(&cap_send_data,60,referee_data.Power_Heat_Data.buffer_energy);  //给定60W充电
 memcpy(can_data,(uint8_t*)&cap_send_data,8);
 // 然后利用CAN将数据发出去即可  CAN_ID: 0x080;
 
@@ -96,7 +96,7 @@ extern SuperCapRecvData cap_recv_data;
 extern NingCapController cap_controller;
 
 void ReceiveCapDecode(uint8_t *recv_data, SuperCapRecvData *cap_recv_data);
-void SendCapPack(SuperCapSendData *send_data, uint16_t P_ref);
+void SendCapPack(SuperCapSendData *send_data, uint16_t P_ref, uint16_t buffer_energy);
 float NingCapControl(float buffer_energy, float max_power, float need_power);
 
 void CapControllerInit(void);

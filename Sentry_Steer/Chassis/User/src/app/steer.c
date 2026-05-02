@@ -7,8 +7,8 @@ void steer_pid_init()
     // 舵向初始编码值设定
     infantry.steer_init_encoder[STEER1] = 3753;
     infantry.steer_init_encoder[STEER2] = 3116;
-    infantry.steer_init_encoder[STEER3] = 1700;
-    infantry.steer_init_encoder[STEER4] = 2400;
+    infantry.steer_init_encoder[STEER3] = 5700;
+    infantry.steer_init_encoder[STEER4] = 1000;
 
     // 轮毂电机安装方向
     infantry.steer_wheel_install_direction[STEER1] = 1;
@@ -38,15 +38,15 @@ void steer_pid_init()
 //    infantry.Steer_6020_FF_Coefficient[2] = 0.0f;
 //    Feedforward_Init(&infantry.Steer_6020_FF, 7500, infantry.Steer_6020_FF_Coefficient, 0.004, 0, 0); // 15000
 	// 舵向控制PID
-    PID_Init(&infantry.steers_angle_pid[STEER1], 720, 0, 0.05, 24, 0, 0, 0, 0, 0, 0, 1, NONE);
-    PID_Init(&infantry.steers_angle_pid[STEER2], 720, 0, 0.05, 24, 0, 0, 0, 0, 0, 0, 1, NONE);
-    PID_Init(&infantry.steers_angle_pid[STEER3], 720, 0, 0.05, 24, 0, 0, 0, 0, 0, 0, 1, NONE);
-    PID_Init(&infantry.steers_angle_pid[STEER4], 720, 0, 0.05, 24, 0, 0, 0, 0, 0, 0, 1, NONE);
+    PID_Init(&infantry.steers_angle_pid[STEER1], 720, 0, 0.05, 30, 0, 0, 0, 0, 0, 0, 1, NONE);
+    PID_Init(&infantry.steers_angle_pid[STEER2], 720, 0, 0.05, 30, 0, 0, 0, 0, 0, 0, 1, NONE);
+    PID_Init(&infantry.steers_angle_pid[STEER3], 720, 0, 0.05, 30, 0, 0, 0, 0, 0, 0, 1, NONE);
+    PID_Init(&infantry.steers_angle_pid[STEER4], 720, 0, 0.05, 30, 0, 0, 0, 0, 0, 0, 1, NONE);
 
-    PID_Init(&infantry.steers_speed_pid[STEER1], GM6020_MAX_CURRENT*4/5, 8000, 1.0, 10, 3, 0, 0, 0, 0, 0, 1, Integral_Limit);
-    PID_Init(&infantry.steers_speed_pid[STEER2], GM6020_MAX_CURRENT*4/5, 8000, 1.0, 10, 3, 0, 0, 0, 0, 0, 1, Integral_Limit);
-    PID_Init(&infantry.steers_speed_pid[STEER3], GM6020_MAX_CURRENT*4/5, 8000, 1.0, 10, 3, 0, 0, 0, 0, 0, 1, Integral_Limit);
-    PID_Init(&infantry.steers_speed_pid[STEER4], GM6020_MAX_CURRENT*4/5, 8000, 1.0, 10, 3, 0, 0, 0, 0, 0, 1, Integral_Limit);
+    PID_Init(&infantry.steers_speed_pid[STEER1], GM6020_MAX_CURRENT*4/5, 8000, 1.0, 10, 0, 0, 0, 0, 0, 0, 1, Integral_Limit);
+    PID_Init(&infantry.steers_speed_pid[STEER2], GM6020_MAX_CURRENT*4/5, 8000, 1.0, 10, 0, 0, 0, 0, 0, 0, 1, Integral_Limit);
+    PID_Init(&infantry.steers_speed_pid[STEER3], GM6020_MAX_CURRENT*4/5, 8000, 1.0, 10, 0, 0, 0, 0, 0, 0, 1, Integral_Limit);
+    PID_Init(&infantry.steers_speed_pid[STEER4], GM6020_MAX_CURRENT*4/5, 8000, 1.0, 10, 0, 0, 0, 0, 0, 0, 1, Integral_Limit);
 
     // 6020前馈初始化
     infantry.Steer_6020_FF_Coefficient[0] = 8.0f;
@@ -203,10 +203,18 @@ void steer_chassis_control(void)
         if(remote_controller.control_mode_action != SPEED_FOLLOW)//非速度跟随下速度矢量计算
         {
             /*计算平动向量的速度模值m/s、方向degree*/
+            // 根据底盘跟随方向添加对应偏移角度
+            // error_angle是相对于所选方向的角度，需要转换到统一坐标系
+            float direction_offset = 0.0f;
             if (infantry.chassis_direction == CHASSIS_BACK)
-                infantry.robot_vector.angle = 180.0f + R2DEG_RATIO * atan2f(infantry.target_x_v, infantry.target_y_v) + GIMBAL_MOTOR_SIGN * infantry.error_angle * R2DEG_RATIO;
-            else
-                infantry.robot_vector.angle = R2DEG_RATIO * atan2f(infantry.target_x_v, infantry.target_y_v) + GIMBAL_MOTOR_SIGN * infantry.error_angle * R2DEG_RATIO;
+                direction_offset = 180.0f;
+            else if (infantry.chassis_direction == CHASSIS_LEFT)
+                direction_offset = -90.0f;
+            else if (infantry.chassis_direction == CHASSIS_RIGHT)
+                direction_offset = 90.0f;
+            // CHASSIS_FRONT: direction_offset = 0.0f
+
+            infantry.robot_vector.angle = direction_offset + R2DEG_RATIO * atan2f(infantry.target_x_v, infantry.target_y_v) + GIMBAL_MOTOR_SIGN * infantry.error_angle * R2DEG_RATIO;
 
             arm_sqrt_f32(infantry.target_y_v * infantry.target_y_v + infantry.target_x_v * infantry.target_x_v, &infantry.robot_vector.module); // 计算速度模值
             

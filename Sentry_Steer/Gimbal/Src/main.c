@@ -125,7 +125,7 @@ int main(void)
   /* USER CODE END 1 */
 
   
-
+  Initialization_Completed();
   /* Call init function for freertos objects (in cmsis_os2.c) */
   MX_FREERTOS_Init();
 

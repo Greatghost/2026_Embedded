@@ -26,7 +26,7 @@
 #if ROBOT == GOBLIN
 #define MAX_YAW_SPEED 1.5f
 #elif ROBOT == TIGER
-#define MAX_YAW_SPEED 4.0f
+#define MAX_YAW_SPEED 16.0f
 #endif
 
 typedef struct ChassisSolver

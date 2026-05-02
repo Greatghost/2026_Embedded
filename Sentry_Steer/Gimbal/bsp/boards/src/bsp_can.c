@@ -207,19 +207,16 @@ void MotorReceive(CAN_HandleTypeDef *hcan, CAN_RxHeaderTypeDef *rx_header, uint8
 		memcpy(&JudgeRecieveData2,data,8);
 	}
 	else if (hcan->Instance == CHASSIS_CAN_COMM_CANx && rx_header->StdId == SEND_TO_GIMBAL_BLOOD_DATA_CAN_ID1)
-	{
-		
+	{		
 		if(temp_CAN_msg_type == 0x0)
-		{
-			
+		{			
 			memcpy(&JudgeBlood_F,data,8);
 		}
 		else if(temp_CAN_msg_type == 0x1)
 		{
 			Blood_update = 1;
 			memcpy(&JudgeBlood_E,data,8);
-		}
-		
+		}		
 	}
 	else if (hcan->Instance == CHASSIS_CAN_COMM_CANx && rx_header->StdId == SEND_TO_GIMBAL_RFID_AND_BUFF_DATA_CAN_ID)
 	{

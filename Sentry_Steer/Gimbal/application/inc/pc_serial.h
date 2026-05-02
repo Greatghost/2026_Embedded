@@ -154,7 +154,7 @@ typedef struct PCSendDataJudge
 
 	uint8_t crc8;
 }PCSendDataJudge;
-typedef struct PCSendDataBlood_1
+typedef struct PCSendDataBlood_1	//友方血量
 {
 	uint8_t start_flag;
 	uint8_t data_pack_type;
@@ -169,7 +169,7 @@ typedef struct PCSendDataBlood_1
 
 	uint8_t crc8;
 }PCSendDataBlood_1;//0x098
-typedef struct PCSendDataBlood_2
+typedef struct PCSendDataBlood_2	//敌方血量
 {
 	uint8_t start_flag;
 	uint8_t data_pack_type;

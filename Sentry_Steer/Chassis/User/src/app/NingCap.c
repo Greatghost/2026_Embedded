@@ -16,9 +16,10 @@ void CapControllerInit()
 }
 
 /*  发送数据封装 */
-void SendCapPack(SuperCapSendData *send_data, uint16_t P_ref)
+void SendCapPack(SuperCapSendData *send_data, uint16_t P_ref, uint16_t buffer_energy)
 {
     send_data->P_ref = P_ref * 100.0f;
+    send_data->buffer_energy = buffer_energy * 100.0f;
 }
 
 void ReceiveCapDecode(uint8_t *recv_data, SuperCapRecvData *cap_recv_data)

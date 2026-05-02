@@ -42,11 +42,12 @@ void PowerControlTask(void *pvParameters)
 
 		// 使用裁判系统功率限制作为基准，根据缓冲能量动态调整
 		float buffer_energy = referee_data.Power_Heat_Data.buffer_energy;
-		if (buffer_energy > 40.0f)
-			dynamic_referee_power = referee_power + (buffer_energy - 40.0f);  // 缓冲能量高可超限使用
-		else
-			dynamic_referee_power = referee_power - (40.0f - buffer_energy) * 0.5f;  // 缓冲能量低要保守，避免扣血
-
+		//if (buffer_energy > 40.0f)
+		//	dynamic_referee_power = referee_power + (buffer_energy - 40.0f);  // 缓冲能量高可超限使用
+		//else
+		//	dynamic_referee_power = referee_power - (40.0f - buffer_energy) * 0.5f;  // 缓冲能量低要保守，避免扣血
+		
+		dynamic_referee_power = referee_power;
 		dynamic_cap_power = CapPowerSet();
 		// 先用100w
 
@@ -72,7 +73,7 @@ void PowerControlTask(void *pvParameters)
 
 		if (i % 4 == 0) // 250HZ
 		{
-			SendCapPack(&cap_send_data, cap_controller.cap_power);
+			SendCapPack(&cap_send_data, cap_controller.cap_power, referee_data.Power_Heat_Data.buffer_energy);
 			Interval = GetDeltaT(&timtim);
 			CanSend(SUPER_POWER_CAN, (int8_t *)(&cap_send_data), SEND_TO_SUPER_POWER_CAN_ID, 8);
 		}

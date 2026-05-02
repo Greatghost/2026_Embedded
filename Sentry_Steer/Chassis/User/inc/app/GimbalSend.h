@@ -53,7 +53,7 @@ typedef struct{
 	uint16_t ID4 : 6;
 	uint16_t ID_reserve : 6;
 	uint16_t ID7 : 6;
-	uint16_t ID8 : 6;//基地
+	uint16_t ID8 : 6;//基地，无法获取时显式指定为0
 	uint32_t reserve : 14;
 }JudgeBloodData_ForSend1_t;
 

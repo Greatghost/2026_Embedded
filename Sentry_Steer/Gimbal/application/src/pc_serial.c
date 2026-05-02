@@ -265,12 +265,12 @@ void SendtoPCBlood_1(unsigned char* buff)
 	pc_send_data_blood_1.start_flag = '!';  // 
     pc_send_data_blood_1.data_pack_type = JUDGE_PC_DATA_BLOOD_1;  // 2
 
-    pc_send_data_blood_1.Friend1 = JudgeBlood_F.ID1 * 10;
-    pc_send_data_blood_1.Friend2 = JudgeBlood_F.ID2 * 10;
-    pc_send_data_blood_1.Friend3 = JudgeBlood_F.ID3 * 10;
-    pc_send_data_blood_1.Friend4 = JudgeBlood_F.ID4 * 10;
-    pc_send_data_blood_1.F_base = JudgeBlood_F.ID8 * 100;
-    pc_send_data_blood_1.self7 = JudgeBlood_F.ID7 * 10;
+    pc_send_data_blood_1.Friend1 = JudgeBlood_F.ID1 * 10;//hero
+    pc_send_data_blood_1.Friend2 = JudgeBlood_F.ID2 * 10;//engineer
+    pc_send_data_blood_1.Friend3 = JudgeBlood_F.ID3 * 10;//infantry
+    pc_send_data_blood_1.Friend4 = JudgeBlood_F.ID4 * 10;//infantry
+    pc_send_data_blood_1.F_base = JudgeBlood_F.ID8 * 100;//base
+    pc_send_data_blood_1.self7 = JudgeBlood_F.ID7 * 10;//sentry
     
 	pc_send_data_blood_1.crc8 = 0;
 	Append_CRC8_Check_Sum((unsigned char *)&pc_send_data_blood_1, PC_SENDBUF_SIZE);

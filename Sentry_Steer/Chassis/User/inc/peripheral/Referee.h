@@ -152,10 +152,10 @@
 #define UI_Color_White 8  // 白色
 
 // 哨兵决策
-#define SENTRY_DECISION_SIZE    19    //上传数据最大的长度为21？？实际使用19
-#define HEADER_LEN  	 5       //帧头长度
-#define CMD_LEN          2       //命令码长度
-#define CRC_LEN          2       //尾部CRC16校验
+#define SENTRY_DECISION_SIZE 19 // 上传数据最大的长度为21？？实际使用19
+#define HEADER_LEN 5			// 帧头长度
+#define CMD_LEN 2				// 命令码长度
+#define CRC_LEN 2				// 尾部CRC16校验
 #define SENTRY_DECISION_ID 0x120
 
 #pragma pack(push, 1)
@@ -174,86 +174,78 @@ typedef struct // 0x0002 比赛结果数据
 	uint8_t winner;
 } ext_game_result_t;
 
-typedef struct // 0x0003 机器人血量数据
+typedef struct // 0x0003 友方机器人血量数据
 {
-	uint16_t red_1_robot_HP;
-	uint16_t red_2_robot_HP;
-	uint16_t red_3_robot_HP;
-	uint16_t red_4_robot_HP;
-	uint16_t red_5_robot_HP;
-	uint16_t red_7_robot_HP;
-	uint16_t red_outpost_HP;
-	uint16_t red_base_HP;
-	uint16_t blue_1_robot_HP;
-	uint16_t blue_2_robot_HP;
-	uint16_t blue_3_robot_HP;
-	uint16_t blue_4_robot_HP;
-	uint16_t blue_5_robot_HP;
-	uint16_t blue_7_robot_HP;
-	uint16_t blue_outpost_HP;
-	uint16_t blue_base_HP;
-} ext_game_robot_HP_t;
+	uint16_t friend_1_robot_HP;
+	uint16_t friend_2_robot_HP;
+	uint16_t friend_3_robot_HP;
+	uint16_t friend_4_robot_HP;
+	//uint16_t friend_5_robot_HP;
+	uint16_t friend_7_robot_HP;
+	uint16_t friend_outpost_HP;
+	uint16_t friend_base_HP;
+} robot_HP_friend_t;
 
 /* 0x010X --------------------------------------------------------------------*/
 typedef struct // 0x0101 场地事件数据
 {
 	// uint32_t event_type;
-	uint8_t self_supply_status : 3;
-	uint8_t self_Buff_status : 3;
-	uint8_t self_highland_status : 6;
-	uint8_t self_BaseShield : 7;
-	uint16_t last_dart_time : 9;
-	uint8_t dart_target : 2;
-	uint8_t gain_point_statuss : 2;
-	// uint8_t _ : 3;
+	uint8_t self_supply_status : 3;	  // 己方补给站状态：0-未激活/1-已激活/2-已使用
+	uint8_t self_Buff_status : 3;	  // 己方Buff状态：0-无/1-攻击/2-防御/3-恢复/4-冷却
+	uint8_t self_highland_status : 6; // 己方高地状态：0-未占领/1-已占领
+	uint8_t self_BaseShield : 7;	  // 己方基地护盾状态：0-无/1-有
+	uint16_t last_dart_time : 9;	  // 己方飞镖剩余发射时间（秒）
+	uint8_t dart_target : 2;		  // 飞镖目标：0-前哨站/1-基地
+	uint8_t gain_point_statuss : 2;	  // 得分状态：0-无/1-击杀/2-占领
+									  // uint8_t _ : 3;
 } ext_event_data_t;
 
 typedef struct // 0x0102 补给站动作标识
 {
-	uint8_t reserved;
-	uint8_t supply_robot_id;
-	uint8_t supply_projectile_step;
-	uint8_t supply_projectile_num;
+	uint8_t reserved;				// 保留字节
+	uint8_t supply_robot_id;		// 补给站对应机器人ID
+	uint8_t supply_projectile_step; // 补弹步骤：0-未开始/1-进行中/2-完成
+	uint8_t supply_projectile_num;	// 补弹数量
 } ext_supply_projectile_action_t;
 
 typedef struct // 0x0103 请求补给站补弹数据，由参赛队发送（RM 对抗赛尚未开放）
 {
-	uint8_t supply_projectile_id;
-	uint8_t supply_robot_id;
-	uint8_t supply_num;
+	uint8_t supply_projectile_id; // 补给站ID
+	uint8_t supply_robot_id;	  // 请求补弹的机器人ID
+	uint8_t supply_num;			  // 请求补弹数量
 } ext_supply_projectile_booking_t;
 
 typedef struct // 0x0104 裁判警告信息
 {
-	uint8_t level;
-	uint8_t foul_robot_id;
-	uint8_t count;
+	uint8_t level;		   // 警告等级：1-黄牌/2-红牌/3-判负
+	uint8_t foul_robot_id; // 犯规机器人ID
+	uint8_t count;		   // 犯规次数
 } ext_referee_warning_t;
 
 typedef struct // 0x0105 飞镖发射口倒计时
 {
-	uint8_t dart_remaining_time;
-	uint16_t dart_info;
+	uint8_t dart_remaining_time; // 飞镖发射口剩余开启时间（秒）
+	uint16_t dart_info;			 // 飞镖信息：bit0-1闸门状态/bit2-3目标
 } ext_dart_remaining_time_t;
 
 // 0x120 哨兵自主决策
 typedef struct
 {
-	uint16_t data_cmd_id;
-	uint16_t send_ID;
-	uint16_t receiver_ID; //0x8080
-}Student_interactive_header_data_t;//交互数据
+	uint16_t data_cmd_id;			 // 数据命令ID
+	uint16_t send_ID;				 // 发送者ID
+	uint16_t receiver_ID;			 // 接收者ID（0x8080）
+} Student_interactive_header_data_t; // 交互数据
 
 typedef struct
 {
-	uint32_t sentry_if_revive : 1;  //是否复活
-	uint32_t sentry_immediate_revive : 1; //是否立即复活
-	uint32_t sentry_bullet_claim : 11; //申请买弹量
-	uint32_t sentry_remote_bullet_claim_times : 4; //远程弹丸兑换次数
-	uint32_t sentry_remote_HP_claim_times : 4;  //远程买血次数
-	uint32_t sentry_posture : 2;  //哨兵姿态: 1=进攻, 2=防御, 3=移动, 0=未知 (对应sentry_cmd bit21-22)
-	uint32_t reserve : 9;
-}Sentry_decision_referee_t;
+	uint32_t sentry_if_revive : 1;				   // 是否允许复活：0-否/1-是
+	uint32_t sentry_immediate_revive : 1;		   // 是否申请立即复活：0-否/1-是
+	uint32_t sentry_bullet_claim : 11;			   // 申请购买弹丸数量
+	uint32_t sentry_remote_bullet_claim_times : 4; // 远程兑换弹丸次数
+	uint32_t sentry_remote_HP_claim_times : 4;	   // 远程兑换血量次数
+	uint32_t sentry_posture : 2;				   // 哨兵姿态：0-未知/1-进攻/2-防御/3-移动
+	uint32_t reserve : 9;						   // 保留位
+} Sentry_decision_referee_t;
 
 /* 0x020X --------------------------------------------------------------------*/
 typedef struct // 0x0201 比赛机器人状态
@@ -291,44 +283,44 @@ typedef struct // 0x0203 机器人位置
 
 typedef struct // 0x0204 机器人增益
 {
-	uint8_t recovery_buff;
-	uint8_t cooling_buff;
-	uint8_t defence_buff;
-	uint8_t vulnerability_buff;
-	uint16_t attack_buff;
-	uint8_t remaining_energy;
+	uint8_t recovery_buff;		// 恢复Buff等级：0-无/1-5级
+	uint8_t cooling_buff;		// 冷却Buff等级：0-无/1-5级
+	uint8_t defence_buff;		// 防御Buff等级：0-无/1-5级
+	uint8_t vulnerability_buff; // 易伤Debuff等级：0-无/1-5级
+	uint16_t attack_buff;		// 攻击Buff值
+	uint8_t remaining_energy;	// 剩余能量
 } ext_buff_musk_t;
 
-typedef struct // 0x205 ���л�����״̬
+typedef struct // 0x205 空中支援状态
 {
-	uint8_t airforce_status;
-	uint8_t time_remain;
+	uint8_t airforce_status; // 空中支援状态：0-未激活/1-已激活/2-已使用
+	uint8_t time_remain;	 // 空中支援剩余时间（秒）
 } air_support_data_t;
 
 typedef struct // 0x0206 伤害状态
 {
-	uint8_t armor_type : 4;
-	uint8_t hurt_type : 4;
+	uint8_t armor_type : 4; // 被击中装甲板类型：0-前/1-后/2-左/3-右/4-上
+	uint8_t hurt_type : 4;	// 伤害类型：0-装甲板/1-模块离线/2-超射速/3-超热量/4-超功率/5-撞击
 } ext_robot_hurt_t;
 
 typedef struct // 0x0207 实时射击信息
 {
-	uint8_t bullet_type;
-	uint8_t shooter_id;
-	uint8_t bullet_freq;
-	float bullet_speed;
+	uint8_t bullet_type; // 弹丸类型：1-17mm/2-42mm
+	uint8_t shooter_id;	 // 发射机构ID：1-1号17mm/2-2号17mm/3-1号42mm
+	uint8_t bullet_freq; // 发射频率（发/秒）
+	float bullet_speed;	 // 弹丸初速度（m/s）
 } ext_shoot_data_t;
 
 typedef struct // 0x0208 子弹剩余发射数
 {
-	uint16_t bullet_remaining_num_17mm;
-	uint16_t bullet_remaining_num_42mm;
-	uint16_t coin_remaining_num;
+	uint16_t bullet_remaining_num_17mm; // 17mm弹丸剩余发射数
+	uint16_t bullet_remaining_num_42mm; // 42mm弹丸剩余发射数
+	uint16_t coin_remaining_num;		// 剩余金币数量
 } ext_bullet_remaining_t;
 
- typedef struct // 0x0209 ������RFID״̬
+typedef struct // 0x0209 机器人RFID状态
 {
-	uint32_t rfid_status;
+	uint32_t rfid_status; // RFID状态：bit0-补给区/bit1-己方高地/bit2-对方高地/bit3-能量机关/bit4-飞镖区
 } ext_rfid_status_t;
 
 // typedef struct // 0x020A 飞镖机器人客户端指令数据
@@ -339,7 +331,7 @@ typedef struct // 0x0208 子弹剩余发射数
 // 	uint16_t operate_launch_cmd_time;
 // } ext_dart_client_cmd_t;
 
-typedef struct // 0x20B ����������λ��
+typedef struct // 0x20B 地面机器人位置
 {
 	float hero_x;
 	float hero_y;
@@ -354,178 +346,219 @@ typedef struct // 0x20B ����������λ��
 } ground_robot_position_t;
 
 // 0x020D 哨兵信息 (RoboMaster 2026协议 V1.2.0)
-typedef struct {
-    // 字节0-3: sentry_info (4字节)
-    uint32_t sentry_bullet_claimed : 11;      // bit 0-10: 成功兑换的允许发弹量
-    uint32_t sentry_remote_bullet_times : 4;  // bit 11-14: 远程兑换发弹量次数
-    uint32_t sentry_remote_hp_times : 4;      // bit 15-18: 远程兑换血量次数
-    uint32_t sentry_can_free_revive : 1;      // bit 19: 是否可以免费复活
-    uint32_t sentry_can_instant_revive : 1;   // bit 20: 是否可以兑换立即复活
-    uint32_t sentry_instant_revive_cost : 10; // bit 21-30: 立即复活需要的金币数
-    uint32_t sentry_reserved : 1;             // bit 31: 保留
+typedef struct
+{
+	// 字节0-3: sentry_info (4字节)
+	uint32_t sentry_bullet_claimed : 11;	  // bit 0-10: 成功兑换的允许发弹量
+	uint32_t sentry_remote_bullet_times : 4;  // bit 11-14: 远程兑换发弹量次数
+	uint32_t sentry_remote_hp_times : 4;	  // bit 15-18: 远程兑换血量次数
+	uint32_t sentry_can_free_revive : 1;	  // bit 19: 是否可以免费复活：0-否/1-是
+	uint32_t sentry_can_instant_revive : 1;	  // bit 20: 是否可以兑换立即复活：0-否/1-是
+	uint32_t sentry_instant_revive_cost : 10; // bit 21-30: 立即复活需要的金币数
+	uint32_t sentry_reserved : 1;			  // bit 31: 保留
 
-    // 字节4-5: sentry_info_2 (2字节)
-    uint16_t sentry_disengaged : 1;           // bit 0: 是否处于脱战状态
-    uint16_t team_17mm_bullet_remaining : 11; // bit 1-11: 17mm弹量剩余可兑换数
-    uint16_t sentry_posture : 2;              // bit 12-13: 哨兵姿态 1=进攻, 2=防御, 3=移动
-    uint16_t rune_can_activate : 1;           // bit 14: 能量机关可激活
-    uint16_t sentry_reserved2 : 1;            // bit 15: 保留
+	// 字节4-5: sentry_info_2 (2字节)
+	uint16_t sentry_disengaged : 1;			  // bit 0: 是否处于脱战状态：0-否/1-是
+	uint16_t team_17mm_bullet_remaining : 11; // bit 1-11: 17mm弹量剩余可兑换数
+	uint16_t sentry_posture : 2;			  // bit 12-13: 哨兵姿态：0-未知/1-进攻/2-防御/3-移动
+	uint16_t rune_can_activate : 1;			  // bit 14: 能量机关可激活：0-否/1-是
+	uint16_t sentry_reserved2 : 1;			  // bit 15: 保留
 } sentry_info_t;
-
 
 typedef struct
 {
-	uint8_t radar_double_hurt_chance : 2;
-	uint8_t radar_if_double_hurt : 1;
-	uint8_t _ : 5;
+	uint8_t radar_double_hurt_chance : 2; // 雷达双倍伤害机会次数
+	uint8_t radar_if_double_hurt : 1;	  // 是否激活双倍伤害：0-否/1-是
+	uint8_t _ : 5;						  // 保留位
 } radar_info_t;
 
 /* 0x030X --------------------------------------------------------------------*/
 typedef struct // 0x0301 机器人间通信 头结构体
 {
-	uint16_t data_cmd_id;
-	uint16_t sender_ID;
-	uint16_t receiver_ID;
-	// uint8_t *data;
+	uint16_t data_cmd_id; // 数据命令ID
+	uint16_t sender_ID;	  // 发送者机器人ID
+	uint16_t receiver_ID; // 接收者机器人ID
+						  // uint8_t *data;
 } ext_student_interactive_header_data_t;
 
+/*老版机器人坐标结构体
 typedef struct Radar_map_info
 {
-	uint16_t hero_position_x; 
-	uint16_t hero_position_y; 
-	uint16_t engineer_position_x; 
-	uint16_t engineer_position_y; 
-	uint16_t infantry_3_position_x; 
-	uint16_t infantry_3_position_y; 
-	uint16_t infantry_4_position_x; 
-	uint16_t infantry_4_position_y; 
-	uint16_t infantry_5_position_x; 
-	uint16_t infantry_5_position_y; 
-	uint16_t sentry_position_x; 
-	uint16_t sentry_position_y;
-	
-}Radar_map_info_t;
+	uint16_t hero_position_x;          // 英雄机器人X坐标
+	uint16_t hero_position_y;          // 英雄机器人Y坐标
+	uint16_t engineer_position_x;      // 工程机器人X坐标
+	uint16_t engineer_position_y;      // 工程机器人Y坐标
+	uint16_t infantry_3_position_x;    // 步兵3机器人X坐标
+	uint16_t infantry_3_position_y;    // 步兵3机器人Y坐标
+	uint16_t infantry_4_position_x;    // 步兵4机器人X坐标
+	uint16_t infantry_4_position_y;    // 步兵4机器人Y坐标
+	uint16_t infantry_5_position_x;    // 步兵5机器人X坐标
+	uint16_t infantry_5_position_y;    // 步兵5机器人Y坐标
+	uint16_t sentry_position_x;        // 哨兵机器人X坐标
+	uint16_t sentry_position_y;        // 哨兵机器人Y坐标
 
-typedef struct // 0x0301 机器人间通信 数据结构体
+}Radar_map_info_t;
+*/
+
+// 雷达发送的哨兵预警信息 (data_cmd_id = 0x0201)
+// 格式: carID(2) + distance(4字节float) + quadrant(2)
+typedef struct
 {
-	uint16_t data_cmd_id; 
-	uint16_t sender_id; 
-	uint16_t receiver_id; 
-	Radar_map_info_t map_info;
-  
+    uint16_t car_id;      // 敌方车辆ID: 1-5,7红方; 101-105,107蓝方
+    float distance;       // 距离，单位m
+    uint16_t quadrant;    // 象限: 0-7，对应八个方向
+} radar_sentinel_alert_t;
+
+// 雷达发送的哨兵赛场坐标信息 (data_cmd_id = 0x0202)
+// 格式: 7个坐标(哨兵自身 + 敌方1,2,3,4,6,7号)，每个坐标为float x + float y
+typedef struct
+{
+    float sentry_x;           // 哨兵自身x坐标
+    float sentry_y;           // 哨兵自身y坐标
+    float enemy1_hero_x;      // 敌方1号英雄x
+    float enemy1_hero_y;      // 敌方1号英雄y
+    float enemy2_engineer_x;  // 敌方2号工程x
+    float enemy2_engineer_y;  // 敌方2号工程y
+    float enemy3_infantry_x;  // 敌方3号步兵x
+    float enemy3_infantry_y;  // 敌方3号步兵y
+    float enemy4_infantry_x;  // 敌方4号步兵x
+    float enemy4_infantry_y;  // 敌方4号步兵y
+    float enemy6_drone_x;     // 敌方6号无人机x
+    float enemy6_drone_y;     // 敌方6号无人机y
+    float enemy7_sentry_x;    // 敌方7号哨兵x
+    float enemy7_sentry_y;    // 敌方7号哨兵y
+} radar_sentry_position_t;
+
+// 雷达发送的敌方血量信息 (data_cmd_id = 0x0205)
+// 格式: 5个uint16血量，顺序为敌方1,2,3,4,7号
+typedef struct
+{
+    uint16_t enemy1_hero_hp;      // 敌方1号英雄血量
+    uint16_t enemy2_engineer_hp;  // 敌方2号工程血量
+    uint16_t enemy3_infantry_hp;  // 敌方3号步兵血量
+    uint16_t enemy4_infantry_hp;  // 敌方4号步兵血量
+    uint16_t enemy7_sentry_hp;    // 敌方7号哨兵血量
+} radar_enemy_hp_t;
+
+typedef struct // 0x0301 机器人间通信 数据结构体（兼容旧代码映射）
+{
+    uint16_t data_cmd_id;            // 数据命令ID
+    uint16_t sender_id;              // 发送者机器人ID
+    uint16_t receiver_id;            // 接收者机器人ID
+    radar_sentry_position_t position; // 雷达位置信息(0x0202)
+    radar_enemy_hp_t enemy_hp;        // 雷达血量信息(0x0205)
 } robot_interactive_data_t;
 
 typedef struct // 0x0303 小地图下发信息标识
 {
-	float target_position_x;
-	float target_position_y;
-	float target_position_z;
-	uint8_t commd_keyboard;
-	uint16_t target_robot_ID;
+	float target_position_x;  // 目标位置X坐标
+	float target_position_y;  // 目标位置Y坐标
+	float target_position_z;  // 目标位置Z坐标
+	uint8_t commd_keyboard;	  // 键盘按键命令
+	uint16_t target_robot_ID; // 目标机器人ID
 } ext_robot_command_t;
 
 typedef struct // 0x0305 小地图接收信息标识
 {
-	uint16_t target_robot_ID;
-	float target_position_x;
-	float target_position_y;
+	uint16_t target_robot_ID; // 目标机器人ID
+	float target_position_x;  // 目标位置X坐标
+	float target_position_y;  // 目标位置Y坐标
 } ext_client_map_command_t;
-
 
 /* 自定义绘制UI结构体 -------------------------------------------------------*/
 typedef struct // 绘制UI UI图形数据
 {
-	uint8_t graphic_name[3];
-	uint32_t operate_tpye : 3;
-	uint32_t graphic_tpye : 3;
-	uint32_t layer : 4;
-	uint32_t color : 4;
-	uint32_t start_angle : 9;
-	uint32_t end_angle : 9;
-	uint32_t width : 10;
-	uint32_t start_x : 11;
-	uint32_t start_y : 11;
-	uint32_t radius : 10;
-	uint32_t end_x : 11;
-	uint32_t end_y : 11;
+	uint8_t graphic_name[3];   // 图形名称（客户端索引）
+	uint32_t operate_tpye : 3; // 操作类型：0-空/1-增加/2-修改/3-删除
+	uint32_t graphic_tpye : 3; // 图形类型：0-直线/1-矩形/2-圆/3-椭圆/4-圆弧/5-浮点/6-整形/7-字符
+	uint32_t layer : 4;		   // 图层：0-9
+	uint32_t color : 4;		   // 颜色：0-主色/1-黄/2-绿/3-橙/4-紫/5-粉/6-青/7-黑/8-白
+	uint32_t start_angle : 9;  // 起始角度（0-360度）
+	uint32_t end_angle : 9;	   // 结束角度（0-360度）
+	uint32_t width : 10;	   // 线宽
+	uint32_t start_x : 11;	   // 起始X坐标
+	uint32_t start_y : 11;	   // 起始Y坐标
+	uint32_t radius : 10;	   // 半径（圆/椭圆/圆弧用）
+	uint32_t end_x : 11;	   // 结束X坐标（直线/矩形用）
+	uint32_t end_y : 11;	   // 结束Y坐标（直线/矩形用）
 } graphic_data_struct_t;
 
 typedef struct // 绘制UI UI字符串数据
 {
-	uint8_t string_name[3];
-	uint32_t operate_tpye : 3;
-	uint32_t graphic_tpye : 3;
-	uint32_t layer : 4;
-	uint32_t color : 4;
-	uint32_t start_angle : 9;
-	uint32_t end_angle : 9;
-	uint32_t width : 10;
-	uint32_t start_x : 11;
-	uint32_t start_y : 11;
-	uint32_t null;
-	uint8_t stringdata[30];
+	uint8_t string_name[3];	   // 字符串名称（客户端索引）
+	uint32_t operate_tpye : 3; // 操作类型：0-空/1-增加/2-修改/3-删除
+	uint32_t graphic_tpye : 3; // 图形类型：固定7（字符型）
+	uint32_t layer : 4;		   // 图层：0-9
+	uint32_t color : 4;		   // 颜色：0-主色/1-黄/2-绿/3-橙/4-紫/5-粉/6-青/7-黑/8-白
+	uint32_t start_angle : 9;  // 保留
+	uint32_t end_angle : 9;	   // 保留
+	uint32_t width : 10;	   // 线宽
+	uint32_t start_x : 11;	   // 起始X坐标
+	uint32_t start_y : 11;	   // 起始Y坐标
+	uint32_t null;			   // 保留
+	uint8_t stringdata[30];	   // 字符串内容（最大30字节）
 } string_data_struct_t;
 
 typedef struct // 绘制UI UI删除图形数据
 {
-	uint8_t operate_tpye;
-	uint8_t layer;
+	uint8_t operate_tpye; // 删除操作：0-空/1-删图层/2-删所有
+	uint8_t layer;		  // 目标图层（删图层时有效）
 } delete_data_struct_t;
 
 typedef struct // 绘制UI 绘制1个图形完整结构体
 {
-	frame_header_struct_t Referee_Transmit_Header;
-	uint16_t CMD_ID;
-	ext_student_interactive_header_data_t Interactive_Header;
-	graphic_data_struct_t Graphic[1];
-	uint16_t CRC16;
+	frame_header_struct_t Referee_Transmit_Header;			  // 协议帧头
+	uint16_t CMD_ID;										  // 命令ID（0x0301）
+	ext_student_interactive_header_data_t Interactive_Header; // 交互数据头
+	graphic_data_struct_t Graphic[1];						  // 1个图形数据
+	uint16_t CRC16;											  // CRC16校验
 } UI_Graph1_t;
 
 typedef struct // 绘制UI 绘制2个图形完整结构体
 {
-	frame_header_struct_t Referee_Transmit_Header;
-	uint16_t CMD_ID;
-	ext_student_interactive_header_data_t Interactive_Header;
-	graphic_data_struct_t Graphic[2];
-	uint16_t CRC16;
+	frame_header_struct_t Referee_Transmit_Header;			  // 协议帧头
+	uint16_t CMD_ID;										  // 命令ID（0x0301）
+	ext_student_interactive_header_data_t Interactive_Header; // 交互数据头
+	graphic_data_struct_t Graphic[2];						  // 2个图形数据
+	uint16_t CRC16;											  // CRC16校验
 } UI_Graph2_t;
 
 typedef struct // 绘制UI 绘制5个图形完整结构体
 {
-	frame_header_struct_t Referee_Transmit_Header;
-	uint16_t CMD_ID;
-	ext_student_interactive_header_data_t Interactive_Header;
-	graphic_data_struct_t Graphic[5];
-	uint16_t CRC16;
+	frame_header_struct_t Referee_Transmit_Header;			  // 协议帧头
+	uint16_t CMD_ID;										  // 命令ID（0x0301）
+	ext_student_interactive_header_data_t Interactive_Header; // 交互数据头
+	graphic_data_struct_t Graphic[5];						  // 5个图形数据
+	uint16_t CRC16;											  // CRC16校验
 } UI_Graph5_t;
 
 typedef struct // 绘制UI 绘制7个图形完整结构体
 {
-	frame_header_struct_t Referee_Transmit_Header;
-	uint16_t CMD_ID;
-	ext_student_interactive_header_data_t Interactive_Header;
-	graphic_data_struct_t Graphic[7];
-	uint16_t CRC16;
+	frame_header_struct_t Referee_Transmit_Header;			  // 协议帧头
+	uint16_t CMD_ID;										  // 命令ID（0x0301）
+	ext_student_interactive_header_data_t Interactive_Header; // 交互数据头
+	graphic_data_struct_t Graphic[7];						  // 7个图形数据
+	uint16_t CRC16;											  // CRC16校验
 } UI_Graph7_t;
 
 typedef struct // 绘制UI 绘制1字符串完整结构体
 {
-	frame_header_struct_t Referee_Transmit_Header;
-	uint16_t CMD_ID;
-	ext_student_interactive_header_data_t Interactive_Header;
-	string_data_struct_t String;
-	uint16_t CRC16;
+	frame_header_struct_t Referee_Transmit_Header;			  // 协议帧头
+	uint16_t CMD_ID;										  // 命令ID（0x0301）
+	ext_student_interactive_header_data_t Interactive_Header; // 交互数据头
+	string_data_struct_t String;							  // 字符串数据
+	uint16_t CRC16;											  // CRC16校验
 } UI_String_t;
 
-#define N sizeof(graphic_data_struct_t)
+#define N sizeof(graphic_data_struct_t) // UI图形数据结构体大小（用于删除操作）
 
 typedef struct // 绘制UI UI删除图形完整结构体
 {
-	frame_header_struct_t Referee_Transmit_Header;
-	uint16_t CMD_ID;
-	ext_student_interactive_header_data_t Interactive_Header;
-	delete_data_struct_t Delete;
-	uint16_t CRC16;
+	frame_header_struct_t Referee_Transmit_Header;			  // 协议帧头
+	uint16_t CMD_ID;										  // 命令ID（0x0301）
+	ext_student_interactive_header_data_t Interactive_Header; // 交互数据头
+	delete_data_struct_t Delete;							  // 删除操作数据
+	uint16_t CRC16;											  // CRC16校验
 } UI_Delete_t;
 
 #pragma pack(pop)
@@ -628,38 +661,39 @@ void UI_PushUp_Delete(UI_Delete_t *Delete, uint8_t RobotID);
 /* 裁判系统数据解码器 */
 typedef struct Referee_Decoder
 {
-	uint16_t judgementFullCount; // FIFO 圈数
-	uint64_t receive_data_len;
-	uint64_t decode_data_len;
+	uint16_t judgementFullCount; // FIFO缓冲区圈数
+	uint64_t receive_data_len;	 // 接收数据总长度
+	uint64_t decode_data_len;	 // 解码数据总长度
 
-	uint8_t judgementStep; // 解码步骤
-	uint16_t index;		   // 当前解包位置
-	uint16_t data_len;	   // 数据帧长度
+	uint8_t judgementStep; // 解码步骤：0-找帧头/1-读帧头/2-读数据/3-校验
+	uint16_t index;		   // 当前解包位置索引
+	uint16_t data_len;	   // 数据帧总长度
 
 } Referee_Decoder;
 
-typedef struct{
-	uint8_t alert_flag;
-}Sentry_alert_t;
+typedef struct
+{
+	uint8_t alert_flag; // 哨兵告警标志：0-无告警/1-有告警
+} Sentry_alert_t;
 
 typedef struct Referee_t
 {
 	/* protocol包头结构体 */
-	frame_header_struct_t Referee_Receive_Header;
+	frame_header_struct_t Referee_Receive_Header; // 接收数据帧头
 
-	/* 0x000X */
-	ext_game_status_t Game_Status;
-	ext_game_result_t Game_Result;
-	ext_game_robot_HP_t Game_Robot_HP;
+	/* 0x000X 比赛基础数据 */
+	ext_game_status_t Game_Status;			// 0x0001 比赛状态
+	ext_game_result_t Game_Result;			// 0x0002 比赛结果
+	robot_HP_friend_t Game_Robot_friend_HP; // 0x0003 友方机器人血量
 
-	/* 0x010X */
-	ext_event_data_t Event_Data;
-	ext_supply_projectile_action_t Supply_Projectile_Action;
-	ext_supply_projectile_booking_t Supply_Projectile_Booking;
-	ext_referee_warning_t Referee_Warning;
-	ext_dart_remaining_time_t Dart_Remaining_Time;
+	/* 0x010X 场地事件数据 */
+	ext_event_data_t Event_Data;							   // 0x0101 场地事件
+	ext_supply_projectile_action_t Supply_Projectile_Action;   // 0x0102 补给站动作
+	ext_supply_projectile_booking_t Supply_Projectile_Booking; // 0x0103 补弹请求
+	ext_referee_warning_t Referee_Warning;					   // 0x0104 裁判警告
+	ext_dart_remaining_time_t Dart_Remaining_Time;			   // 0x0105 飞镖倒计时
 
-	/* 0x020X */
+	/* 0x020X 机器人状态数据 */
 	// ext_game_robot_state_t Game_Robot_State;
 	// ext_power_heat_data_t Power_Heat_Data;
 	// ext_game_robot_pos_t Game_Robot_Pos;
@@ -668,28 +702,33 @@ typedef struct Referee_t
 	// ext_robot_hurt_t Robot_Hurt;
 	// ext_shoot_data_t Shoot_Data;
 	// ext_bullet_remaining_t Bullet_Remaining;
-	 
+
 	// ext_dart_client_cmd_t Dart_Client_Cmd;
-	ext_game_robot_state_t Game_Robot_State; // 0x0201
-	ext_power_heat_data_t Power_Heat_Data;	 // 0x0202
-	ext_game_robot_pos_t Game_Robot_Pos;	 // 0x0203
-	ext_buff_musk_t Buff_Musk;				 // 0x0204
-	ext_robot_hurt_t Robot_Hurt;			 // 0x0206
-	ext_shoot_data_t Shoot_Data;			 // 0x0207
-	ext_bullet_remaining_t Bullet_Remaining; // 0x0208
-	ext_rfid_status_t rfid_status;			 // 0x0209
-	ground_robot_position_t ground_robot_position;//0x020B
-	sentry_info_t Sentry_info;
+	ext_game_robot_state_t Game_Robot_State;	   // 0x0201 机器人状态
+	ext_power_heat_data_t Power_Heat_Data;		   // 0x0202 功率热量
+	ext_game_robot_pos_t Game_Robot_Pos;		   // 0x0203 机器人位置
+	ext_buff_musk_t Buff_Musk;					   // 0x0204 机器人增益
+	ext_robot_hurt_t Robot_Hurt;				   // 0x0206 伤害状态
+	ext_shoot_data_t Shoot_Data;				   // 0x0207 射击信息
+	ext_bullet_remaining_t Bullet_Remaining;	   // 0x0208 剩余弹量
+	ext_rfid_status_t rfid_status;				   // 0x0209 RFID状态
+	ground_robot_position_t ground_robot_position; // 0x020B 地面机器人位置
+	sentry_info_t Sentry_info;					   // 0x020D 哨兵信息
 
-	radar_info_t Radar_Info;					 // 0x020E
-	
-	Sentry_alert_t Sentry_alert_info;
+	radar_info_t Radar_Info; // 0x020E 雷达信息
 
-	/* 0x030X */
-	ext_student_interactive_header_data_t Student_Interactive_Header_Data;
-	robot_interactive_data_t Robot_Interactive_Data;
-	ext_robot_command_t Robot_Command;
-	ext_client_map_command_t Client_Map_Command;
+	Sentry_alert_t Sentry_alert_info; // 哨兵告警信息
+
+	/* 0x030X 机器人间通信数据 */
+	ext_student_interactive_header_data_t Student_Interactive_Header_Data; // 通信头数据
+	robot_interactive_data_t Robot_Interactive_Data;					   // 通信数据
+	ext_robot_command_t Robot_Command;									   // 0x0303 小地图下发
+	ext_client_map_command_t Client_Map_Command;						   // 0x0305 小地图接收
+
+	/* 雷达站发送的数据 (通过0x0301机器人交互链路) */
+	radar_sentinel_alert_t Radar_Alert_Info;     // 0x0201 哨兵预警信息
+	radar_sentry_position_t Radar_Position_Info; // 0x0202 哨兵赛场坐标
+	radar_enemy_hp_t Radar_Enemy_HP;             // 0x0205 敌方血量
 
 	// /* 绘制UI专用结构体 */
 	// UI_Graph1_t UI_Graph1;
@@ -699,24 +738,29 @@ typedef struct Referee_t
 	// UI_String_t UI_String;
 	// UI_Delete_t UI_Delete;
 
-	Referee_Decoder decoder;
+	Referee_Decoder decoder; // 数据解码器
 
 } Referee_t;
 
 typedef struct RefereeDataUpdate
 {
-	int8_t is_max_power_data_update;
-	int8_t is_power_data_update;
+	int8_t is_max_power_data_update; // 最大功率数据更新标志：1-已更新/0-未更新
+	int8_t is_power_data_update;	 // 功率数据更新标志：1-已更新/0-未更新
 } RefereeDataUpdate;
 
-extern RefereeDataUpdate referee_data_updater;
+enum
+{
+	NOT_RADAR_DATA = 0,	   // 0：不是雷达数据
+	NEAREST_ENEMY_POS = 1, // 1：最近的敌人位置
+	ALL_ENEMY_POS = 2,	   // 2：所有敌人位置
+	ALL_ENEMY_HP = 3	   // 3：所有敌人血量
+};
 
-extern Referee_t referee_data;
-
-extern uint8_t Radar_double_hurt_chance;
-
+extern RefereeDataUpdate referee_data_updater; // 裁判系统数据更新标志
+extern Referee_t referee_data;				   // 裁判系统总数据
+extern uint8_t Radar_double_hurt_chance;	   // 雷达双倍伤害机会次数
 // 哨兵决策数据结构体声明
-extern Sentry_decision_referee_t sentry_decision_referee;
+extern Sentry_decision_referee_t sentry_decision_referee; // 哨兵自主决策数据
 
 #define MAX_REFEREE_DATA_LEN 45
 

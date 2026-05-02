@@ -78,13 +78,13 @@ void PCStateControl() // 比赛专用
 			switch (PC_statecontrol.RotateState)
 			{
 			case 1:
-				chassis_solver.chassis_speed_w = 0.35f * MAX_YAW_SPEED;
-				break;
-			case 2:
 				chassis_solver.chassis_speed_w = 0.5f * MAX_YAW_SPEED;
 				break;
+			case 2:
+				chassis_solver.chassis_speed_w = 0.75f * MAX_YAW_SPEED;
+				break;
 			case 3:
-				chassis_solver.chassis_speed_w = 0.9f * MAX_YAW_SPEED;
+				chassis_solver.chassis_speed_w = 1.0f * MAX_YAW_SPEED;
 				break;
 
 			default:
@@ -405,13 +405,13 @@ if (remote_controller.dji_remote.rc.s[LEFT_SW] == Up) // 高自由度活动
 #if (GIMBAL_TEST_CONFIG != GIMBAL_CONFIG_SMALLYAW_SQUARE && GIMBAL_CONTROL_DISCONNECT == 0)
             gimbal_controller.target_small_yaw_angle -= remote_controller.dji_remote.mouse.x * 0.005f;
 #endif
+        }
 
             // Pitch控制：仅在正常模式下响应遥控器
 #if (GIMBAL_TEST_CONFIG != GIMBAL_CONFIG_PITCH_SQUARE && GIMBAL_CONTROL_DISCONNECT == 0)
             gimbal_controller.target_pitch_angle -= remote_controller.dji_remote.mouse.y * 0.005f;
             gimbal_controller.target_pitch_angle -= remote_controller.dji_remote.mouse.z * 0.001f;
 #endif
-        }
 
         // 鼠标左键检测
         volatile unsigned char press_l = remote_controller.dji_remote.mouse.press_l;
@@ -559,7 +559,7 @@ void DJIRemoteUpdate(ChassisSolver *infantry)
             // 底盘控制
                 chassis_solver.chassis_speed_x = (remote_controller.dji_remote.rc.ch[RIGHT_CH_UD] - CH_MIDDLE) * 1.0f / CH_RANGE * MAX_X_SPEED;
                 chassis_solver.chassis_speed_y = (remote_controller.dji_remote.rc.ch[RIGHT_CH_LR] - CH_MIDDLE) * 1.0f / CH_RANGE * MAX_Y_SPEED;
-                chassis_solver.chassis_speed_w = -1.0f * MAX_YAW_SPEED;
+                chassis_solver.chassis_speed_w = 0.5f * MAX_YAW_SPEED;
             // 检录要求变向小陀螺
             //   if (remote_controller.control_mode_action == CV_ROTATE)
             //   {
@@ -600,8 +600,8 @@ void DJIRemoteUpdate(ChassisSolver *infantry)
             // 底盘控制
                 chassis_solver.chassis_speed_x = (remote_controller.dji_remote.rc.ch[RIGHT_CH_UD] - CH_MIDDLE) * 1.0f / CH_RANGE * MAX_X_SPEED;
                 chassis_solver.chassis_speed_y = (remote_controller.dji_remote.rc.ch[RIGHT_CH_LR] - CH_MIDDLE) * 1.0f / CH_RANGE * MAX_Y_SPEED;
-                chassis_solver.chassis_speed_w = 0.5f * MAX_YAW_SPEED;
-    
+                chassis_solver.chassis_speed_w = 0.75f * MAX_YAW_SPEED;
+
 				//            if((remote_controller.dji_remote.rc.ch[RIGHT_CH_UD] - CH_MIDDLE) > 330)
 //            {
 //                toggle_controller.is_shoot = TRUE;

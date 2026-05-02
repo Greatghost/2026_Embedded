@@ -45,7 +45,7 @@ void Gimbal_msgs_Decode1()
   // 运动百分比
   infantry.receive_x_v = gimbal_receiver_pack1.robot_speed_x / 30.0f;
   infantry.receive_y_v= gimbal_receiver_pack1.robot_speed_y / 30.0f;
-  infantry.receive_yaw_v = gimbal_receiver_pack1.robot_speed_w / 30.0f;
+  infantry.receive_yaw_v = gimbal_receiver_pack1.robot_speed_w / 7.0f;
 
   // 更新哨兵姿态到裁判系统数据包 (1=进攻, 2=防御, 3=移动, 0=未知)
   if(gimbal_receiver_pack1.sentry_posture >= 1 && gimbal_receiver_pack1.sentry_posture <= 3)

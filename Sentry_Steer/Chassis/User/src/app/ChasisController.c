@@ -53,7 +53,7 @@ float target_ang_speed = 0.0f;
 #if ROBOT == GOBLIN
 float speed_angle_bias = -28.0f;
 #elif ROBOT == TIGER
-float speed_angle_bias = -90.0f;
+float speed_angle_bias = -90.0f;  // 默认值，SPEED_FOLLOW模式会动态修改为31
 #endif
 float calculate_velocity_angle() {
     static float last_valid_angle = 0.0f;  // 保存上次有效角度（线程不安全，需根据场景加锁）
@@ -99,17 +99,30 @@ float angle_z_err_get(float target_ang, float zeros_angle)
     }
     else angleBias = 0.f;
 
+    // 根据模式动态设置speed_angle_bias
+    float current_speed_angle_bias = speed_angle_bias;  // 默认使用全局设置
+    #if ROBOT == TIGER
+    if(remote_controller.control_mode_action == SPEED_FOLLOW && speed_follow_enable_flag == 1)
+    {
+        current_speed_angle_bias = 31.0f;  // SPEED_FOLLOW模式使用31
+    }
+    else
+    {
+        current_speed_angle_bias = -90.0f;  // 其他模式使用-90
+    }
+    #endif
+
      if(remote_controller.control_mode_action == SPEED_FOLLOW && speed_follow_enable_flag == 1)
-    //if(remote_controller.control_mode_action == SPEED_FOLLOW ) // 舵轮启动已经优化，此处不需要二者混合  
+    //if(remote_controller.control_mode_action == SPEED_FOLLOW ) // 舵轮启动已经优化，此处不需要二者混合
     {
         // if (infantry.yaw_motor_type == YAW_GM6020) {
         //     AngErr_front = limit_pi(zeros_angle / 22.755555556f - target_ang_speed / 22.755555556f + angleBias);
         //     AngErr_back = limit_pi(AngErr_front + 180.0f);
         //     AngErr_left = limit_pi(AngErr_front + GIMBAL_MOTOR_SIGN * 90.0f);
         //     AngErr_right = limit_pi(AngErr_front - GIMBAL_MOTOR_SIGN * 90.0f);
-        // } 
+        // }
         if (infantry.yaw_motor_type == YAW_DM_MOTOR) {
-            AngErr_front = limit_pi(zeros_angle / 90.0f - target_ang_speed + speed_angle_bias);
+            AngErr_front = limit_pi(zeros_angle / 90.0f - target_ang_speed + current_speed_angle_bias);
             AngErr_back = limit_pi(AngErr_front + 180.0f);
             AngErr_left = limit_pi(AngErr_front + GIMBAL_MOTOR_SIGN * 90.0f);
             AngErr_right = limit_pi(AngErr_front - GIMBAL_MOTOR_SIGN * 90.0f);
@@ -338,7 +351,7 @@ void wheels_accel(Infantry *infantry)
     if (remote_controller.control_mode_action == NOT_FOLLOW_GIMBAL || remote_controller.control_mode_action == CV_ROTATE) // 检录陀螺要变向
     {
         // infantry->target_yaw_v = TD_Calculate(&infantry->yaw_v_td, 2.0f*infantry->receive_yaw_v);
-        infantry->target_yaw_v = 8.0f * infantry->receive_yaw_v;
+        infantry->target_yaw_v = infantry->receive_yaw_v;
     }
     else
     {

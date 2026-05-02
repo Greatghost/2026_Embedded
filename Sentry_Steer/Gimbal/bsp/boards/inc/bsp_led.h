@@ -1,18 +1,17 @@
-#ifndef BSP_LED_H
-#define BSP_LED_H
-#include "struct_typedef.h"
-#include "stm32f4xx_hal.h"
+#ifndef _BSP_LED_H
+#define _BSP_LED_H
 
-/**
- * @brief          aRGB show
- * @param[in]      aRGB: 0xaaRRGGBB, 'aa' is alpha, 'RR' is red, 'GG' is green, 'BB' is blue
- * @retval         none
- */
-/**
- * @brief          ��ʾRGB
- * @param[in]      aRGB:0xaaRRGGBB,'aa' ��͸����,'RR'�Ǻ�ɫ,'GG'����ɫ,'BB'����ɫ
- * @retval         none
- */
-extern void aRGB_led_show(uint32_t aRGB);
+#include "main.h"
+#include <string.h>
+#include <stdint.h>
+#include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+#include "tools.h"
+
+void LED_On(uint16_t GPIO_Pin);
+void LED_Off(uint16_t GPIO_Pin);
+void LED_Toggle(uint16_t GPIO_Pin);
 
 #endif

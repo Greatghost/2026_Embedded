@@ -56,5 +56,5 @@ void Pack_InfantryMode()
 
   chassis_send_pack1.robot_speed_x = (int8_t)(chassis_solver.chassis_speed_x * 30.0f);
   chassis_send_pack1.robot_speed_y = (int8_t)(chassis_solver.chassis_speed_y * 30.0f);
-  chassis_send_pack1.robot_speed_w = (int8_t)(chassis_solver.chassis_speed_w * 30.0f);
+  chassis_send_pack1.robot_speed_w = (int8_t)(chassis_solver.chassis_speed_w * 7.0f);
 }
