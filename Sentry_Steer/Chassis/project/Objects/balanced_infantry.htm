@@ -3,7 +3,7 @@
 <title>Static Call Graph - [.\Objects\balanced_infantry.axf]</title></head>
 <body><HR>
 <H1>Static Call Graph for image .\Objects\balanced_infantry.axf</H1><HR>
-<BR><P>#&#060CALLGRAPH&#062# ARM Linker, 5060750: Last Updated: Sat May 02 21:54:19 2026
+<BR><P>#&#060CALLGRAPH&#062# ARM Linker, 5060750: Last Updated: Tue May 05 11:50:22 2026
 <BR><P>
 <H3>Maximum Stack Usage =        240 bytes + Unknown(Cycles, Untraceable Function Pointers)</H3><H3>
 Call chain for Maximum Stack Depth:</H3>
@@ -1934,8 +1934,7 @@ Global Symbols
 </UL>
 
 <P><STRONG><a name="[cd]"></a>iir</STRONG> (Thumb, 26 bytes, Stack size 0 bytes, my_filter.o(i.iir))
-<BR><BR>[Called By]<UL><LI><a href="#[12e]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;steer_chassis_control
-<LI><a href="#[e0]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;M3508_Decode
+<BR><BR>[Called By]<UL><LI><a href="#[e0]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;M3508_Decode
 <LI><a href="#[cb]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;GM6020_Decode
 </UL>
 
@@ -2202,14 +2201,13 @@ Global Symbols
 </UL>
 <BR>[Address Reference Count : 1]<UL><LI> start_task.o(i.startTask)
 </UL>
-<P><STRONG><a name="[12e]"></a>steer_chassis_control</STRONG> (Thumb, 2026 bytes, Stack size 64 bytes, steer.o(i.steer_chassis_control))
+<P><STRONG><a name="[12e]"></a>steer_chassis_control</STRONG> (Thumb, 1894 bytes, Stack size 64 bytes, steer.o(i.steer_chassis_control))
 <BR><BR>[Stack]<UL><LI>Max Depth = 152<LI>Call Chain = steer_chassis_control &rArr; __aeabi_dadd &rArr; _double_epilogue &rArr; _double_round
 </UL>
 <BR>[Calls]<UL><LI><a href="#[121]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;arm_cos_f32
 <LI><a href="#[111]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__aeabi_f2d
 <LI><a href="#[79]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__aeabi_d2f
 <LI><a href="#[113]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__aeabi_cdcmple
-<LI><a href="#[cd]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;iir
 <LI><a href="#[72]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__aeabi_dadd
 <LI><a href="#[10b]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;TD_Calculate
 <LI><a href="#[c7]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Feedforward_Calculate
@@ -2225,15 +2223,15 @@ Global Symbols
 <LI><a href="#[12b]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;chassis_follow_control
 </UL>
 
-<P><STRONG><a name="[174]"></a>steer_moving_optimization</STRONG> (Thumb, 374 bytes, Stack size 40 bytes, steer.o(i.steer_moving_optimization))
-<BR><BR>[Stack]<UL><LI>Max Depth = 76<LI>Call Chain = steer_moving_optimization &rArr; __hardfp_fmodf &rArr; _frem &rArr; _float_epilogue
+<P><STRONG><a name="[174]"></a>steer_moving_optimization</STRONG> (Thumb, 426 bytes, Stack size 48 bytes, steer.o(i.steer_moving_optimization))
+<BR><BR>[Stack]<UL><LI>Max Depth = 84<LI>Call Chain = steer_moving_optimization &rArr; __hardfp_fmodf &rArr; _frem &rArr; _float_epilogue
 </UL>
 <BR>[Calls]<UL><LI><a href="#[11d]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__hardfp_fmodf
 </UL>
 <BR>[Called By]<UL><LI><a href="#[12e]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;steer_chassis_control
 </UL>
 
-<P><STRONG><a name="[170]"></a>steer_pid_init</STRONG> (Thumb, 844 bytes, Stack size 8 bytes, steer.o(i.steer_pid_init))
+<P><STRONG><a name="[170]"></a>steer_pid_init</STRONG> (Thumb, 816 bytes, Stack size 8 bytes, steer.o(i.steer_pid_init))
 <BR><BR>[Stack]<UL><LI>Max Depth = 100<LI>Call Chain = steer_pid_init &rArr; PID_Init &rArr; OLS_Init &rArr; malloc
 </UL>
 <BR>[Calls]<UL><LI><a href="#[d8]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;TD_Init

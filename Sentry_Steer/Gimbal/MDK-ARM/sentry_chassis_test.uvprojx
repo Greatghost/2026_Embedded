@@ -792,6 +792,11 @@
               <FileType>1</FileType>
               <FilePath>..\bsp\boards\src\bsp_spi.c</FilePath>
             </File>
+            <File>
+              <FileName>bsp_buzzer.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\bsp\boards\src\bsp_buzzer.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -871,16 +876,6 @@
               <FileName>usbd_desc.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\bsp\usb\src\usbd_desc.c</FilePath>
-            </File>
-            <File>
-              <FileName>bsp_buzzer.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\bsp\boards\src\bsp_buzzer.c</FilePath>
-            </File>
-            <File>
-              <FileName>bsp_led.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\bsp\boards\src\bsp_led.c</FilePath>
             </File>
           </Files>
         </Group>

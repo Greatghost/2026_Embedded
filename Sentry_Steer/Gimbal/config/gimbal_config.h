@@ -101,8 +101,8 @@
 
 #define GIMBAL_PITCH_MOTOR_SIGN 1.0f // 云台PITCH电机方向，向上为正
 
-#define GIMBAL_ANGLE_MIN 33.0f // 电机角软限位
-#define GIMBAL_ANGLE_MAX 93.0f
+#define GIMBAL_ANGLE_MIN 40.0f // 电机角软限位
+#define GIMBAL_ANGLE_MAX 90.0f
 
 #define GIMBAL_PITCH_COMP 4000.0f        // 暂不使用
 #define GIMBAL_PITCH_COMP_COEF 1.0f      // 暂不使用
