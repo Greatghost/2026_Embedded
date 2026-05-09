@@ -316,11 +316,13 @@ typedef struct // 0x0208 子弹剩余发射数
 	uint16_t bullet_remaining_num_17mm; // 17mm弹丸剩余发射数
 	uint16_t bullet_remaining_num_42mm; // 42mm弹丸剩余发射数
 	uint16_t coin_remaining_num;		// 剩余金币数量
+	uint16_t projectile_allowance_fortress; // 堡垒储备17mm允许发弹量 (RoboMaster 2026协议)
 } ext_bullet_remaining_t;
 
 typedef struct // 0x0209 机器人RFID状态
 {
-	uint32_t rfid_status; // RFID状态：bit0-补给区/bit1-己方高地/bit2-对方高地/bit3-能量机关/bit4-飞镖区
+	uint32_t rfid_status; // RFID状态低32bit：bit0-补给区/bit1-己方高地/bit2-对方高地/bit3-能量机关/bit4-飞镖区
+	uint8_t  rfid_status_2; // RFID状态扩展8bit (RoboMaster 2026协议)
 } ext_rfid_status_t;
 
 // typedef struct // 0x020A 飞镖机器人客户端指令数据

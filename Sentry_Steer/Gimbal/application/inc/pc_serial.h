@@ -84,7 +84,7 @@ extern unsigned char SendToPC_Buff[PC_SENDBUF_SIZE];
 #endif
 
 #if COMMUNICATION_CHOOSE == COMMUNICATION_OF_SENTRY
-typedef enum 
+typedef enum
 {
 	USUAL_PC_DATA = 0,
 	JUDGE_PC_DATA = 1,
@@ -92,7 +92,9 @@ typedef enum
 	JUDGE_PC_DATA_BLOOD_2 = 3,
 	JUDGE_PC_DATA_RFID_BUFF = 4,
 	JUDGE_PC_DATA_POS = 5,
-	JUDGE_PC_DATA_EXTENDED = 6
+	JUDGE_PC_DATA_EXTENDED = 6,
+	JUDGE_PC_DATA_SENTRY_DATA = 7,      // TypeID 7: 哨兵信息 (0x020D + 0x0207初速度)
+	JUDGE_PC_DATA_BULLET_DATA_AND_RFID2 = 8  // TypeID 8: 弹量数据+RFID扩展 (0x0207+0x0208+rfid_status_2)
 }PC_dataType_enum;
 typedef enum{
 	OFFLINE_START = 0,
@@ -110,7 +112,7 @@ typedef struct PC_StateControl
 
 #pragma pack(push, 1)     //
 //所有发送到pc的数据，均为1byte Head,1byte typre ,12byte data,1byte crc8
-//上位机下发协议 14 bytes (与lower_downlink_message_contract.md对齐)
+//上位机下发协议 17 bytes (与2026-05-06_lower_machine_downlink_sentry_cmd_integration.md对齐)
 typedef struct PCRecvData_1
 {
 	uint8_t Head;           // '!' = 0x21
@@ -119,9 +121,9 @@ typedef struct PCRecvData_1
 	float Aim_Yaw;          // 4 bytes
 	float Aim_Pitch;        // 4 bytes
 	uint8_t FireCode;       // FireCode位域 (bit0-1:FireStatus, bit2-3:CapState, bit4:HoleMode, bit5:AimMode, bit6-7:Rotate)
-	uint8_t Posture;        // 姿态: 1=进攻, 2=防御, 3=移动, 0=保留
+	uint32_t SentryCmd;     // 4 bytes - 裁判系统0x0301/0x0120 sentry_cmd，姿态在bit21-22
 	uint8_t tail;           // 0x00
-} PCRecvData_1;  // sizeof == 14 bytes
+} PCRecvData_1;  // sizeof == 17 bytes
 typedef struct PCSendData //
 {
     uint8_t start_flag;
@@ -230,6 +232,34 @@ typedef struct PCSendDataExtended
 	uint8_t crc8;
 }PCSendDataExtended_t;
 
+// TypeID 7: SentryData - 哨兵信息 (0x020D + 0x0207初速度)
+typedef struct PCSendDataSentry
+{
+	uint8_t start_flag;
+	uint8_t data_pack_type;  // = JUDGE_PC_DATA_SENTRY_DATA = 7
+	uint32_t sentry_info;          // 0x020D offset 0
+	uint16_t sentry_info_2;        // 0x020D offset 4
+	float    bullet_initial_speed; // 0x0207 offset 6 (弹丸初速度)
+	uint16_t reserved;             // 填0
+	uint8_t crc8;
+}PCSendDataSentry_t;  // sizeof == 15 bytes (1+1+12+1)
+
+// TypeID 8: BulletDataAndRfid2 - 弹量数据+RFID扩展 (0x0207+0x0208+rfid_status_2)
+typedef struct PCSendDataBulletAndRfid2
+{
+	uint8_t start_flag;
+	uint8_t data_pack_type;  // = JUDGE_PC_DATA_BULLET_DATA_AND_RFID2 = 8
+	uint8_t  bullet_type;                      // 0x0207 offset 0
+	uint8_t  shooter_number;                   // 0x0207 offset 1
+	uint8_t  launching_frequency;              // 0x0207 offset 2
+	uint16_t projectile_allowance_17mm;        // 0x0208 offset 0
+	uint16_t projectile_allowance_42mm;        // 0x0208 offset 2
+	uint16_t remaining_gold_coin;              // 0x0208 offset 4
+	uint16_t projectile_allowance_fortress;    // 0x0208 offset 6
+	uint8_t  rfid_status_2;                    // 0x0209 offset 4
+	uint8_t crc8;
+}PCSendDataBulletAndRfid2_t;  // sizeof == 15 bytes (1+1+12+1)
+
 
 #pragma pack(pop) //
 
@@ -258,6 +288,9 @@ extern ARMOR_STATE_ENUM armor_state;
 extern float pc_pitch,pc_yaw;
 extern Nav_Cmd_t NAV_cmd;
 extern uint8_t current_posture;  // 当前姿态状态: 1=进攻, 2=防御, 3=移动, 0=未知
+
+// 0x0207 shadow缓存，用于TypeID 7/8同步
+extern ext_shoot_data_t last_shoot_data;  // 上一次射击数据缓存
 
 void PCReceive(unsigned char *PCbuffer);
 void SendtoPC(uint8_t data_type);

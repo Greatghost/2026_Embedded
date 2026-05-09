@@ -1,4 +1,5 @@
 #include "can_receive.h"
+#include "GimbalSend.h"  // 添加引用以获取sentry_cmd_from_gimbal结构体
 
 void CanReceiveAll(CAN_TypeDef *can, CanRxMsg *rx_message)
 {
@@ -102,6 +103,28 @@ void CanReceiveAll(CAN_TypeDef *can, CanRxMsg *rx_message)
 //						Gimbal_msgs_Decode2();
 //            LossUpdate(&global_debugger.gimbal_comm_debugger[1], 0.0015f);
 //            break;
+        case GET_FROM_GIMBAL_SENTRY_CMD_CAN_ID:
+            // 接收云台转发的SentryCmd
+            memcpy(&sentry_cmd_from_gimbal, rx_message->Data, sizeof(SentryCmd_FromGimbal_t));
+            // 更新sentry_decision_referee (合并shadow，不清除其他位)
+            {
+                extern Sentry_decision_referee_t sentry_decision_referee;
+                uint32_t cmd = sentry_cmd_from_gimbal.sentry_cmd;
+                // posture: bit21-22
+                sentry_decision_referee.sentry_posture = (cmd >> 21) & 0x03;
+                // 其他位按协议保留，暂不处理
+                // sentry_bullet_claim: bit2-12 (累计值)
+                sentry_decision_referee.sentry_bullet_claim = (cmd >> 2) & 0x7FF;
+                // sentry_remote_bullet_claim_times: bit13-16
+                sentry_decision_referee.sentry_remote_bullet_claim_times = (cmd >> 13) & 0x0F;
+                // sentry_remote_HP_claim_times: bit17-20
+                sentry_decision_referee.sentry_remote_HP_claim_times = (cmd >> 17) & 0x0F;
+                // sentry_if_revive: bit0
+                sentry_decision_referee.sentry_if_revive = cmd & 0x01;
+                // sentry_immediate_revive: bit1
+                sentry_decision_referee.sentry_immediate_revive = (cmd >> 1) & 0x01;
+            }
+            break;
         default:
             break;
         }

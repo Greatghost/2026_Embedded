@@ -145,8 +145,8 @@ void PCReceive(unsigned char *PCbuffer)
 	// }
     LossUpdate(&global_debugger.pc_receive_debugger, 0.02);
 
-    // 校验帧头和帧尾，长度为14字节
-    if(PCbuffer[0] == '!' && PCbuffer[13] == 0x00)
+    // 校验帧头和帧尾，长度为17字节
+    if(PCbuffer[0] == '!' && PCbuffer[16] == 0x00)
 	{
 		memcpy(&pc_recv_data_1, PCbuffer, sizeof(PCRecvData_1));
 		pc_recv_data.yaw = pc_recv_data_1.Aim_Yaw;
@@ -155,15 +155,14 @@ void PCReceive(unsigned char *PCbuffer)
 		NAV_cmd.Nav_Speed_y =  - pc_recv_data_1.Aim_v_y * 20.0f;
 		ShootState = pc_recv_data_1.FireCode & 0x03; // FireStatus: bit0-1
 		shootflg_test = ShootState;
-		//Shoot_Cmd.Friction_cmd = pc_recv_data_1.FrictionState; //暂时去掉
-		//Shoot_Cmd.Shoot_Freq_cmd = pc_recv_data_1.ShootFreqMod;
 		PC_Receive_Flag_2_Armor = 1;
-        pc_recv_data.enemy_id = 1;//暂且写死
+        pc_recv_data.enemy_id = 1;
 
-        // 处理姿态字段
-        if(pc_recv_data_1.Posture >= 1 && pc_recv_data_1.Posture <= 3)
+        // 从SentryCmd提取姿态: bit21-22, 1=进攻, 2=防御, 3=移动
+        uint8_t posture_from_cmd = (pc_recv_data_1.SentryCmd >> 21) & 0x03;
+        if(posture_from_cmd >= 1 && posture_from_cmd <= 3)
         {
-            UpdateSentryPosture(pc_recv_data_1.Posture);
+            UpdateSentryPosture(posture_from_cmd);
         }
 	}
 }

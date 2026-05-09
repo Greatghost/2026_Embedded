@@ -25,6 +25,14 @@ JudgeData_RFID_t JudgeData_RFID;
 JudgeData_position_t JudgeData_position;
 // 底盘速度数据包 全局实例
 ChassisSpeedPack_t chassis_speed_pack_send;
+// 射击数据发送包 全局实例 (TypeID 7/8)
+ShootData_ForSend_t shoot_data_send;
+// 哨兵信息发送包 全局实例 (TypeID 7)
+SentryInfo_ForSend_t sentry_info_send;
+// 弹量扩展字段发送包 全局实例 (TypeID 8)
+BulletExtended_ForSend_t bullet_extended_send;
+// 接收云台转发的SentryCmd 全局实例
+SentryCmd_FromGimbal_t sentry_cmd_from_gimbal;
 // 外部声明：超级电容控制器
 extern NingCapController cap_controller;
 // 雷达消息更新标志位
@@ -103,6 +111,116 @@ void Can2SendChassisSpeed(void)
   // 数据拷贝到CAN发送帧
   memcpy(tx_message.Data, &chassis_speed_pack_send, sizeof(ChassisSpeedPack_t));
   // CAN发送
+  CAN_Transmit(CAN2, &tx_message);
+}
+
+/**
+ * @brief 射击数据打包 (0x0207, 用于云台TypeID 7/8)
+ * @param  无
+ * @retval 无
+ */
+void ShootDataPack(void)
+{
+  shoot_data_send.bullet_type = referee_data.Shoot_Data.bullet_type;
+  shoot_data_send.shooter_id = referee_data.Shoot_Data.shooter_id;
+  shoot_data_send.bullet_freq = referee_data.Shoot_Data.bullet_freq;
+  shoot_data_send.bullet_speed = referee_data.Shoot_Data.bullet_speed;
+}
+
+/**
+ * @brief 射击数据发送（CAN2）
+ * @param  data: 射击数据指针
+ * @retval 无
+ */
+void Can2SendShootData(ShootData_ForSend_t *data)
+{
+  CanTxMsg tx_message;
+  tx_message.IDE = CAN_ID_STD;
+  tx_message.RTR = CAN_RTR_DATA;
+  tx_message.DLC = 0x08;
+  tx_message.StdId = SEND_TO_GIMBAL_SHOOT_DATA_CAN_ID;
+  memcpy(tx_message.Data, data, sizeof(ShootData_ForSend_t));
+  CAN_Transmit(CAN2, &tx_message);
+}
+
+/**
+ * @brief 哨兵信息打包 (0x020D, 用于云台TypeID 7)
+ * @param  无
+ * @retval 无
+ * @note sentry_info和sentry_info_2来自裁判系统0x020D
+ */
+void SentryInfoPack(void)
+{
+  // 从referee_data.Sentry_info提取原始数据
+  // sentry_info_t结构体是位域，需要重新组装成原始uint32和uint16
+  uint32_t sentry_info_raw = 0;
+  uint16_t sentry_info_2_raw = 0;
+
+  // 组装sentry_info (4字节)
+  sentry_info_raw |= ((uint32_t)referee_data.Sentry_info.sentry_bullet_claimed & 0x7FF);
+  sentry_info_raw |= ((uint32_t)referee_data.Sentry_info.sentry_remote_bullet_times & 0xF) << 11;
+  sentry_info_raw |= ((uint32_t)referee_data.Sentry_info.sentry_remote_hp_times & 0xF) << 15;
+  sentry_info_raw |= ((uint32_t)referee_data.Sentry_info.sentry_can_free_revive & 0x1) << 19;
+  sentry_info_raw |= ((uint32_t)referee_data.Sentry_info.sentry_can_instant_revive & 0x1) << 20;
+  sentry_info_raw |= ((uint32_t)referee_data.Sentry_info.sentry_instant_revive_cost & 0x3FF) << 21;
+  sentry_info_raw |= ((uint32_t)referee_data.Sentry_info.sentry_reserved & 0x1) << 31;
+
+  // 组装sentry_info_2 (2字节)
+  sentry_info_2_raw |= ((uint16_t)referee_data.Sentry_info.sentry_disengaged & 0x1);
+  sentry_info_2_raw |= ((uint16_t)referee_data.Sentry_info.team_17mm_bullet_remaining & 0x7FF) << 1;
+  sentry_info_2_raw |= ((uint16_t)referee_data.Sentry_info.sentry_posture & 0x3) << 12;
+  sentry_info_2_raw |= ((uint16_t)referee_data.Sentry_info.rune_can_activate & 0x1) << 14;
+  sentry_info_2_raw |= ((uint16_t)referee_data.Sentry_info.sentry_reserved2 & 0x1) << 15;
+
+  sentry_info_send.sentry_info = sentry_info_raw;
+  sentry_info_send.sentry_info_2 = sentry_info_2_raw;
+  sentry_info_send.reserve[0] = 0;
+  sentry_info_send.reserve[1] = 0;
+}
+
+/**
+ * @brief 哨兵信息发送（CAN2）
+ * @param  data: 哨兵信息指针
+ * @retval 无
+ */
+void Can2SendSentryInfo(SentryInfo_ForSend_t *data)
+{
+  CanTxMsg tx_message;
+  tx_message.IDE = CAN_ID_STD;
+  tx_message.RTR = CAN_RTR_DATA;
+  tx_message.DLC = 0x08;
+  tx_message.StdId = SEND_TO_GIMBAL_SENTRY_INFO_CAN_ID;
+  memcpy(tx_message.Data, data, sizeof(SentryInfo_ForSend_t));
+  CAN_Transmit(CAN2, &tx_message);
+}
+
+/**
+ * @brief 弹量扩展字段打包 (0x0208扩展 + rfid_status_2, 用于云台TypeID 8)
+ * @param  无
+ * @retval 无
+ */
+void BulletExtendedPack(void)
+{
+  bullet_extended_send.projectile_allowance_42mm = referee_data.Bullet_Remaining.bullet_remaining_num_42mm;
+  bullet_extended_send.remaining_gold_coin = referee_data.Bullet_Remaining.coin_remaining_num;
+  bullet_extended_send.projectile_allowance_fortress = referee_data.Bullet_Remaining.projectile_allowance_fortress;
+  bullet_extended_send.rfid_status_2 = referee_data.rfid_status.rfid_status_2;
+  bullet_extended_send.reserve = 0;
+}
+
+/**
+ * @brief 弹量扩展字段发送（CAN2）
+ * @param  data: 弹量扩展数据指针
+ * @retval 无
+ */
+void Can2SendBulletExtended(BulletExtended_ForSend_t *data)
+{
+  CanTxMsg tx_message;
+  tx_message.IDE = CAN_ID_STD;
+  tx_message.RTR = CAN_RTR_DATA;
+  tx_message.DLC = 0x08;
+  tx_message.StdId = SEND_TO_GIMBAL_BULLET_EXTENDED_CAN_ID;
+  memcpy(tx_message.Data, data, sizeof(BulletExtended_ForSend_t));
   CAN_Transmit(CAN2, &tx_message);
 }
 
@@ -481,6 +599,24 @@ void JudgeDataCanSend(void)
   // 50Hz 发送底盘速度数据
   if (send_count % 10 == 2)
     Can2SendChassisSpeed();
+  // 10Hz 发送射击数据 (TypeID 7/8需要)
+  if (send_count % 20 == 5)
+  {
+    ShootDataPack();
+    Can2SendShootData(&shoot_data_send);
+  }
+  // 10Hz 发送哨兵信息 (TypeID 7需要)
+  if (send_count % 20 == 10)
+  {
+    SentryInfoPack();
+    Can2SendSentryInfo(&sentry_info_send);
+  }
+  // 10Hz 发送弹量扩展字段 (TypeID 8需要)
+  if (send_count % 20 == 15)
+  {
+    BulletExtendedPack();
+    Can2SendBulletExtended(&bullet_extended_send);
+  }
   // 计数器溢出重置
   if (send_count == 3000)
   {

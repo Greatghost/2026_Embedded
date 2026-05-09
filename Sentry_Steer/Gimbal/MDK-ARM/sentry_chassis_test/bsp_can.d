@@ -108,3 +108,11 @@ sentry_chassis_test\bsp_can.o: ../application/inc/ToggleBullet.h
 sentry_chassis_test\bsp_can.o: ../config/toggle_config.h
 sentry_chassis_test\bsp_can.o: ../application/inc/ChassisGet.h
 sentry_chassis_test\bsp_can.o: ../config/receive_data.h
+sentry_chassis_test\bsp_can.o: ../application/inc/pc_serial.h
+sentry_chassis_test\bsp_can.o: ../components/algorithm/inc/algorithmOfCRC.h
+sentry_chassis_test\bsp_can.o: ../Task/inc/ShootTask.h
+sentry_chassis_test\bsp_can.o: ../application/inc/ChassisSolver.h
+sentry_chassis_test\bsp_can.o: ../Task/inc/Offline_Task.h
+sentry_chassis_test\bsp_can.o: ../application/inc/pc_serial.h
+sentry_chassis_test\bsp_can.o: ../application/inc/ChassisSend.h
+sentry_chassis_test\bsp_can.o: ../application/inc/ChassisSolver.h

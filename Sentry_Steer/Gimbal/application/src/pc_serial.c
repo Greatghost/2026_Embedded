@@ -11,6 +11,7 @@
 #include "Gimbal.h"
 #include "arm_atan2_f32.h"
 #include "debug.h"
+#include "bsp_can.h"  // 新增: 引用Can1SendSentryCmd
 
 #include "SignalGenerator.h"
 
@@ -34,75 +35,57 @@ void PCReceive(unsigned char *PCbuffer)
     {
         memcpy(&pc_recv_data, PCbuffer, PC_RECVBUF_SIZE);
         PCSolve();
-    }	
-		#elif ROBOT == TIGER 
-		if (PCbuffer[0] == '!' && PCbuffer[1] == 0 && PCbuffer[8] == 0) //TODO: 判断方式可能错误
+    }
+	#elif ROBOT == TIGER
+	if (PCbuffer[0] == '!' && PCbuffer[1] == 0 && PCbuffer[8] == 0) //TODO: 判断方式可能错误
     {
         memcpy(&pc_recv_data, PCbuffer, PC_RECVBUF_SIZE);
         PCSolve();
-    }	
+    }
     #else
     if (PCbuffer[0] == '!'  && Verify_CRC16_Check_Sum(PCbuffer, PC_RECVBUF_SIZE))
     {
         memcpy(&pc_recv_data, PCbuffer, PC_RECVBUF_SIZE);
         PCSolve();
-    }	
+    }
     #endif
 }
 
-/**
- * @brief 在这里写发送数据的封装
- * @param[in] void
- */
 void SendtoPCPack(unsigned char *buff)
 {
-    // sin函数用来测试发送延时
-    // static SinFunction sin_function;
-    // static int8_t is_init = 0;
-    // if (!is_init)
-    // {
-    //     SinInit(&sin_function, 80, 10, 1000);
-    //     is_init = 1;
-    // }
-	
-		volatile unsigned char aim_press_r = remote_controller.dji_remote.mouse.press_r;
-        #if ROBOT == QI_TIAN_DA_SHENG
-        pc_send_data.start_flag = '!';
-        pc_send_data.type_id = 0;
-        pc_send_data.yaw = gimbal_controller.gyro_yaw_angle;
-        pc_send_data.pitch = (short)gimbal_controller.gyro_pitch_angle * 100;
-        pc_send_data.crc8 = 0;
-        #else
-		if(remote_controller.gimbal_action == GIMBAL_BIG_BUFF_MODE)
-			pc_send_data.mode_want = 1;
-		else if(remote_controller.gimbal_action == GIMBAL_SMALL_BUFF_MODE)
-			pc_send_data.mode_want = 2;
-		else
-			pc_send_data.mode_want = 0;
-		
-		pc_send_data.start_flag = '!';
-		pc_send_data.pitch_now = gimbal_controller.gyro_pitch_angle;
-		pc_send_data.yaw_now = gimbal_controller.gyro_yaw_angle;
-		pc_send_data.roll_now = 0.0f;
-		pc_send_data.actual_bullet_speed = 0.0f;
-		pc_send_data.aim_request = aim_press_r;
-		pc_send_data.number_want = 0;
-		pc_send_data.enemy_color = !chassis_pack_get_1.robot_color;
-		Append_CRC16_Check_Sum((uint8_t *)(&pc_send_data), PC_SENDBUF_SIZE);
-        #endif
-		
-		memcpy(buff, (void *)&pc_send_data, PC_SENDBUF_SIZE);
+	volatile unsigned char aim_press_r = remote_controller.dji_remote.mouse.press_r;
+    #if ROBOT == QI_TIAN_DA_SHENG
+    pc_send_data.start_flag = '!';
+    pc_send_data.type_id = 0;
+    pc_send_data.yaw = gimbal_controller.gyro_yaw_angle;
+    pc_send_data.pitch = (short)gimbal_controller.gyro_pitch_angle * 100;
+    pc_send_data.crc8 = 0;
+    #else
+	if(remote_controller.gimbal_action == GIMBAL_BIG_BUFF_MODE)
+		pc_send_data.mode_want = 1;
+	else if(remote_controller.gimbal_action == GIMBAL_SMALL_BUFF_MODE)
+		pc_send_data.mode_want = 2;
+	else
+		pc_send_data.mode_want = 0;
+
+	pc_send_data.start_flag = '!';
+	pc_send_data.pitch_now = gimbal_controller.gyro_pitch_angle;
+	pc_send_data.yaw_now = gimbal_controller.gyro_yaw_angle;
+	pc_send_data.roll_now = 0.0f;
+	pc_send_data.actual_bullet_speed = 0.0f;
+	pc_send_data.aim_request = aim_press_r;
+	pc_send_data.number_want = 0;
+	pc_send_data.enemy_color = !chassis_pack_get_1.robot_color;
+	Append_CRC16_Check_Sum((uint8_t *)(&pc_send_data), PC_SENDBUF_SIZE);
+    #endif
+
+	memcpy(buff, (void *)&pc_send_data, PC_SENDBUF_SIZE);
 }
 
-/**
- * @brief 发送数据调用
- * @param[in] void
- */
 void SendtoPC(void)
 {
     SendtoPCPack(SendToPC_Buff);
-
-    CDC_Transmit_FS(SendToPC_Buff, PC_SENDBUF_SIZE); // 通过USB_CDC发送
+    CDC_Transmit_FS(SendToPC_Buff, PC_SENDBUF_SIZE);
 }
 
 #endif
@@ -112,7 +95,6 @@ void SendtoPC(void)
 unsigned char PCbuffer[PC_RECVBUF_SIZE];
 unsigned char SendToPC_Buff[PC_SENDBUF_SIZE];
 
-//PCRecvData pc_recv_data;
 PCRecvData_1 pc_recv_data_1;
 PCSendData pc_send_data;
 PCSendDataJudge PC_send_data_judge;
@@ -123,11 +105,10 @@ float pc_pitch,pc_yaw;
 uint8_t PC_Shoot_flag;
 uint8_t last_shoot_flag;
 Nav_Cmd_t NAV_cmd;
-uint8_t current_posture = 0;  // 当前姿态状态: 1=进攻, 2=防御, 3=移动, 0=未知
+uint8_t current_posture = 0;
 extern BigYawController big_yaw_controller;
 
 PC_StateControl PC_statecontrol;
-
 
 extern Shoot_Cmd_t Shoot_Cmd;
 JudgeData_1_t JudgeRecieveData;
@@ -137,11 +118,14 @@ JudgeData_Buff_t JudgeData_Buff;
 JudgeData_RFID_t JudgeData_RFID;
 JudgeData_position_t JudgeData_position;
 PCSendDataRFIDAndBuff_t PCSendDataRFIDAndBuff;
-PCSendDataPosition_t PCSendPosition;//发送到PC
+PCSendDataPosition_t PCSendPosition;
 PCSendDataExtended_t PCSendExtended;
+PCSendDataSentry_t PCSendSentry;
+PCSendDataBulletAndRfid2_t PCSendBulletAndRfid2;
+
+ext_shoot_data_t last_shoot_data;
 
 extern ChassisGetPack_1 chassis_pack_get_1;
-//extern pc_offline_check_t pc_offline_check;
 char PC_Receive_Flag_2_Armor = 0;
 
 int shootflg_test = 0;
@@ -150,79 +134,31 @@ int shootflg_test = 0;
 void PCReceive(unsigned char *PCbuffer)
 {
 	LossUpdate(&global_debugger.pc_receive_debugger, 0.02);
-//	switch(pc_offline_check.pc_offline_check_type)
-//	{
-//		case OFFLINE_START:
-//			pc_offline_check.pc_offline_check_type = OFFLINE_CHECKING;
-//			break;
-//		case OFFLINE_CHECKING:
-//			pc_offline_check.pc_offline_check_num = 0;
-//			break;
-//		case OFFLINE_PENDING:
-//			pc_offline_check.pc_offline_check_type = OFFLINE_CHECKING;
-//			pc_offline_check.pc_offline_check_num = 0;
-//			break;
-//	}
-    // if(PCbuffer[0] == '!' )
-	// {
-	// 	memcpy(&pc_recv_data,PCbuffer,PC_RECVBUF_SIZE);
-	// 	pc_yaw = pc_recv_data.Aim_Yaw;		
-	// 	pc_pitch = (pc_recv_data.Aim_Pitch/100.0f);
-	// 	NAV_cmd.Nav_Speed_x =  pc_recv_data.Aim_v_x*20.0f;//Aim_v_x是
-	// 	NAV_cmd.Nav_Speed_y =  - pc_recv_data.Aim_v_y*20.0f;
-	// 	Shoot_Cmd.Shoot_State = pc_recv_data.FireState;
-	// 	shootflg_test = Shoot_Cmd.Shoot_State;
-	// 	Shoot_Cmd.Friction_cmd = pc_recv_data.FrictionState;
-	// 	Shoot_Cmd.Shoot_Freq_cmd = pc_recv_data.ShootFreqMod;
-	// 	PC_Receive_Flag_2_Armor = 1;
-	// }
 	if(PCbuffer[0] == '!' )
 	{
 		memcpy(&pc_recv_data_1,PCbuffer,PC_RECVBUF_SIZE);
-		// unsigned char *data_buffer = (unsigned char *)&pc_recv_data_1;
-		// unsigned int data_length = PC_RECVBUF_SIZE;  // 包含 CRC 字段的总长度
-
-		// // 验证 CRC8 校验和
-		// unsigned int crc_valid = Verify_CRC8_Check_Sum(data_buffer, data_length);
-
-		// if (crc_valid) {  // 校验通过，处理数据
-		// 	pc_yaw = pc_recv_data_1.Aim_Yaw;
-		// 	pc_pitch = pc_recv_data_1.Aim_Pitch;
-		// 	NAV_cmd.Nav_Speed_x = pc_recv_data_1.Aim_v_x / 50.0f;
-		// 	NAV_cmd.Nav_Speed_y = pc_recv_data_1.Aim_v_y / 50.0f;
-		// 	Shoot_Cmd.Shoot_State = pc_recv_data_1.FireState;
-		// 	PC_statecontrol.CapState = pc_recv_data_1.CapState;
-		// 	PC_statecontrol.RotateState = pc_recv_data_1.RotateFreqMod;
-		// 	PC_statecontrol.if_through_hole = pc_recv_data_1.if_through_hole;
-		// 	big_yaw_controller.big_yaw_mode = pc_recv_data_1.if_target_in_view;
-		// }
-		// 暂时先不校验
 		pc_yaw = pc_recv_data_1.Aim_Yaw;
 		pc_pitch = pc_recv_data_1.Aim_Pitch;
-		NAV_cmd.Nav_Speed_x =  pc_recv_data_1.Aim_v_x/50.0f;//Aim_v_x是乘了50倍
+		NAV_cmd.Nav_Speed_x =  pc_recv_data_1.Aim_v_x/50.0f;
 		NAV_cmd.Nav_Speed_y =  pc_recv_data_1.Aim_v_y/50.0f;
-		// FireCode解析: bit0-1=FireStatus, bit2-3=CapState, bit4=HoleMode, bit5=AimMode, bit6-7=Rotate
-		Shoot_Cmd.Shoot_State = pc_recv_data_1.FireCode & 0x03;  // bit0-1
-		PC_statecontrol.CapState = (pc_recv_data_1.FireCode >> 2) & 0x03;  // bit2-3
-		PC_statecontrol.if_through_hole = (pc_recv_data_1.FireCode >> 4) & 0x01;  // bit4
-		big_yaw_controller.big_yaw_mode = (pc_recv_data_1.FireCode >> 5) & 0x01;  // bit5
-		PC_statecontrol.RotateState = (pc_recv_data_1.FireCode >> 6) & 0x03;  // bit6-7
+		Shoot_Cmd.Shoot_State = pc_recv_data_1.FireCode & 0x03;
+		PC_statecontrol.CapState = (pc_recv_data_1.FireCode >> 2) & 0x03;
+		PC_statecontrol.if_through_hole = (pc_recv_data_1.FireCode >> 4) & 0x01;
+		big_yaw_controller.big_yaw_mode = (pc_recv_data_1.FireCode >> 5) & 0x01;
+		PC_statecontrol.RotateState = (pc_recv_data_1.FireCode >> 6) & 0x03;
 
-		// 处理姿态字段: 1=进攻, 2=防御, 3=移动, 0=保留
-		if(pc_recv_data_1.Posture >= 1 && pc_recv_data_1.Posture <= 3)
+		uint8_t posture_from_cmd = (pc_recv_data_1.SentryCmd >> 21) & 0x03;
+		if(posture_from_cmd >= 1 && posture_from_cmd <= 3)
 		{
-			current_posture = pc_recv_data_1.Posture;
+			current_posture = posture_from_cmd;
 		}
 
+		// 新增: 转发SentryCmd给底盘 (2026-05-06协议)
+		Can1SendSentryCmd(pc_recv_data_1.SentryCmd);
 	}
 }
 
-/**
- * @brief ������д�������ݵķ�װ
- * @param[in] void
- */
-
-extern int ShootCount_Number;//��������ӵ���
+extern int ShootCount_Number;
 
 void SendtoPCPack(unsigned char *buff)
 {
@@ -234,11 +170,9 @@ void SendtoPCPack(unsigned char *buff)
     pc_send_data.yaw = gimbal_controller.gyro_yaw_angle;
 	pc_send_data.Cap_Vol = chassis_pack_get_1.half_CapVol * 2;
 	pc_send_data.crc8 = 0;
-    Append_CRC8_Check_Sum((unsigned char *)&pc_send_data, PC_SENDBUF_SIZE);//所有的buffersize是一样的
+    Append_CRC8_Check_Sum((unsigned char *)&pc_send_data, PC_SENDBUF_SIZE);
     memcpy(buff, (void *)&pc_send_data, PC_SENDBUF_SIZE);
 }
-
-//char buff_test[PC_SENDBUF_SIZE];
 
 void Send2PCJudge(unsigned char* buff)
 {
@@ -250,45 +184,40 @@ void Send2PCJudge(unsigned char* buff)
 	PC_send_data_judge.is_game_start = JudgeRecieveData.is_game_start;
 	PC_send_data_judge.Robot_Red_Blue = JudgeRecieveData.Robot_Red_Blue;
 	PC_send_data_judge.self_outpost = JudgeRecieveData.self_outpost;
-	PC_send_data_judge.reserve_1bit = 0;  // 不再发送sentry_posture，移至EXTENDED包
+	PC_send_data_judge.reserve_1bit = 0;
 	PC_send_data_judge.stage_remain_time = JudgeRecieveData.stage_remain_time*2;
 	PC_send_data_judge.event_data = JudgeData_RFID.event_data;
 	PC_send_data_judge.Heat_update = 0;
-	PC_send_data_judge.crc8 = 0;	
+	PC_send_data_judge.crc8 = 0;
 	Append_CRC8_Check_Sum((unsigned char *)&PC_send_data_judge, PC_SENDBUF_SIZE);
 	memcpy(buff, (void *)&PC_send_data_judge, PC_SENDBUF_SIZE);
-	//memcpy(buff_test, (void *)&PC_send_data_judge, PC_SENDBUF_SIZE);
 }
 
 void SendtoPCBlood_1(unsigned char* buff)
 {
-	pc_send_data_blood_1.start_flag = '!';  // 
-    pc_send_data_blood_1.data_pack_type = JUDGE_PC_DATA_BLOOD_1;  // 2
-
-    pc_send_data_blood_1.Friend1 = JudgeBlood_F.ID1 * 10;//hero
-    pc_send_data_blood_1.Friend2 = JudgeBlood_F.ID2 * 10;//engineer
-    pc_send_data_blood_1.Friend3 = JudgeBlood_F.ID3 * 10;//infantry
-    pc_send_data_blood_1.Friend4 = JudgeBlood_F.ID4 * 10;//infantry
-    pc_send_data_blood_1.F_base = JudgeBlood_F.ID8 * 100;//base
-    pc_send_data_blood_1.self7 = JudgeBlood_F.ID7 * 10;//sentry
-    
+	pc_send_data_blood_1.start_flag = '!';
+    pc_send_data_blood_1.data_pack_type = JUDGE_PC_DATA_BLOOD_1;
+    pc_send_data_blood_1.Friend1 = JudgeBlood_F.ID1 * 10;
+    pc_send_data_blood_1.Friend2 = JudgeBlood_F.ID2 * 10;
+    pc_send_data_blood_1.Friend3 = JudgeBlood_F.ID3 * 10;
+    pc_send_data_blood_1.Friend4 = JudgeBlood_F.ID4 * 10;
+    pc_send_data_blood_1.F_base = JudgeBlood_F.ID8 * 100;
+    pc_send_data_blood_1.self7 = JudgeBlood_F.ID7 * 10;
 	pc_send_data_blood_1.crc8 = 0;
 	Append_CRC8_Check_Sum((unsigned char *)&pc_send_data_blood_1, PC_SENDBUF_SIZE);
 	memcpy(buff, (void *)&pc_send_data_blood_1, PC_SEND_BLOOD_SIZE);
-
 }
+
 void SendtoPCBlood_2(unsigned char* buff)
 {
-	pc_send_data_blood_2.start_flag = '!';  // 
-    pc_send_data_blood_2.data_pack_type = JUDGE_PC_DATA_BLOOD_2;  // 3
-
+	pc_send_data_blood_2.start_flag = '!';
+    pc_send_data_blood_2.data_pack_type = JUDGE_PC_DATA_BLOOD_2;
 	pc_send_data_blood_2.Enemy1 = JudgeBlood_E.ID1 * 10;
     pc_send_data_blood_2.Enemy2 = JudgeBlood_E.ID2 * 10;
     pc_send_data_blood_2.Enemy3 = JudgeBlood_E.ID3 * 10;
     pc_send_data_blood_2.Enemy4 = JudgeBlood_E.ID4 * 10;
     pc_send_data_blood_2.E_base = JudgeBlood_E.ID8 * 10;
     pc_send_data_blood_2.Enemy7 = JudgeBlood_E.ID7 * 10;
-
 	pc_send_data_blood_2.crc8 = 0;
 	Append_CRC8_Check_Sum((unsigned char *)&pc_send_data_blood_2, PC_SENDBUF_SIZE);
 	memcpy(buff, (void *)&pc_send_data_blood_2, PC_SEND_BLOOD_SIZE);
@@ -306,58 +235,76 @@ void SendtoPCRFIDAndBuff(unsigned char* buff)
 }
 
 void SendtoPCPos(unsigned char* buff)
-{ 
+{
 	static uint8_t count = 0;
 	if(count!=0 && count!=5 && count!=6)
 	{
-	PCSendPosition.start_flag = '!';
-	PCSendPosition.data_pack_type = JUDGE_PC_DATA_POS;
-	PCSendPosition.Friend.position_type = JudgeData_position.Friend[count].position_type;
-	PCSendPosition.Friend.ID_X_100 = JudgeData_position.Friend[count].ID_X_100;
-	PCSendPosition.Friend.ID_Y_100 = JudgeData_position.Friend[count].ID_Y_100;
-	PCSendPosition.Enemy.position_type = JudgeData_position.Enemy[count].position_type;
-	PCSendPosition.Enemy.ID_X_100 = JudgeData_position.Enemy[count].ID_X_100;
-	PCSendPosition.Enemy.ID_Y_100 = JudgeData_position.Enemy[count].ID_Y_100;
-	PCSendPosition.bullet_speed_100 = chassis_pack_get_1.bullet_speed;
-	PCSendPosition.crc8 = 0;
-	Append_CRC8_Check_Sum((unsigned char *)&PCSendPosition, PC_SEND_BLOOD_SIZE);
-	memcpy(buff, (void *)&PCSendPosition, PC_SEND_BLOOD_SIZE);
+		PCSendPosition.start_flag = '!';
+		PCSendPosition.data_pack_type = JUDGE_PC_DATA_POS;
+		PCSendPosition.Friend.position_type = JudgeData_position.Friend[count].position_type;
+		PCSendPosition.Friend.ID_X_100 = JudgeData_position.Friend[count].ID_X_100;
+		PCSendPosition.Friend.ID_Y_100 = JudgeData_position.Friend[count].ID_Y_100;
+		PCSendPosition.Enemy.position_type = JudgeData_position.Enemy[count].position_type;
+		PCSendPosition.Enemy.ID_X_100 = JudgeData_position.Enemy[count].ID_X_100;
+		PCSendPosition.Enemy.ID_Y_100 = JudgeData_position.Enemy[count].ID_Y_100;
+		PCSendPosition.bullet_speed_100 = chassis_pack_get_1.bullet_speed;
+		PCSendPosition.crc8 = 0;
+		Append_CRC8_Check_Sum((unsigned char *)&PCSendPosition, PC_SEND_BLOOD_SIZE);
+		memcpy(buff, (void *)&PCSendPosition, PC_SEND_BLOOD_SIZE);
 	}
-	
 	count++;
-	if(count >= 8) count = 0;//循环发送
+	if(count >= 8) count = 0;
 }
 
 void SendtoPCExtend(unsigned char* buff)
 {
 	PCSendExtended.start_flag = '!';
-	PCSendExtended.data_pack_type = JUDGE_PC_DATA_EXTENDED;//6
-
+	PCSendExtended.data_pack_type = JUDGE_PC_DATA_EXTENDED;
 	PCSendExtended.UWB_yaw_10 = JudgeRecieveData2.yaw_10;
-	PCSendExtended.sentry_posture = JudgeRecieveData.sentry_posture;  // 哨兵姿态: 1=进攻, 2=防御, 3=移动, 0=未知
+	PCSendExtended.sentry_posture = JudgeRecieveData.sentry_posture;
 	PCSendExtended.reserve_8 = 0;
-	// gimbal_vel_data1: 小YAW相对于小YAW电机零点的偏差角度 + 底盘w速度
-		// byte0+byte1: 小YAW相对于电机零点偏差角度 * 10 (int16), 单位0.1度
-		// byte2+byte3: 底盘角速度 * 100 (int16), 单位0.01 rad/s
-		int16_t small_yaw_offset_angle_10 = (int16_t)(big_yaw_controller.big_yaw_gyro_bias * 10.0f);
-		PCSendExtended.gimbal_vel_data1 = ((uint32_t)(small_yaw_offset_angle_10 & 0xFFFF)) | ((uint32_t)(chassis_speed_recv.chassis_yaw_v_100 & 0xFFFF) << 16);
-
-		// 底盘速度数据回传到gimbal_vel_data字段（通过舵电机角度与轮电机速度反解）
-		// byte0+byte1: 底盘x方向速度 (int16) = chassis_x_v_100, 单位0.01 m/s
-		// byte2+byte3: 底盘y方向速度 (int16) = chassis_y_v_100, 单位0.01 m/s
-		// 注：原gimbal_vel_data字段改为存储底盘速度数据
-		PCSendExtended.gimbal_vel_data2 = ((uint32_t)(chassis_speed_recv.chassis_x_v_100 & 0xFFFF)) | ((uint32_t)(chassis_speed_recv.chassis_y_v_100 & 0xFFFF) << 16);
-
+	int16_t small_yaw_offset_angle_10 = (int16_t)(big_yaw_controller.big_yaw_gyro_bias * 10.0f);
+	PCSendExtended.gimbal_vel_data1 = ((uint32_t)(small_yaw_offset_angle_10 & 0xFFFF)) | ((uint32_t)(chassis_speed_recv.chassis_yaw_v_100 & 0xFFFF) << 16);
+	PCSendExtended.gimbal_vel_data2 = ((uint32_t)(chassis_speed_recv.chassis_x_v_100 & 0xFFFF)) | ((uint32_t)(chassis_speed_recv.chassis_y_v_100 & 0xFFFF) << 16);
 	PCSendExtended.crc8 = 0;
-	Append_CRC8_Check_Sum((unsigned char *)&PCSendExtended, PC_SEND_BLOOD_SIZE);//size == 12byte
+	Append_CRC8_Check_Sum((unsigned char *)&PCSendExtended, PC_SEND_BLOOD_SIZE);
 	memcpy(buff, (void *)&PCSendExtended, PC_SEND_BLOOD_SIZE);
-
 }
 
-/**
- * @brief �������ݵ���
- * @param[in] void
- */
+// TypeID 7: 发送哨兵信息 (0x020D + 0x0207初速度)
+void SendtoPCSentry(unsigned char* buff)
+{
+	extern SentryInfoRecv_t sentry_info_recv;  // 来自底盘的哨兵信息
+	PCSendSentry.start_flag = '!';
+	PCSendSentry.data_pack_type = JUDGE_PC_DATA_SENTRY_DATA;
+	PCSendSentry.sentry_info = sentry_info_recv.sentry_info;       // 来自底盘CAN 0x09C
+	PCSendSentry.sentry_info_2 = sentry_info_recv.sentry_info_2;   // 来自底盘CAN 0x09C
+	PCSendSentry.bullet_initial_speed = last_shoot_data.bullet_speed;  // 来自底盘CAN 0x09B
+	PCSendSentry.reserved = 0;
+	PCSendSentry.crc8 = 0;
+	Append_CRC8_Check_Sum((unsigned char *)&PCSendSentry, PC_SEND_BLOOD_SIZE);
+	memcpy(buff, (void *)&PCSendSentry, PC_SEND_BLOOD_SIZE);
+}
+
+// TypeID 8: 发送弹量数据+RFID扩展
+void SendtoPCBulletAndRfid2(unsigned char* buff)
+{
+	extern BulletExtendedRecv_t bullet_extended_recv;  // 来自底盘的弹量扩展数据
+	PCSendBulletAndRfid2.start_flag = '!';
+	PCSendBulletAndRfid2.data_pack_type = JUDGE_PC_DATA_BULLET_DATA_AND_RFID2;
+	PCSendBulletAndRfid2.bullet_type = last_shoot_data.bullet_type;
+	PCSendBulletAndRfid2.shooter_number = last_shoot_data.shooter_id;
+	PCSendBulletAndRfid2.launching_frequency = last_shoot_data.bullet_freq;
+	PCSendBulletAndRfid2.projectile_allowance_17mm = JudgeRecieveData.bullet_remaining_num_17mm;
+	PCSendBulletAndRfid2.projectile_allowance_42mm = bullet_extended_recv.projectile_allowance_42mm;     // 来自底盘CAN 0x09D
+	PCSendBulletAndRfid2.remaining_gold_coin = bullet_extended_recv.remaining_gold_coin;                 // 来自底盘CAN 0x09D
+	PCSendBulletAndRfid2.projectile_allowance_fortress = bullet_extended_recv.projectile_allowance_fortress; // 来自底盘CAN 0x09D
+	PCSendBulletAndRfid2.rfid_status_2 = bullet_extended_recv.rfid_status_2;                             // 来自底盘CAN 0x09D
+	PCSendBulletAndRfid2.crc8 = 0;
+	Append_CRC8_Check_Sum((unsigned char *)&PCSendBulletAndRfid2, PC_SEND_BLOOD_SIZE);
+	memcpy(buff, (void *)&PCSendBulletAndRfid2, PC_SEND_BLOOD_SIZE);
+}
+
 void SendtoPC(uint8_t data_type)
 {
 	if(data_type == USUAL_PC_DATA)
@@ -387,6 +334,14 @@ void SendtoPC(uint8_t data_type)
 	else if(data_type == JUDGE_PC_DATA_EXTENDED)
 	{
 		SendtoPCExtend(SendToPC_Buff);
+	}
+	else if(data_type == JUDGE_PC_DATA_SENTRY_DATA)
+	{
+		SendtoPCSentry(SendToPC_Buff);
+	}
+	else if(data_type == JUDGE_PC_DATA_BULLET_DATA_AND_RFID2)
+	{
+		SendtoPCBulletAndRfid2(SendToPC_Buff);
 	}
 	CDC_Transmit_FS(SendToPC_Buff,PC_SENDBUF_SIZE);
 }

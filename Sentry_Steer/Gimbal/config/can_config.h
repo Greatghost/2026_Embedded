@@ -45,6 +45,12 @@
 #define SEND_TO_GIMBAL_RFID_AND_BUFF_DATA_CAN_ID 0x098
 #define SEND_TO_GIMBAL_POSITION_DATA_CAN_ID 0x099
 #define GET_CHASSIS_SPEED_CAN_ID 0x09A  // 接收底盘速度数据CAN ID
+// 新增: TypeID 7/8上行数据所需CAN ID (2026-05-06协议)
+#define GET_SHOOT_DATA_CAN_ID 0x09B           // 接收底盘射击数据(0x0207)
+#define GET_SENTRY_INFO_CAN_ID 0x09C          // 接收哨兵信息(0x020D)
+#define GET_BULLET_EXTENDED_CAN_ID 0x09D      // 接收弹量扩展字段(0x0208扩展)
+// 新增: 发送SentryCmd给底盘
+#define SEND_TO_CHASSIS_SENTRY_CMD_CAN_ID 0x15A  // 发送SentryCmd给底盘
 #define CHASSIS_CAN_COMM_CAN_Handlerx hcan1
 #define CHASSIS_CAN_COMM_CANx CAN1
 
@@ -113,6 +119,12 @@
 #define SEND_TO_GIMBAL_RFID_AND_BUFF_DATA_CAN_ID 0x098
 #define SEND_TO_GIMBAL_POSITION_DATA_CAN_ID 0x099
 #define GET_CHASSIS_SPEED_CAN_ID 0x09A  // 接收底盘速度数据CAN ID
+// 新增: TypeID 7/8上行数据所需CAN ID (2026-05-06协议)
+#define GET_SHOOT_DATA_CAN_ID 0x09B           // 接收底盘射击数据(0x0207)
+#define GET_SENTRY_INFO_CAN_ID 0x09C          // 接收哨兵信息(0x020D)
+#define GET_BULLET_EXTENDED_CAN_ID 0x09D      // 接收弹量扩展字段(0x0208扩展)
+// 新增: 发送SentryCmd给底盘
+#define SEND_TO_CHASSIS_SENTRY_CMD_CAN_ID 0x15A  // 发送SentryCmd给底盘
 #define CHASSIS_CAN_COMM_CAN_Handlerx hcan1
 #define CHASSIS_CAN_COMM_CANx CAN1
 

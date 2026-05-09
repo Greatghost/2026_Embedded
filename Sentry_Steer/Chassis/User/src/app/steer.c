@@ -231,17 +231,17 @@ void steer_chassis_control(void)
                 direction_offset = 90.0f;
             // CHASSIS_FRONT: direction_offset = 0.0f
 
-            infantry.robot_vector.angle = direction_offset + R2DEG_RATIO * atan2f(infantry.target_x_v, infantry.target_y_v) + GIMBAL_MOTOR_SIGN * infantry.error_angle * R2DEG_RATIO;
+            // 角度基准：从y正方向（向前）开始，0°=向前，90°=向右
+            // atan2f(y, x) 给出相对于x轴的角度，需要交换参数使其相对于y轴
+            infantry.robot_vector.angle = direction_offset + R2DEG_RATIO * atan2f(infantry.target_y_v, infantry.target_x_v) + GIMBAL_MOTOR_SIGN * infantry.error_angle * R2DEG_RATIO;
 
             arm_sqrt_f32(infantry.target_y_v * infantry.target_y_v + infantry.target_x_v * infantry.target_x_v, &infantry.robot_vector.module); // 计算速度模值
         }
         else
         {
             /*计算平动向量的速度模值m/s、方向degree*/
-            // 因为速度跟随有跟随方向，所以这里不用加180度
-            // float new_vector_angle = R2DEG_RATIO * atan2f(infantry.set_x_v, infantry.set_y_v) + GIMBAL_MOTOR_SIGN * infantry.error_angle * R2DEG_RATIO;
-            // iir(&infantry.robot_vector.angle, new_vector_angle, 0.95); // 过一个低通
-            infantry.robot_vector.angle = R2DEG_RATIO * atan2f(infantry.set_x_v, infantry.set_y_v) + GIMBAL_MOTOR_SIGN * infantry.error_angle * R2DEG_RATIO;
+            // 角度基准：从y正方向（向前）开始，0°=向前，90°=向右
+            infantry.robot_vector.angle = R2DEG_RATIO * atan2f(infantry.set_y_v, infantry.set_x_v) + GIMBAL_MOTOR_SIGN * infantry.error_angle * R2DEG_RATIO;
 
             arm_sqrt_f32(infantry.set_y_v * infantry.set_y_v + infantry.set_x_v * infantry.set_x_v, &infantry.robot_vector.module); // 计算速度模值
             if (fabsf(infantry.robot_vector.module) < 0.001)
@@ -267,11 +267,14 @@ void steer_chassis_control(void)
             w_vector[STEER3].module = rotation_speed;
             w_vector[STEER4].module = rotation_speed;
             // 底盘旋转6020角度朝向赋值 degree，根据旋转方向调整角度
+            // 切线方向 = 安装位置角度 + 90°（逆时针旋转时）
+            // 安装位置：STEER1=135°(左前), STEER2=45°(右前), STEER3=-135°(左后), STEER4=-45°(右后)
+            // 逆时针旋转时切线方向：STEER1=45°, STEER2=135°, STEER3=-45°, STEER4=-135°
             float angle_offset = (infantry.target_yaw_v >= 0) ? 0.0f : 180.0f; // 反转时角度翻转180度
-            w_vector[STEER1].angle = 135.0f + angle_offset;
-            w_vector[STEER2].angle = 45.0f + angle_offset;
-            w_vector[STEER3].angle = -135.0f + angle_offset;
-            w_vector[STEER4].angle = -45.0f + angle_offset;
+            w_vector[STEER1].angle = -135.0f + angle_offset;
+            w_vector[STEER2].angle = 135.0f + angle_offset;
+            w_vector[STEER3].angle = -45.0f + angle_offset;
+            w_vector[STEER4].angle = 45.0f + angle_offset;
 
             /*执行向量加法,把转动、平动向量相加*/
             for (int u = 0; u < 4; u++)
@@ -331,8 +334,7 @@ void steer_pos_kinematics(void)
     float steer_angle_rad[4]; // 四个舵轮的物理角度
 
     // 四个舵轮yaw切线方向角度（与逆运动学w_vector.angle一致）
-    // STEER1=135°, STEER2=45°, STEER3=-135°, STEER4=-45°
-    float tangent_angle_rad[4] = {135.0f * DEG2R_RATIO, 45.0f * DEG2R_RATIO, -135.0f * DEG2R_RATIO, -45.0f * DEG2R_RATIO};
+    float tangent_angle_rad[4] = {-45.0f * DEG2R_RATIO, 45.0f * DEG2R_RATIO, -135.0f * DEG2R_RATIO, 135.0f * DEG2R_RATIO};
 
     // 第一步：计算每个轮的物理线速度和舵轮角度
     for (int i = 0; i < 4; i++)

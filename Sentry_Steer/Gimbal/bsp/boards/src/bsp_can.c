@@ -1,5 +1,7 @@
 #include "bsp_can.h"
 #include "can_send_config.h"
+#include "ChassisGet.h"  // 新增: 引用底盘数据接收结构体
+#include "pc_serial.h"   // 新增: 引用last_shoot_data
 
 /**********************************************************************************************************
  *函 数 名: can_filter_init
@@ -9,7 +11,9 @@
  **********************************************************************************************************/
 volatile uint8_t JudgeData_update = 0;
 volatile uint8_t Blood_update = 0;
- void can_filter_init(void)
+// shoot_data_recv, sentry_info_recv, bullet_extended_recv 已在ChassisGet.c中定义
+
+void can_filter_init(void)
 {
 	CAN_FilterTypeDef can_filter_st;
 	// CAN 1 FIFO0 接收中断
@@ -40,15 +44,15 @@ volatile uint8_t Blood_update = 0;
 	HAL_CAN_ConfigFilter(&hcan1, &can_filter_st);
 	HAL_CAN_Start(&hcan1);
 	HAL_CAN_ActivateNotification(&hcan1, CAN_IT_RX_FIFO1_MSG_PENDING);
-	// CAN 1 FIFO1 第二个过滤器（接收底盘速度数据）
+	// CAN 1 FIFO1 第二个过滤器（接收底盘速度数据和TypeID 7/8数据）
 	can_filter_st.FilterBank = 2;
 	can_filter_st.FilterActivation = ENABLE;
 	can_filter_st.FilterMode = CAN_FILTERMODE_IDLIST;
 	can_filter_st.FilterScale = CAN_FILTERSCALE_16BIT;
 	can_filter_st.FilterIdHigh = GET_CHASSIS_SPEED_CAN_ID << 5;
-	can_filter_st.FilterIdLow = 0x000 << 5;  // 保留
-	can_filter_st.FilterMaskIdHigh = 0x000 << 5;  // 保留
-	can_filter_st.FilterMaskIdLow = 0x000 << 5;  // 保留
+	can_filter_st.FilterIdLow = GET_SHOOT_DATA_CAN_ID << 5;  // 新增: 0x09B
+	can_filter_st.FilterMaskIdHigh = GET_SENTRY_INFO_CAN_ID << 5;  // 新增: 0x09C
+	can_filter_st.FilterMaskIdLow = GET_BULLET_EXTENDED_CAN_ID << 5;  // 新增: 0x09D
 	can_filter_st.FilterFIFOAssignment = CAN_RX_FIFO1;
 	can_filter_st.SlaveStartFilterBank = 14;
 	HAL_CAN_ConfigFilter(&hcan1, &can_filter_st);
@@ -171,14 +175,6 @@ void MotorReceive(CAN_HandleTypeDef *hcan, CAN_RxHeaderTypeDef *rx_header, uint8
 
 		LossUpdate(&global_debugger.toggle_debugger, 0.0015f);
 	}
-//    else if (hcan->Instance == BAY_MOTOR_CAN && rx_header->StdId == BAY_MOTOR_CAN_ID)
-//	{
-//		// 弹舱盖电机数据接收
-//		bomb_bay_controller.bomb_bay_recv.angle = (data[0] << 8) | (data[1]);	
-//		bomb_bay_controller.bomb_bay_recv.speed = (data[2] << 8) | (data[3]);	
-//		bomb_bay_controller.bomb_bay_recv.torque_current = (data[4] << 8) | (data[5]);
-//		LossUpdate(&global_debugger.bomb_bay_debugger, 0.0015f);
-//	}
 	else if (hcan->Instance == CHASSIS_CAN_COMM_CANx && rx_header->StdId == GET_FROM_CHASSIS_CAN_ID_1)
 	{
 		memcpy(&chassis_pack_get_1, data, 8);
@@ -194,29 +190,27 @@ void MotorReceive(CAN_HandleTypeDef *hcan, CAN_RxHeaderTypeDef *rx_header, uint8
 	{
 		memcpy(&big_yaw_controller.big_yaw_gyro_raw,data,sizeof(float));
 		memcpy(&big_yaw_controller.big_yaw_gyro_speed,data+4,sizeof(float));
-		//big_yaw_gyro_after_zerocheck = ZeroCheck(&big_yaw_gyro_zerocheck,big_yaw_gyro_raw,360.f);
-		//过零检测在大yaw的C板，这里只保留接口
 	}
 	else if (hcan->Instance == CHASSIS_CAN_COMM_CANx && rx_header->StdId == JUDGE_RECEIVE_DATA_CAN_ID_1)
-	{	
+	{
 		memcpy(&JudgeRecieveData,data,8);
 		JudgeData_update = 1;
 	}
 	else if (hcan->Instance == CHASSIS_CAN_COMM_CANx && rx_header->StdId == JUDGE_RECEIVE_DATA_CAN_ID_2)
-	{	
+	{
 		memcpy(&JudgeRecieveData2,data,8);
 	}
 	else if (hcan->Instance == CHASSIS_CAN_COMM_CANx && rx_header->StdId == SEND_TO_GIMBAL_BLOOD_DATA_CAN_ID1)
-	{		
+	{
 		if(temp_CAN_msg_type == 0x0)
-		{			
+		{
 			memcpy(&JudgeBlood_F,data,8);
 		}
 		else if(temp_CAN_msg_type == 0x1)
 		{
 			Blood_update = 1;
 			memcpy(&JudgeBlood_E,data,8);
-		}		
+		}
 	}
 	else if (hcan->Instance == CHASSIS_CAN_COMM_CANx && rx_header->StdId == SEND_TO_GIMBAL_RFID_AND_BUFF_DATA_CAN_ID)
 	{
@@ -228,7 +222,7 @@ void MotorReceive(CAN_HandleTypeDef *hcan, CAN_RxHeaderTypeDef *rx_header, uint8
 		{
 			memcpy(&JudgeData_Buff,data,8);
 		}
-		
+
 	}
 	else if (hcan->Instance == CHASSIS_CAN_COMM_CANx && rx_header->StdId == SEND_TO_GIMBAL_POSITION_DATA_CAN_ID)
 	{
@@ -239,8 +233,29 @@ void MotorReceive(CAN_HandleTypeDef *hcan, CAN_RxHeaderTypeDef *rx_header, uint8
 	}
 	else if (hcan->Instance == CHASSIS_CAN_COMM_CANx && rx_header->StdId == GET_CHASSIS_SPEED_CAN_ID)
 	{
-		// 底盘速度数据接收：通过舵电机角度和轮电机速度反解的底盘实际速度
+		// 底盘速度数据接收
 		memcpy(&chassis_speed_recv, data, sizeof(ChassisSpeedRecv_t));
+	}
+	// 新增: TypeID 7/8数据接收 (2026-05-06协议)
+	else if (hcan->Instance == CHASSIS_CAN_COMM_CANx && rx_header->StdId == GET_SHOOT_DATA_CAN_ID)
+	{
+		// 射击数据接收 (0x0207) -> 更新last_shoot_data
+		memcpy(&shoot_data_recv, data, sizeof(ShootDataRecv_t));
+		// 同步更新last_shoot_data用于TypeID 7/8上行
+		last_shoot_data.bullet_type = shoot_data_recv.bullet_type;
+		last_shoot_data.shooter_id = shoot_data_recv.shooter_id;
+		last_shoot_data.bullet_freq = shoot_data_recv.bullet_freq;
+		last_shoot_data.bullet_speed = shoot_data_recv.bullet_speed;
+	}
+	else if (hcan->Instance == CHASSIS_CAN_COMM_CANx && rx_header->StdId == GET_SENTRY_INFO_CAN_ID)
+	{
+		// 哨兵信息接收 (0x020D)
+		memcpy(&sentry_info_recv, data, sizeof(SentryInfoRecv_t));
+	}
+	else if (hcan->Instance == CHASSIS_CAN_COMM_CANx && rx_header->StdId == GET_BULLET_EXTENDED_CAN_ID)
+	{
+		// 弹量扩展字段接收 (0x0208扩展)
+		memcpy(&bullet_extended_recv, data, sizeof(BulletExtendedRecv_t));
 	}
 }
 
@@ -300,4 +315,21 @@ int8_t CanSend(CAN_HandleTypeDef *hcan, int8_t *data, uint32_t std_id, CAN_TxHea
 	}
 
 	return TRUE;
+}
+
+// 新增: 发送SentryCmd给底盘 (2026-05-06协议)
+void Can1SendSentryCmd(uint32_t sentry_cmd)
+{
+	static CAN_TxHeaderTypeDef tx_header;
+	static uint8_t send_data[8] = {0};
+	static uint32_t wait_time;
+
+	// 打包数据: 4字节sentry_cmd + 4字节填充
+	memcpy(&send_data[0], &sentry_cmd, sizeof(uint32_t));
+	send_data[4] = 0;
+	send_data[5] = 0;
+	send_data[6] = 0;
+	send_data[7] = 0;
+
+	CanSend(&hcan1, (int8_t*)send_data, SEND_TO_CHASSIS_SENTRY_CMD_CAN_ID, &tx_header, &wait_time);
 }

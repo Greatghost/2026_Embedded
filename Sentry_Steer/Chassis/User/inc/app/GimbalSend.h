@@ -99,15 +99,55 @@ typedef struct ChassisSpeedPack
 	uint8_t reserve[2];         // 保留字节
 } ChassisSpeedPack_t;
 
+// 射击数据发送包 (0x0207), 用于云台TypeID 7/8
+typedef struct ShootData_ForSend
+{
+	uint8_t  bullet_type;       // 弹丸类型：1-17mm/2-42mm
+	uint8_t  shooter_id;        // 发射机构ID：1-1号17mm/2-2号17mm/3-1号42mm
+	uint8_t  bullet_freq;       // 发射频率（发/秒）
+	float    bullet_speed;      // 弹丸初速度（m/s）
+} ShootData_ForSend_t;
+
+// 哨兵信息发送包 (0x020D), 用于云台TypeID 7
+typedef struct SentryInfo_ForSend
+{
+	uint32_t sentry_info;       // 0x020D offset 0 (4字节)
+	uint16_t sentry_info_2;     // 0x020D offset 4 (2字节)
+	uint8_t  reserve[2];        // 填充到8字节
+} SentryInfo_ForSend_t;
+
+// 弹量扩展字段发送包 (0x0208扩展), 用于云台TypeID 8
+typedef struct BulletExtended_ForSend
+{
+	uint16_t projectile_allowance_42mm;    // 42mm弹丸剩余发射数
+	uint16_t remaining_gold_coin;          // 剩余金币数量
+	uint16_t projectile_allowance_fortress; // 堡垒储备17mm允许发弹量
+	uint8_t  rfid_status_2;                // RFID状态扩展8bit (0x0209 offset 4)
+	uint8_t  reserve;                      // 填充到8字节
+} BulletExtended_ForSend_t;
+
+// 接收云台转发的SentryCmd
+typedef struct SentryCmd_FromGimbal
+{
+	uint32_t sentry_cmd;        // 32-bit命令字，对应裁判0x0120
+	uint8_t  reserve[4];        // 填充到8字节
+} SentryCmd_FromGimbal_t;
 
 
 #pragma pack(pop)
 
 extern GimbalSendPack_1 gimbal_pack_send_1;
 extern ChassisSpeedPack_t chassis_speed_pack_send;
+extern ShootData_ForSend_t shoot_data_send;
+extern SentryInfo_ForSend_t sentry_info_send;
+extern BulletExtended_ForSend_t bullet_extended_send;
+extern SentryCmd_FromGimbal_t sentry_cmd_from_gimbal;  // 接收云台转发的SentryCmd
 
 void GimbalSendPack(void);
 void JudgeDataCanSend(void);
 void ChassisSpeedPack(void);  // 底盘速度数据打包发送
+void ShootDataPack(void);     // 射击数据打包发送 (TypeID 7/8)
+void SentryInfoPack(void);    // 哨兵信息打包发送 (TypeID 7)
+void BulletExtendedPack(void); // 弹量扩展字段打包发送 (TypeID 8)
 
 #endif // !_GIMBAL_SEND_H

@@ -22,7 +22,14 @@ extern JudgeData_Buff_t JudgeData_Buff;
 extern JudgeData_RFID_t JudgeData_RFID;
 extern JudgeData_position_t JudgeData_position;
 
+// chassis_pack_get_1 和 chassis_speed_recv 已在ChassisGet.h中声明
+// shoot_data_recv, sentry_info_recv, bullet_extended_recv 已在ChassisGet.h中声明
+
 void can_filter_init(void);
 
 int8_t CanSend(CAN_HandleTypeDef *hcan, int8_t *data, uint32_t std_id, CAN_TxHeaderTypeDef *Motor_Send, uint32_t *wait_time);
+
+// 新增: 发送SentryCmd给底盘 (2026-05-06协议)
+void Can1SendSentryCmd(uint32_t sentry_cmd);
+
 #endif

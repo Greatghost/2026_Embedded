@@ -28,19 +28,39 @@ typedef struct ChassisSpeedRecv
   uint8_t reserve[2];         // 保留字节
 } ChassisSpeedRecv_t;
 
-// debug
-// typedef struct ChassisGetPack_2
-// {
-//   // uint16_t bullet_speed;
-//   uint8_t jump_state; // 跳跃状态
-//   uint16_t tof_dis;   // tof距离
-//   short speed;        // 速度
-// } ChassisGetPack_2;
+// 射击数据接收结构 (0x0207, CAN ID 0x09B)
+typedef struct ShootDataRecv
+{
+  uint8_t  bullet_type;       // 弹丸类型：1-17mm/2-42mm
+  uint8_t  shooter_id;        // 发射机构ID：1-1号17mm/2-2号17mm/3-1号42mm
+  uint8_t  bullet_freq;       // 发射频率（发/秒）
+  float    bullet_speed;      // 弹丸初速度（m/s）
+} ShootDataRecv_t;
+
+// 哨兵信息接收结构 (0x020D, CAN ID 0x09C)
+typedef struct SentryInfoRecv
+{
+  uint32_t sentry_info;       // 0x020D offset 0 (4字节)
+  uint16_t sentry_info_2;     // 0x020D offset 4 (2字节)
+  uint8_t  reserve[2];        // 填充到8字节
+} SentryInfoRecv_t;
+
+// 弹量扩展字段接收结构 (0x0208扩展, CAN ID 0x09D)
+typedef struct BulletExtendedRecv
+{
+  uint16_t projectile_allowance_42mm;    // 42mm弹丸剩余发射数
+  uint16_t remaining_gold_coin;          // 剩余金币数量
+  uint16_t projectile_allowance_fortress; // 堡垒储备17mm允许发弹量
+  uint8_t  rfid_status_2;                // RFID状态扩展8bit (0x0209 offset 4)
+  uint8_t  reserve;                      // 填充到8字节
+} BulletExtendedRecv_t;
 
 #pragma pack(pop)
 
 extern ChassisGetPack_1 chassis_pack_get_1;
-extern ChassisSpeedRecv_t chassis_speed_recv;  // 底盘速度接收数据
-//extern ChassisGetPack_2 chassis_pack_get_2;
+extern ChassisSpeedRecv_t chassis_speed_recv;
+extern ShootDataRecv_t shoot_data_recv;       // 射击数据接收
+extern SentryInfoRecv_t sentry_info_recv;     // 哨兵信息接收
+extern BulletExtendedRecv_t bullet_extended_recv;  // 弹量扩展数据接收
 
 #endif // !_CHASSIS_GET_H

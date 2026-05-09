@@ -438,6 +438,16 @@ void PC_Send(uint32_t index)
     {
         SendtoPC(JUDGE_PC_DATA_EXTENDED);
     }
+    // 新增: TypeID 7 哨兵信息发送 (10Hz)
+    if (index % 50 == 5)
+    {
+        SendtoPC(JUDGE_PC_DATA_SENTRY_DATA);
+    }
+    // 新增: TypeID 8 弹量数据+RFID扩展发送 (10Hz)
+    if (index % 50 == 25)
+    {
+        SendtoPC(JUDGE_PC_DATA_BULLET_DATA_AND_RFID2);
+    }
 
     if (index % 2 == 0) // 250HZ
     {

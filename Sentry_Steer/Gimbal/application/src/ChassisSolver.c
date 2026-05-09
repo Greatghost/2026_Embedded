@@ -624,44 +624,62 @@ void DJIRemoteUpdate(ChassisSolver *infantry)
 		
         break;
     case Mid:
-        switch (remote_controller.dji_remote.rc.s[RIGHT_SW])
+        // 测导航模式：右拨杆之前在Down位置时触发
+        if(remote_controller.dji_remote.rc.Previous_rc_Right_SW == Down)
         {
-        case Down:
-            PCStateControl(); // NUC模式，允许旋转
-            break;
-        case Mid:
-            PCStateControl(); //比赛专用
-            break;
-        case Up:
-            // 辅瞄测试
             setRobotState(CONTROL_MODE);
-            setControlModeAction(NOT_CONTROL_MODE);
-            setShootAction(SHOOT_AUTO_AIM_MODE);
-            setGimbalAction(GIMBAL_AUTO_AIM_MODE);
+            setControlModeAction(NOT_FOLLOW_GIMBAL);
+            setShootAction(SHOOT_POWERDOWN_MODE);
+            setGimbalAction(GIMBAL_ACT_MODE);
             setSuperPower(POWER_TO_BATTERY);
 
-            //OpenCoverCommand();
-
-            // 云台控制
-#if (GIMBAL_TEST_CONFIG != GIMBAL_CONFIG_SMALLYAW_SQUARE && GIMBAL_CONTROL_DISCONNECT == 0)
-            gimbal_controller.target_small_yaw_angle -= (remote_controller.dji_remote.rc.ch[LEFT_CH_LR] - CH_MIDDLE) * MAX_SW_YAW_SPEED / CH_RANGE * infantry->delta_t;
-            gimbal_controller.target_big_yaw_angle  -= (remote_controller.dji_remote.rc.ch[LEFT_CH_LR] - CH_MIDDLE) * MAX_SW_YAW_SPEED / CH_RANGE * infantry->delta_t;
-#endif
-#if (GIMBAL_TEST_CONFIG != GIMBAL_CONFIG_PITCH_SQUARE && GIMBAL_CONTROL_DISCONNECT == 0)
-            gimbal_controller.target_pitch_angle += (remote_controller.dji_remote.rc.ch[LEFT_CH_UD] - CH_MIDDLE) * MAX_SW_PITCH_SPEED / CH_RANGE * infantry->delta_t;
-#endif
-
-            // 底盘控制
-             chassis_solver.chassis_speed_x = 0;//(remote_controller.dji_remote.rc.ch[RIGHT_CH_LR] - CH_MIDDLE) * 1.0f / CH_RANGE;
-             chassis_solver.chassis_speed_y = 0;//(remote_controller.dji_remote.rc.ch[RIGHT_CH_UD] - CH_MIDDLE) * 1.0f / CH_RANGE;
-						 chassis_solver.chassis_speed_w = 0;
-                
-            break;
-        default:
-            setAllModeOff();
-            break;
+            // 云台保持当前角度不变
+            // 底盘执行NUC发来的命令
+            chassis_solver.chassis_speed_x = NAV_cmd.Nav_Speed_x;
+            chassis_solver.chassis_speed_y = NAV_cmd.Nav_Speed_y;
+            chassis_solver.chassis_speed_w = 0.f;
         }
-           
+        else
+        {
+            switch (remote_controller.dji_remote.rc.s[RIGHT_SW])
+            {
+            case Down:
+                PCStateControl(); // NUC模式，允许旋转
+                break;
+            case Mid:
+                PCStateControl(); //比赛专用
+                break;
+            case Up:
+                // 辅瞄测试
+                setRobotState(CONTROL_MODE);
+                setControlModeAction(NOT_CONTROL_MODE);
+                setShootAction(SHOOT_AUTO_AIM_MODE);
+                setGimbalAction(GIMBAL_AUTO_AIM_MODE);
+                setSuperPower(POWER_TO_BATTERY);
+
+                //OpenCoverCommand();
+
+                // 云台控制
+    #if (GIMBAL_TEST_CONFIG != GIMBAL_CONFIG_SMALLYAW_SQUARE && GIMBAL_CONTROL_DISCONNECT == 0)
+                gimbal_controller.target_small_yaw_angle -= (remote_controller.dji_remote.rc.ch[LEFT_CH_LR] - CH_MIDDLE) * MAX_SW_YAW_SPEED / CH_RANGE * infantry->delta_t;
+                gimbal_controller.target_big_yaw_angle  -= (remote_controller.dji_remote.rc.ch[LEFT_CH_LR] - CH_MIDDLE) * MAX_SW_YAW_SPEED / CH_RANGE * infantry->delta_t;
+    #endif
+    #if (GIMBAL_TEST_CONFIG != GIMBAL_CONFIG_PITCH_SQUARE && GIMBAL_CONTROL_DISCONNECT == 0)
+                gimbal_controller.target_pitch_angle += (remote_controller.dji_remote.rc.ch[LEFT_CH_UD] - CH_MIDDLE) * MAX_SW_PITCH_SPEED / CH_RANGE * infantry->delta_t;
+    #endif
+
+                // 底盘控制
+                 chassis_solver.chassis_speed_x = 0;//(remote_controller.dji_remote.rc.ch[RIGHT_CH_LR] - CH_MIDDLE) * 1.0f / CH_RANGE;
+                 chassis_solver.chassis_speed_y = 0;//(remote_controller.dji_remote.rc.ch[RIGHT_CH_UD] - CH_MIDDLE) * 1.0f / CH_RANGE;
+                             chassis_solver.chassis_speed_w = 0;
+
+                break;
+            default:
+                setAllModeOff();
+                break;
+            }
+        }
+
     break;
     case Up:
         // 左上为遥控器控制

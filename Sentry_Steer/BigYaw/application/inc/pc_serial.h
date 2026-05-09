@@ -88,17 +88,18 @@ typedef enum
 	JUDGE_PC_DATA = 1
 }PC_dataType_enum;
 #pragma pack(push, 1)     //不进行字节对齐
+//上位机下发协议 17 bytes (与2026-05-06_lower_machine_downlink_sentry_cmd_integration.md对齐)
 typedef struct PCRecvData_1
 {
-    uint8_t Head;
-	int8_t Aim_v_x;
-	int8_t Aim_v_y;
-	float Aim_Yaw;
-	float Aim_Pitch;  // 修改为float，与上位机协议对齐
-	uint8_t FireCode; // FireCode位域
-	uint8_t Posture;  // 姿态字段: 1=进攻, 2=防御, 3=移动, 0=保留
-	uint8_t Tail;     // 尾部标志 0x00
-} PCRecvData_1; // sizeof == 14 bytes
+    uint8_t Head;           // '!' = 0x21
+	int8_t Aim_v_x;         // Velocity.X
+	int8_t Aim_v_y;         // Velocity.Y
+	float Aim_Yaw;          // 4 bytes
+	float Aim_Pitch;        // 4 bytes
+	uint8_t FireCode;       // FireCode位域 (bit0-1:FireStatus, bit2-3:CapState, bit4:HoleMode, bit5:AimMode, bit6-7:Rotate)
+	uint32_t SentryCmd;     // 4 bytes - 裁判系统0x0301/0x0120 sentry_cmd，姿态在bit21-22
+	uint8_t Tail;           // 0x00
+} PCRecvData_1; // sizeof == 17 bytes
 typedef struct PCSendData //数据顺序不能变,注意32字节对齐 //11 bytes
 {
     uint8_t start_flag;

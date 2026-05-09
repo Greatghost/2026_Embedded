@@ -85,6 +85,16 @@ typedef struct
 	Each_Robot_position_t Friend[8]; // 0~7,但0,5,6不填
 	Each_Robot_position_t Enemy[8];	 // 0~7,但0,5,6不填
 } JudgeData_position_t;
+
+// 0x0207 实时射击信息 (用于TypeID 7/8上行数据同步)
+typedef struct
+{
+	uint8_t bullet_type; // 弹丸类型：1-17mm/2-42mm
+	uint8_t shooter_id;	 // 发射机构ID：1-1号17mm/2-2号17mm/3-1号42mm
+	uint8_t bullet_freq; // 发射频率（发/秒）
+	float bullet_speed;	 // 弹丸初速度（m/s）
+} ext_shoot_data_t;
+
 #pragma pack(pop)
 
 #endif
