@@ -231,17 +231,15 @@ void steer_chassis_control(void)
                 direction_offset = 90.0f;
             // CHASSIS_FRONT: direction_offset = 0.0f
 
-            // 角度基准：从y正方向（向前）开始，0°=向前，90°=向右
-            // atan2f(y, x) 给出相对于x轴的角度，需要交换参数使其相对于y轴
-            infantry.robot_vector.angle = direction_offset + R2DEG_RATIO * atan2f(infantry.target_y_v, infantry.target_x_v) + GIMBAL_MOTOR_SIGN * infantry.error_angle * R2DEG_RATIO;
+            // 角度计算：atan2(y, -x)匹配舵轮物理基准
+            infantry.robot_vector.angle = direction_offset + R2DEG_RATIO * atan2f(infantry.target_y_v, -infantry.target_x_v) + GIMBAL_MOTOR_SIGN * infantry.error_angle * R2DEG_RATIO;
 
             arm_sqrt_f32(infantry.target_y_v * infantry.target_y_v + infantry.target_x_v * infantry.target_x_v, &infantry.robot_vector.module); // 计算速度模值
         }
         else
         {
-            /*计算平动向量的速度模值m/s、方向degree*/
-            // 角度基准：从y正方向（向前）开始，0°=向前，90°=向右
-            infantry.robot_vector.angle = R2DEG_RATIO * atan2f(infantry.set_y_v, infantry.set_x_v) + GIMBAL_MOTOR_SIGN * infantry.error_angle * R2DEG_RATIO;
+            // 角度计算：atan2(y, -x)匹配舵轮物理基准
+            infantry.robot_vector.angle = R2DEG_RATIO * atan2f(infantry.set_y_v, -infantry.set_x_v) + GIMBAL_MOTOR_SIGN * infantry.error_angle * R2DEG_RATIO;
 
             arm_sqrt_f32(infantry.set_y_v * infantry.set_y_v + infantry.set_x_v * infantry.set_x_v, &infantry.robot_vector.module); // 计算速度模值
             if (fabsf(infantry.robot_vector.module) < 0.001)
@@ -382,8 +380,8 @@ void steer_pos_kinematics(void)
     infantry.yaw_v = yaw_sum / 4.0f;
 
     // 第五步：底盘坐标系 → 云台坐标系
-    infantry.x_v = vx_chassis * infantry.cos_dir - vy_chassis * infantry.sin_dir;
-    infantry.y_v = vx_chassis * infantry.sin_dir + vy_chassis * infantry.cos_dir;
+    infantry.x_v = vy_chassis * infantry.cos_dir - vx_chassis * infantry.sin_dir;   // 向前
+    infantry.y_v = -(vx_chassis * infantry.cos_dir + vy_chassis * infantry.sin_dir); // 向左
 }
 
 /**
