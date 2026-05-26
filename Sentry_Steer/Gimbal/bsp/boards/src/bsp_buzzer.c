@@ -7,7 +7,7 @@
 // BUZZER_MUSIC_SEE_YOU_AGAIN_MAIN  - See You Again 主旋律(oh~How) 2倍速
 // ========================================
 
-#define BUZZER_MUSIC_SEE_YOU_AGAIN_MAIN 1  // 当前选择: See You Again 主旋律(oh~How) 2倍速
+#define BUZZER_MUSIC_SEE_YOU_AGAIN_INTRO 1  // 当前选择: See You Again 主旋律(oh~How) 2倍速
 
 void Set_Buzzer_Frequency(uint32_t frequency)
 {

@@ -120,7 +120,6 @@
         <SetRegEntry>
           <Number>0</Number>
           <Key>DLGUARM</Key>
-          <Name></Name>
         </SetRegEntry>
         <SetRegEntry>
           <Number>0</Number>
@@ -213,65 +212,60 @@
         <Ww>
           <count>9</count>
           <WinNumber>1</WinNumber>
-          <ItemText>Interval,0x0A</ItemText>
+          <ItemText>remote_controller,0x0A</ItemText>
         </Ww>
         <Ww>
           <count>10</count>
           <WinNumber>1</WinNumber>
-          <ItemText>remote_controller,0x0A</ItemText>
+          <ItemText>cap_send_data,0x0A</ItemText>
         </Ww>
         <Ww>
           <count>11</count>
           <WinNumber>1</WinNumber>
-          <ItemText>cap_send_data,0x0A</ItemText>
+          <ItemText>sentry_decision_referee</ItemText>
         </Ww>
         <Ww>
           <count>12</count>
           <WinNumber>1</WinNumber>
-          <ItemText>sentry_decision_referee</ItemText>
+          <ItemText>referee_data,0x10</ItemText>
         </Ww>
         <Ww>
           <count>13</count>
           <WinNumber>1</WinNumber>
-          <ItemText>referee_data,0x10</ItemText>
+          <ItemText>JudgeData_ForSend1</ItemText>
         </Ww>
         <Ww>
           <count>14</count>
           <WinNumber>1</WinNumber>
-          <ItemText>JudgeData_ForSend1</ItemText>
+          <ItemText>chassis_speed_pack_send,0x0A</ItemText>
         </Ww>
         <Ww>
           <count>15</count>
           <WinNumber>1</WinNumber>
-          <ItemText>chassis_speed_pack_send,0x0A</ItemText>
+          <ItemText>JudgeBloodData_ForSend_Friend</ItemText>
         </Ww>
         <Ww>
           <count>16</count>
           <WinNumber>1</WinNumber>
-          <ItemText>JudgeBloodData_ForSend_Friend</ItemText>
+          <ItemText>JudgeBloodData_ForSend_Enemy</ItemText>
         </Ww>
         <Ww>
           <count>17</count>
           <WinNumber>1</WinNumber>
-          <ItemText>JudgeBloodData_ForSend_Enemy</ItemText>
+          <ItemText>JudgeData_position,0x10</ItemText>
         </Ww>
         <Ww>
           <count>18</count>
           <WinNumber>1</WinNumber>
-          <ItemText>JudgeData_position,0x10</ItemText>
+          <ItemText>sentry_info_send</ItemText>
         </Ww>
         <Ww>
           <count>19</count>
           <WinNumber>1</WinNumber>
-          <ItemText>sentry_info_send</ItemText>
-        </Ww>
-        <Ww>
-          <count>20</count>
-          <WinNumber>1</WinNumber>
           <ItemText>shoot_data_send</ItemText>
         </Ww>
         <Ww>
-          <count>21</count>
+          <count>20</count>
           <WinNumber>1</WinNumber>
           <ItemText>bullet_extended_send,0x0A</ItemText>
         </Ww>
@@ -320,30 +314,25 @@
         <Ww>
           <count>8</count>
           <WinNumber>2</WinNumber>
-          <ItemText>send_count,0x0A</ItemText>
+          <ItemText>test_data,0x0A</ItemText>
         </Ww>
         <Ww>
           <count>9</count>
           <WinNumber>2</WinNumber>
-          <ItemText>test_data,0x0A</ItemText>
+          <ItemText>JudgeData_ForSend1,0x0A</ItemText>
         </Ww>
         <Ww>
           <count>10</count>
           <WinNumber>2</WinNumber>
-          <ItemText>JudgeData_ForSend1,0x0A</ItemText>
+          <ItemText>JudgeData_ForSend2</ItemText>
         </Ww>
         <Ww>
           <count>11</count>
           <WinNumber>2</WinNumber>
-          <ItemText>JudgeData_ForSend2</ItemText>
-        </Ww>
-        <Ww>
-          <count>12</count>
-          <WinNumber>2</WinNumber>
           <ItemText>gimbal_pack_send_1,0x0A</ItemText>
         </Ww>
         <Ww>
-          <count>13</count>
+          <count>12</count>
           <WinNumber>2</WinNumber>
           <ItemText>JudgeData_position,0x0A</ItemText>
         </Ww>
