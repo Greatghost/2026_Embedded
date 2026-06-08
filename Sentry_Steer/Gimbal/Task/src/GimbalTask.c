@@ -14,7 +14,8 @@ void Gimbal_Powerdown_Cal()
 
     motor_communication[PITCH_MOTOR].control = 0;
     motor_communication[BIG_YAW_MOTOR].control = 0;
-    motor_communication[SMALL_YAW_MOTOR].control = 0;
+    // [SMALL_YAW_REMOVED] 小Yaw电机控制已删除
+    // motor_communication[SMALL_YAW_MOTOR].control = 0;
     big_yaw_controller.gimbal_last_mode = 0;
 
     // TEST
@@ -52,13 +53,14 @@ void Gimbal_Autoaim_Cal()
 {
     PCRecvData_1 pc_recv_data_temp = pc_recv_data_1;
     // 设置目标角度
-    if (fabsf(gimbal_controller.target_pitch_angle - pc_pitch) < 60.0f && fabsf(gimbal_controller.target_small_yaw_angle - pc_yaw) < 70.0f)
+    // [SMALL_YAW_REMOVED] target_small_yaw_angle → target_big_yaw_angle
+    if (fabsf(gimbal_controller.target_pitch_angle - pc_pitch) < 60.0f && fabsf(gimbal_controller.target_big_yaw_angle - pc_yaw) < 70.0f)
     {
         if (offline_detector.pc_state == PC_ON)
         {
             gimbal_controller.target_pitch_angle = pc_pitch;
-            // PCyaw作为小yaw输入
-            gimbal_controller.target_small_yaw_angle = pc_yaw;
+            // [SMALL_YAW_REMOVED] PCyaw直接作为大Yaw输入
+            gimbal_controller.target_big_yaw_angle = pc_yaw;
             BigYawSetpointSet();
         }
     }
@@ -68,9 +70,9 @@ void Gimbal_Autoaim_Cal()
     {
         gimbal_controller.target_pitch_angle = gimbal_controller.gyro_pitch_angle;
     }
-    if (fabsf(gimbal_controller.target_small_yaw_angle - 999.0f) < 1e-4)
+    // [SMALL_YAW_REMOVED] target_big_yaw_angle保护 (原target_small_yaw)
+    if (fabsf(gimbal_controller.target_big_yaw_angle - 999.0f) < 1e-4)
     {
-        gimbal_controller.target_small_yaw_angle = gimbal_controller.gyro_yaw_angle;
         gimbal_controller.target_big_yaw_angle = big_yaw_controller.dealed_big_yaw_gyro;
     }
 
@@ -78,8 +80,9 @@ void Gimbal_Autoaim_Cal()
     limitPitchAngle();
     motor_communication[PITCH_MOTOR].control = Gimbal_Pitch_Calculate(gimbal_controller.target_pitch_angle);
     // yaw计算
+    // [SMALL_YAW_REMOVED] 小Yaw控制已删除，仅大Yaw
     motor_communication[BIG_YAW_MOTOR].control = Gimbal_Big_Yaw_Calculate(gimbal_controller.target_big_yaw_angle);
-    motor_communication[SMALL_YAW_MOTOR].control = Gimbal_Small_Yaw_Calculate(gimbal_controller.target_small_yaw_angle);
+    // motor_communication[SMALL_YAW_MOTOR].control = Gimbal_Small_Yaw_Calculate(gimbal_controller.target_small_yaw_angle);
     big_yaw_controller.gimbal_last_mode = 1;
 }
 
@@ -87,13 +90,14 @@ void Gimbal_Small_Buff_Cal()
 {
     PCRecvData_1 pc_recv_data_temp = pc_recv_data_1;
     // 设置目标角度
-    if (fabsf(gimbal_controller.target_pitch_angle - pc_pitch) < 60.0f && fabsf(gimbal_controller.target_small_yaw_angle - pc_yaw) < 70.0f)
+    // [SMALL_YAW_REMOVED] target_small_yaw_angle → target_big_yaw_angle
+    if (fabsf(gimbal_controller.target_pitch_angle - pc_pitch) < 60.0f && fabsf(gimbal_controller.target_big_yaw_angle - pc_yaw) < 70.0f)
     {
         if (offline_detector.pc_state == PC_ON)
         {
             gimbal_controller.target_pitch_angle = pc_pitch;
-            // PCyaw作为小yaw输入
-            gimbal_controller.target_small_yaw_angle = pc_yaw;
+            // [SMALL_YAW_REMOVED] PCyaw直接作为大Yaw输入
+            gimbal_controller.target_big_yaw_angle = pc_yaw;
             BigYawSetpointSet();
         }
     }
@@ -103,18 +107,18 @@ void Gimbal_Small_Buff_Cal()
     {
         gimbal_controller.target_pitch_angle = gimbal_controller.gyro_pitch_angle;
     }
-    if (fabsf(gimbal_controller.target_small_yaw_angle - 999.0f) < 1e-4)
+    // [SMALL_YAW_REMOVED] target_big_yaw_angle保护 (原target_small_yaw)
+    if (fabsf(gimbal_controller.target_big_yaw_angle - 999.0f) < 1e-4)
     {
-        gimbal_controller.target_small_yaw_angle = gimbal_controller.gyro_yaw_angle;
         gimbal_controller.target_big_yaw_angle = big_yaw_controller.dealed_big_yaw_gyro;
     }
 
     // pitch限制幅值
     limitPitchAngle();
     motor_communication[PITCH_MOTOR].control = Gimbal_Pitch_Calculate(gimbal_controller.target_pitch_angle);
-    // yaw计算 - 大YAW目标加上bias补偿
+    // [SMALL_YAW_REMOVED] 小Yaw控制已删除，大Yaw直接承载bias补偿
     motor_communication[BIG_YAW_MOTOR].control = Gimbal_Big_Yaw_Calculate(gimbal_controller.target_big_yaw_angle);
-    motor_communication[SMALL_YAW_MOTOR].control = Gimbal_Small_Yaw_Calculate(gimbal_controller.target_small_yaw_angle);
+    // motor_communication[SMALL_YAW_MOTOR].control = Gimbal_Small_Yaw_Calculate(gimbal_controller.target_small_yaw_angle);
     big_yaw_controller.gimbal_last_mode = 1;
 }
 
@@ -178,17 +182,14 @@ void Gimbal_Act_Cal()
 
     motor_communication[PITCH_MOTOR].control = pitch_control;
 
-    // === Yaw控制 ===
-#if (GIMBAL_TEST_CONFIG == GIMBAL_CONFIG_SMALLYAW_SQUARE)
-    // 小Yaw方波测试模式
-    gimbal_controller.target_small_yaw_angle = SquareWaveRun(&test->small_yaw_square, gimbal_controller.delta_t);
-#elif (GIMBAL_CONTROL_DISCONNECT == 0)
-    // 正常模式：目标角度由遥控器/上位机设置（ChassisSolver.c）
-#else
-    // 控制断开模式：目标角度保持不变
-#endif
-
-    motor_communication[SMALL_YAW_MOTOR].control = Gimbal_Small_Yaw_Calculate(gimbal_controller.target_small_yaw_angle);
+    // [SMALL_YAW_REMOVED] 小Yaw控制已全部删除，大Yaw独立承载Yaw控制
+    // // === Yaw控制 ===
+    // #if (GIMBAL_TEST_CONFIG == GIMBAL_CONFIG_SMALLYAW_SQUARE)
+    // gimbal_controller.target_small_yaw_angle = SquareWaveRun(&test->small_yaw_square, gimbal_controller.delta_t);
+    // #elif (GIMBAL_CONTROL_DISCONNECT == 0)
+    // #else
+    // #endif
+    // motor_communication[SMALL_YAW_MOTOR].control = Gimbal_Small_Yaw_Calculate(gimbal_controller.target_small_yaw_angle);
 
     // 大Yaw动态跟随
     float delta_angle = fabsf(gimbal_controller.target_big_yaw_angle - (big_yaw_controller.dealed_big_yaw_gyro + 0.6 * big_yaw_controller.big_yaw_gyro_bias));
@@ -216,7 +217,8 @@ void YawSawTest()
     // yaw计算
     // 锯齿波
     test_yaw_angle = SawWaveRun(&gimbal_saw_tooth, gimbal_controller.delta_t);
-    motor_communication[SMALL_YAW_MOTOR].control = Gimbal_Small_Yaw_Calculate(test_yaw_angle);
+    // [SMALL_YAW_REMOVED] 小Yaw控制已删除，锯齿波测试仅用大Yaw
+    // motor_communication[SMALL_YAW_MOTOR].control = Gimbal_Small_Yaw_Calculate(test_yaw_angle);
     float delta_angle = fabsf(gimbal_controller.target_big_yaw_angle - test_yaw_angle);
     // 动态增益，y = -0.0004233^2 + 0.000567 + 0.998,对应点(0,0.998),(10,0.95),(30,0.6),在正半轴单调递减
     float dynamic_gain = -0.0004233 * delta_angle * delta_angle - 0.000567 * delta_angle + 0.999f;
@@ -383,11 +385,11 @@ void updataSensors()
         GM6020_Decode(&gimbal_controller.pitch_recv, &gimbal_controller.pitch_info);
     }
 
-    // YAW电机解码  TODO:扩展到所有类型电机
-    if (motor_communication[SMALL_YAW_MOTOR].motor_type == GM6020)
-    {
-        GM6020_Decode(&gimbal_controller.small_yaw_recv, &gimbal_controller.small_yaw_info);
-    }
+    // [SMALL_YAW_REMOVED] 小Yaw电机解码已删除
+    // if (motor_communication[SMALL_YAW_MOTOR].motor_type == GM6020)
+    // {
+    //     GM6020_Decode(&gimbal_controller.small_yaw_recv, &gimbal_controller.small_yaw_info);
+    // }
 
     // 摩擦轮电机解码  TODO:扩展到所有类型电机
     if (motor_communication[LEFT_FRICTION_WHEEL_MOTOR].motor_type == M3508)

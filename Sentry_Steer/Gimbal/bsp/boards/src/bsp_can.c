@@ -131,6 +131,8 @@ void MotorReceive(CAN_HandleTypeDef *hcan, CAN_RxHeaderTypeDef *rx_header, uint8
 
 		LossUpdate(&global_debugger.friction_debugger[RIGHT_FRICTION_WHEEL], 0.0015f);
 	}
+	// [SMALL_YAW_REMOVED] 小Yaw电机CAN接收已删除
+	/*
 	else if (hcan->Instance == SMALL_YAW_MOTOR_CAN && rx_header->StdId == SMALL_YAW_MOTOR_CAN_ID)
 	{
 		// 6020
@@ -148,6 +150,7 @@ void MotorReceive(CAN_HandleTypeDef *hcan, CAN_RxHeaderTypeDef *rx_header, uint8
 
 		LossUpdate(&global_debugger.gimbal_debugger[1], 0.0015f); // 1KHZ
 	}
+	*/
 	else if (hcan->Instance == BIG_YAW_MOTOR_CAN && rx_header->StdId == BIG_YAW_MOTOR_CAN_ID)
 	{
 		// 6020

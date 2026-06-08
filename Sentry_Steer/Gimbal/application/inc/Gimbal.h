@@ -35,23 +35,27 @@ typedef struct CostFunction
 typedef struct GimbalTest
 {
     SquareWave pitch_square;      // Pitch方波信号发生器
-    SquareWave small_yaw_square;  // 小Yaw方波信号发生器
+    // [SMALL_YAW_REMOVED] 小Yaw方波测试相关字段
+    // SquareWave small_yaw_square;
 
     // 目标函数计算（当前周期）
     CostFunction_t pitch_cost;    // Pitch目标函数
-    CostFunction_t yaw_cost;      // Yaw目标函数
+    // [SMALL_YAW_REMOVED]
+    // CostFunction_t yaw_cost;
 
     // 周期追踪
-    uint16_t last_pitch_cycle;    // 上一个Pitch周期计数（用于检测周期切换）
-    uint16_t last_yaw_cycle;      // 上一个Yaw周期计数
+    uint16_t last_pitch_cycle;
+    // [SMALL_YAW_REMOVED]
+    // uint16_t last_yaw_cycle;
 
     // 历史记录（上一个完整周期的代价）
-    float last_pitch_ise;         // 上一个Pitch周期ISE
-    float last_pitch_control;     // 上一个Pitch周期控制量代价
-    float last_pitch_max_error;   // 上一个Pitch周期最大误差
-    float last_yaw_ise;           // 上一个Yaw周期ISE
-    float last_yaw_control;       // 上一个Yaw周期控制量代价
-    float last_yaw_max_error;     // 上一个Yaw周期最大误差
+    float last_pitch_ise;
+    float last_pitch_control;
+    float last_pitch_max_error;
+    // [SMALL_YAW_REMOVED]
+    // float last_yaw_ise;
+    // float last_yaw_control;
+    // float last_yaw_max_error;
 
 } GimbalTest_t;
 
@@ -76,8 +80,9 @@ typedef struct GimbalController
   GM6020_Info pitch_info;
   GM6020_Recv big_yaw_recv;
   GM6020_Info big_yaw_info;
-  GM6020_Recv small_yaw_recv;
-  GM6020_Info small_yaw_info;
+  // [SMALL_YAW_REMOVED] 小Yaw电机数据接收已删除
+  // GM6020_Recv small_yaw_recv;
+  // GM6020_Info small_yaw_info;
 
   float set_pitch_speed;
   float set_pitch_current;
@@ -101,28 +106,30 @@ typedef struct GimbalController
   PID_t big_yaw_angle_pid;             // 角度环
   Feedforward_t big_yaw_speed_forward; // 速度环前馈
   Feedforward_t big_yaw_angle_forward; // 角度环前馈
-  // // SMALL_YAW
-  PID_t small_yaw_current_pid;           // 电流环
-  PID_t small_yaw_speed_pid;             // 速度环
-  PID_t small_yaw_angle_pid;             // 角度环
-  Feedforward_t small_yaw_speed_forward; // 速度环前馈
-  Feedforward_t small_yaw_angle_forward; // 角度环前馈
+  // [SMALL_YAW_REMOVED] 小Yaw PID/前馈已删除
+  // PID_t small_yaw_current_pid;
+  // PID_t small_yaw_speed_pid;
+  // PID_t small_yaw_angle_pid;
+  // Feedforward_t small_yaw_speed_forward;
+  // Feedforward_t small_yaw_angle_forward;
 
 
   // GM6020_Recv yaw_recv;
   // GM6020_Info yaw_info; // 电机信息
-  DM_MIT DM_Small_Yaw_Motor;
-	DM_MIT DM_Big_Yaw_Motor;
+  // [SMALL_YAW_REMOVED] 小Yaw DM电机已删除
+  // DM_MIT DM_Small_Yaw_Motor;
+  DM_MIT DM_Big_Yaw_Motor;
   DM_MIT DM_Pitch_Motor;
 
   float set_big_yaw_speed;
   float set_big_yaw_current;
   float set_big_yaw_angle;
   float set_big_yaw_vol;
-  float set_small_yaw_speed;
-  float set_small_yaw_current;
-  float set_small_yaw_angle;
-  float set_small_yaw_vol;
+  // [SMALL_YAW_REMOVED] 小Yaw控制量已删除
+  // float set_small_yaw_speed;
+  // float set_small_yaw_current;
+  // float set_small_yaw_angle;
+  // float set_small_yaw_vol;
 
   // 陀螺仪信息及其解算
   float gyro_yaw_speed;
@@ -130,10 +137,10 @@ typedef struct GimbalController
   float gyro_last_yaw_angle;
 
   float target_big_yaw_angle;
-  float target_small_yaw_angle;
-
-  TD_t pos_small_yaw_td; // 位置跟踪微分器
-  TD_t speed_small_yaw_td;
+  // [SMALL_YAW_REMOVED] 小Yaw目标角度和TD已删除
+  // float target_small_yaw_angle;
+  // TD_t pos_small_yaw_td;
+  // TD_t speed_small_yaw_td;
   TD_t pos_big_yaw_td; // 位置跟踪微分器
   TD_t speed_big_yaw_td;
 
@@ -184,7 +191,8 @@ void GimbalTestRunPitchCost(GimbalTest_t *test, float error, float control, floa
 // Yaw
 float Gimbal_Big_Yaw_Calculate(float set_point);
 void Big_Yaw_Bias_Cal(void);
-float Gimbal_Small_Yaw_Calculate(float set_point);
+// [SMALL_YAW_REMOVED] 小Yaw计算函数已删除
+// float Gimbal_Small_Yaw_Calculate(float set_point);
 float Gimbal_Speed_Calculate(float set_point);
 float GimbalFrictionModel(void);
 void BigYawZeroCheck(void);

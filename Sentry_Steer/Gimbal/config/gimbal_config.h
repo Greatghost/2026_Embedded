@@ -73,13 +73,14 @@
 
 // yaw
 // 作为云台控制的yaw角度需要以逆时针为正(角度增加)
-#define GIMBAL_SMALL_YAW_MOTOR_SIGN 1.0f       // 用来标记电机的方向，逆时针为正，达妙电机不是逆时针为正？？
-#define GIMBAL_SMALL_YAW_GYRO_SIGN 1.0f        // 用来标记gyro的方向，逆时针为正
-#define GIMBAL_SMALL_YAW_POS_FORWARD_COEF 0.6f // 角度环前馈系数
-#define GIMBAL_SMALL_YAW_SPEED_FORWARD_COEF 0.f
-#define GIMBAL_SMALL_YAW_LIMIT_LEFG 210.0f    //小yaw电机角左限位
-#define GIMBAL_SMALL_YAW_LIMIT_RIGHT 150.0f       //小yaw电机角右限位
-#define GIMBAL_SMALL_YAW_ZERO_POINT 180.0f //小yaw电机零点
+// [SMALL_YAW_REMOVED] 小Yaw轴电机宏定义已删除
+// #define GIMBAL_SMALL_YAW_MOTOR_SIGN 1.0f
+// #define GIMBAL_SMALL_YAW_GYRO_SIGN 1.0f
+// #define GIMBAL_SMALL_YAW_POS_FORWARD_COEF 0.6f
+// #define GIMBAL_SMALL_YAW_SPEED_FORWARD_COEF 0.f
+// #define GIMBAL_SMALL_YAW_LIMIT_LEFG 210.0f
+// #define GIMBAL_SMALL_YAW_LIMIT_RIGHT 150.0f
+// #define GIMBAL_SMALL_YAW_ZERO_POINT 180.0f
 
 
 #define GIMBAL_BIG_YAW_MOTOR_SIGN 1.0f       // 用来标记电机的方向，逆时针为正，达妙电机不是逆时针为正？？
@@ -111,13 +112,14 @@
 
 // yaw
 // 作为云台控制的yaw角度需要以逆时针为正(角度增加)
-#define GIMBAL_SMALL_YAW_MOTOR_SIGN 1.0f       // 用来标记电机的方向，逆时针为正，达妙电机不是逆时针为正？？
-#define GIMBAL_SMALL_YAW_GYRO_SIGN 1.0f        // 用来标记gyro的方向，逆时针为正
-#define GIMBAL_SMALL_YAW_POS_FORWARD_COEF 0.6f // 角度环前馈系数
-#define GIMBAL_SMALL_YAW_SPEED_FORWARD_COEF 0.f
-#define GIMBAL_SMALL_YAW_LIMIT_LEFG 165.0f    //小yaw电机角左限位
-#define GIMBAL_SMALL_YAW_LIMIT_RIGHT 75.0f       //小yaw电机角右限位
-#define GIMBAL_SMALL_YAW_ZERO_POINT 120.0f //小yaw电机零点
+// [SMALL_YAW_REMOVED] 小Yaw轴电机宏定义已删除
+// #define GIMBAL_SMALL_YAW_MOTOR_SIGN 1.0f
+// #define GIMBAL_SMALL_YAW_GYRO_SIGN 1.0f
+// #define GIMBAL_SMALL_YAW_POS_FORWARD_COEF 0.6f
+// #define GIMBAL_SMALL_YAW_SPEED_FORWARD_COEF 0.f
+// #define GIMBAL_SMALL_YAW_LIMIT_LEFG 165.0f
+// #define GIMBAL_SMALL_YAW_LIMIT_RIGHT 75.0f
+// #define GIMBAL_SMALL_YAW_ZERO_POINT 120.0f
 
 
 #define GIMBAL_BIG_YAW_MOTOR_SIGN 1.0f       // 用来标记电机的方向，逆时针为正，达妙电机不是逆时针为正？？

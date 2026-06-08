@@ -347,7 +347,7 @@ if (remote_controller.dji_remote.rc.s[LEFT_SW] == Up) // 高自由度活动
                 break;
             case KEY_E:
 								
-								gimbal_controller.target_small_yaw_angle += 180;
+								gimbal_controller.target_big_yaw_angle /* [SMALL_YAW_REMOVED] 原为target_small_yaw */ += 180;
 								
                 break;
             case KEY_R:
@@ -403,7 +403,7 @@ if (remote_controller.dji_remote.rc.s[LEFT_SW] == Up) // 高自由度活动
         {
             // Yaw控制：仅在正常模式下响应遥控器
 #if (GIMBAL_TEST_CONFIG != GIMBAL_CONFIG_SMALLYAW_SQUARE && GIMBAL_CONTROL_DISCONNECT == 0)
-            gimbal_controller.target_small_yaw_angle -= remote_controller.dji_remote.mouse.x * 0.005f;
+            gimbal_controller.target_big_yaw_angle /* [SMALL_YAW_REMOVED] 原为target_small_yaw */ -= remote_controller.dji_remote.mouse.x * 0.005f;
 #endif
         }
 
@@ -546,7 +546,7 @@ void DJIRemoteUpdate(ChassisSolver *infantry)
             
                 // 云台控制 - Yaw
 #if (GIMBAL_TEST_CONFIG != GIMBAL_CONFIG_SMALLYAW_SQUARE && GIMBAL_CONTROL_DISCONNECT == 0)
-                gimbal_controller.target_small_yaw_angle -= (remote_controller.dji_remote.rc.ch[LEFT_CH_LR] - CH_MIDDLE) * MAX_SW_YAW_SPEED / CH_RANGE * infantry->delta_t;
+                gimbal_controller.target_big_yaw_angle /* [SMALL_YAW_REMOVED] 原为target_small_yaw */ -= (remote_controller.dji_remote.rc.ch[LEFT_CH_LR] - CH_MIDDLE) * MAX_SW_YAW_SPEED / CH_RANGE * infantry->delta_t;
                 gimbal_controller.target_big_yaw_angle  -= (remote_controller.dji_remote.rc.ch[LEFT_CH_LR] - CH_MIDDLE) * MAX_SW_YAW_SPEED / CH_RANGE * infantry->delta_t;
 #endif
 
@@ -587,7 +587,7 @@ void DJIRemoteUpdate(ChassisSolver *infantry)
 
         // 云台控制 - Yaw
 #if (GIMBAL_TEST_CONFIG != GIMBAL_CONFIG_SMALLYAW_SQUARE && GIMBAL_CONTROL_DISCONNECT == 0)
-                gimbal_controller.target_small_yaw_angle -= (remote_controller.dji_remote.rc.ch[LEFT_CH_LR] - CH_MIDDLE) * MAX_SW_YAW_SPEED / CH_RANGE * infantry->delta_t;
+                gimbal_controller.target_big_yaw_angle /* [SMALL_YAW_REMOVED] 原为target_small_yaw */ -= (remote_controller.dji_remote.rc.ch[LEFT_CH_LR] - CH_MIDDLE) * MAX_SW_YAW_SPEED / CH_RANGE * infantry->delta_t;
                 gimbal_controller.target_big_yaw_angle  -= (remote_controller.dji_remote.rc.ch[LEFT_CH_LR] - CH_MIDDLE) * MAX_SW_YAW_SPEED / CH_RANGE * infantry->delta_t;
 #endif
 
@@ -661,7 +661,7 @@ void DJIRemoteUpdate(ChassisSolver *infantry)
 
                 // 云台控制
     #if (GIMBAL_TEST_CONFIG != GIMBAL_CONFIG_SMALLYAW_SQUARE && GIMBAL_CONTROL_DISCONNECT == 0)
-                gimbal_controller.target_small_yaw_angle -= (remote_controller.dji_remote.rc.ch[LEFT_CH_LR] - CH_MIDDLE) * MAX_SW_YAW_SPEED / CH_RANGE * infantry->delta_t;
+                gimbal_controller.target_big_yaw_angle /* [SMALL_YAW_REMOVED] 原为target_small_yaw */ -= (remote_controller.dji_remote.rc.ch[LEFT_CH_LR] - CH_MIDDLE) * MAX_SW_YAW_SPEED / CH_RANGE * infantry->delta_t;
                 gimbal_controller.target_big_yaw_angle  -= (remote_controller.dji_remote.rc.ch[LEFT_CH_LR] - CH_MIDDLE) * MAX_SW_YAW_SPEED / CH_RANGE * infantry->delta_t;
     #endif
     #if (GIMBAL_TEST_CONFIG != GIMBAL_CONFIG_PITCH_SQUARE && GIMBAL_CONTROL_DISCONNECT == 0)
@@ -699,7 +699,7 @@ void DJIRemoteUpdate(ChassisSolver *infantry)
 
             // 云台控制
 #if (GIMBAL_TEST_CONFIG != GIMBAL_CONFIG_SMALLYAW_SQUARE && GIMBAL_CONTROL_DISCONNECT == 0)
-            gimbal_controller.target_small_yaw_angle -= (remote_controller.dji_remote.rc.ch[LEFT_CH_LR] - CH_MIDDLE) * MAX_SW_YAW_SPEED / CH_RANGE * infantry->delta_t;
+            gimbal_controller.target_big_yaw_angle /* [SMALL_YAW_REMOVED] 原为target_small_yaw */ -= (remote_controller.dji_remote.rc.ch[LEFT_CH_LR] - CH_MIDDLE) * MAX_SW_YAW_SPEED / CH_RANGE * infantry->delta_t;
 #endif
 
 #if (GIMBAL_TEST_CONFIG != GIMBAL_CONFIG_PITCH_SQUARE && GIMBAL_CONTROL_DISCONNECT == 0)
@@ -743,7 +743,7 @@ void DJIRemoteUpdate(ChassisSolver *infantry)
 						
                 // 云台控制
 #if (GIMBAL_TEST_CONFIG != GIMBAL_CONFIG_SMALLYAW_SQUARE && GIMBAL_CONTROL_DISCONNECT == 0)
-                gimbal_controller.target_small_yaw_angle -= (remote_controller.dji_remote.rc.ch[LEFT_CH_LR] - CH_MIDDLE) * MAX_SW_YAW_SPEED / CH_RANGE * infantry->delta_t;
+                gimbal_controller.target_big_yaw_angle /* [SMALL_YAW_REMOVED] 原为target_small_yaw */ -= (remote_controller.dji_remote.rc.ch[LEFT_CH_LR] - CH_MIDDLE) * MAX_SW_YAW_SPEED / CH_RANGE * infantry->delta_t;
                 gimbal_controller.target_big_yaw_angle  -= (remote_controller.dji_remote.rc.ch[LEFT_CH_LR] - CH_MIDDLE) * MAX_SW_YAW_SPEED / CH_RANGE * infantry->delta_t;
 #endif
 
@@ -770,7 +770,7 @@ void DJIRemoteUpdate(ChassisSolver *infantry)
 
             // 云台控制
 #if (GIMBAL_TEST_CONFIG != GIMBAL_CONFIG_SMALLYAW_SQUARE && GIMBAL_CONTROL_DISCONNECT == 0)
-            gimbal_controller.target_small_yaw_angle -= (remote_controller.dji_remote.rc.ch[LEFT_CH_LR] - CH_MIDDLE) * MAX_SW_YAW_SPEED / CH_RANGE * infantry->delta_t;
+            gimbal_controller.target_big_yaw_angle /* [SMALL_YAW_REMOVED] 原为target_small_yaw */ -= (remote_controller.dji_remote.rc.ch[LEFT_CH_LR] - CH_MIDDLE) * MAX_SW_YAW_SPEED / CH_RANGE * infantry->delta_t;
             gimbal_controller.target_big_yaw_angle  -= (remote_controller.dji_remote.rc.ch[LEFT_CH_LR] - CH_MIDDLE) * MAX_SW_YAW_SPEED / CH_RANGE * infantry->delta_t;
 #endif
 

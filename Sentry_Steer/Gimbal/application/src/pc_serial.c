@@ -264,8 +264,9 @@ void SendtoPCExtend(unsigned char* buff)
 	PCSendExtended.UWB_yaw_10 = JudgeRecieveData2.yaw_10;
 	PCSendExtended.sentry_posture = JudgeRecieveData.sentry_posture;
 	PCSendExtended.reserve_8 = 0;
-	int16_t small_yaw_offset_angle_10 = (int16_t)(big_yaw_controller.big_yaw_gyro_bias * 10.0f);
-	PCSendExtended.gimbal_vel_data1 = ((uint32_t)(small_yaw_offset_angle_10 & 0xFFFF)) | ((uint32_t)(chassis_speed_recv.chassis_yaw_v_100 & 0xFFFF) << 16);
+	// [SMALL_YAW_REMOVED] 变量改名: small_yaw_offset → yaw_bias_offset (数据来源不变)
+	int16_t yaw_bias_offset_angle_10 = (int16_t)(big_yaw_controller.big_yaw_gyro_bias * 10.0f);
+	PCSendExtended.gimbal_vel_data1 = ((uint32_t)(yaw_bias_offset_angle_10 & 0xFFFF)) | ((uint32_t)(chassis_speed_recv.chassis_yaw_v_100 & 0xFFFF) << 16);
 	PCSendExtended.gimbal_vel_data2 = ((uint32_t)(chassis_speed_recv.chassis_x_v_100 & 0xFFFF)) | ((uint32_t)(chassis_speed_recv.chassis_y_v_100 & 0xFFFF) << 16);
 	PCSendExtended.crc8 = 0;
 	Append_CRC8_Check_Sum((unsigned char *)&PCSendExtended, PC_SEND_BLOOD_SIZE);

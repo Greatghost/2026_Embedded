@@ -17,9 +17,10 @@ void GimbalPidInit()
     PID_Init(&gimbal_controller.pitch_angle_pid, 150.0f, 48.0f, 0.0f, 52.0f, 0.5f, 0.05f, 0, 0, 0, 0.02f, 1, DerivativeFilter | Integral_Limit | Trapezoid_Intergral);
     PID_Init(&gimbal_controller.pitch_speed_pid, 3000, 1200, 0.1f, 58.0f, 6.0f, 0, 0, 0, 0.0018, 0, 1, Integral_Limit | Trapezoid_Intergral);
 
-    // yaw GM6020 CURRENT LOOP
-    PID_Init(&gimbal_controller.small_yaw_angle_pid, 180.0, 0, 0.05, 48.0f, 0, 0.3f, 0, 0, 0.0, 0.0f, 1, DerivativeFilter);
-    PID_Init(&gimbal_controller.small_yaw_speed_pid, GM6020_MAX_CURRENT, 1000, 0.5, 170.0f, 1.5f, 0, 0, 0, 0.f, 0, 1, Integral_Limit | Trapezoid_Intergral);
+    // [SMALL_YAW_REMOVED] 小Yaw PID/前馈初始化已删除
+    // // yaw GM6020 CURRENT LOOP
+    // PID_Init(&gimbal_controller.small_yaw_angle_pid, 180.0, 0, 0.05, 48.0f, 0, 0.3f, 0, 0, 0.0, 0.0f, 1, DerivativeFilter);
+    // PID_Init(&gimbal_controller.small_yaw_speed_pid, GM6020_MAX_CURRENT, 1000, 0.5, 170.0f, 1.5f, 0, 0, 0, 0.f, 0, 1, Integral_Limit | Trapezoid_Intergral);
 
     // yaw DM MOTOR CURRENT LOOP
     PID_Init(&gimbal_controller.big_yaw_angle_pid, 360.0, 0, 0.05, 32.0f, 0.f, 0.1f, 0, 0, 0.0, 0.02f, 1, DerivativeFilter);
@@ -32,15 +33,17 @@ void GimbalPidInit()
     //    TD_Init(&gimbal_controller.speed_small_yaw_td, 90000, 0.01);
     TD_Init(&gimbal_controller.pos_big_yaw_td, 20000, 0.01);
     TD_Init(&gimbal_controller.speed_big_yaw_td, 90000, 0.01);
-    TD_Init(&gimbal_controller.pos_small_yaw_td, 40000, 0.01);
-    TD_Init(&gimbal_controller.speed_small_yaw_td, 90000, 0.01);
+    // [SMALL_YAW_REMOVED] 小Yaw TD初始化已删除
+    // TD_Init(&gimbal_controller.pos_small_yaw_td, 40000, 0.01);
+    // TD_Init(&gimbal_controller.speed_small_yaw_td, 90000, 0.01);
 
     // Feedforward_Init( Feedforward_t,float max_out, float *c, float lpf_rc, uint16_t ref_dot_ols_order, uint16_t ref_ddot_ols_orde)
 
-    float small_yaw_angle_ff_c[3] = {0.f, 0.4f, 0.0f}; // 小yaw前馈参数向量
-    float small_yaw_speed_ff_c[3] = {0.4f, 0.f, 0.0f}; // 小yaw前馈参数向量
-    Feedforward_Init(&gimbal_controller.small_yaw_angle_forward, 100.0f, small_yaw_angle_ff_c, 0.01f, 5, 5);
-    Feedforward_Init(&gimbal_controller.small_yaw_speed_forward, 500.0f, small_yaw_speed_ff_c, 0.01f, 5, 5);
+    // [SMALL_YAW_REMOVED] 小Yaw前馈参数和初始化已删除
+    // float small_yaw_angle_ff_c[3] = {0.f, 0.4f, 0.0f};
+    // float small_yaw_speed_ff_c[3] = {0.4f, 0.f, 0.0f};
+    // Feedforward_Init(&gimbal_controller.small_yaw_angle_forward, 100.0f, small_yaw_angle_ff_c, 0.01f, 5, 5);
+    // Feedforward_Init(&gimbal_controller.small_yaw_speed_forward, 500.0f, small_yaw_speed_ff_c, 0.01f, 5, 5);
     // 云台、机械臂的最小二乘法阶数经验值通常为3~5，LPF_rc在0.01~0.05
 
     float big_yaw_angle_ff_c[3] = {0.f, 0.15f, 0.0f}; // 大yaw前馈参数向量
@@ -57,9 +60,9 @@ void GimbalPidInit()
 	PID_Init(&gimbal_controller.pitch_angle_pid, 500.0f, 48.0f, 0.0f, 40.0f, 0.0f, 0.0f, 0, 0, 0, 0.02f, 1, DerivativeFilter | Integral_Limit| Trapezoid_Intergral);
 	PID_Init(&gimbal_controller.pitch_speed_pid, 15000, 1200, 0.1f, 35.0f, 1.0f, 0, 0, 0, 0.0018, 0, 1, Integral_Limit | Trapezoid_Intergral);
 
-    // yaw GM6020 CURRENT LOOP
-    PID_Init(&gimbal_controller.small_yaw_angle_pid, 100.0, 0, 0.05, 15.0f, 0, 0.0f, 0, 0, 0.0, 0.0f, 1, DerivativeFilter);
-    PID_Init(&gimbal_controller.small_yaw_speed_pid, GM6020_MAX_CURRENT, 5000, 0.5, 120.0f, 80.0f, 0, 0, 0, 0.f, 0, 1, Integral_Limit | Trapezoid_Intergral);
+    // [SMALL_YAW_REMOVED] 小Yaw PID初始化已删除
+    // PID_Init(&gimbal_controller.small_yaw_angle_pid, 100.0, 0, 0.05, 15.0f, 0, 0.0f, 0, 0, 0.0, 0.0f, 1, DerivativeFilter);
+    // PID_Init(&gimbal_controller.small_yaw_speed_pid, GM6020_MAX_CURRENT, 5000, 0.5, 120.0f, 80.0f, 0, 0, 0, 0.f, 0, 1, Integral_Limit | Trapezoid_Intergral);
 
     // yaw DM MOTOR CURRENT LOOP
     PID_Init(&gimbal_controller.big_yaw_angle_pid, 360.0, 0, 0.05, 32.0f, 0.f, 0.1f, 0, 0, 0.0, 0.02f, 1, DerivativeFilter);
@@ -72,15 +75,17 @@ void GimbalPidInit()
     //    TD_Init(&gimbal_controller.speed_small_yaw_td, 90000, 0.01);
     TD_Init(&gimbal_controller.pos_big_yaw_td, 20000, 0.01);
     TD_Init(&gimbal_controller.speed_big_yaw_td, 90000, 0.01);
-    TD_Init(&gimbal_controller.pos_small_yaw_td, 40000, 0.01);
-    TD_Init(&gimbal_controller.speed_small_yaw_td, 90000, 0.01);
+    // [SMALL_YAW_REMOVED] 小Yaw TD初始化已删除
+    // TD_Init(&gimbal_controller.pos_small_yaw_td, 40000, 0.01);
+    // TD_Init(&gimbal_controller.speed_small_yaw_td, 90000, 0.01);
 
     // Feedforward_Init( Feedforward_t,float max_out, float *c, float lpf_rc, uint16_t ref_dot_ols_order, uint16_t ref_ddot_ols_orde)
 
-    float small_yaw_angle_ff_c[3] = {0.f, 0.4f, 0.0f}; // 小yaw前馈参数向量
-    float small_yaw_speed_ff_c[3] = {0.4f, 0.f, 0.0f}; // 小yaw前馈参数向量
-    Feedforward_Init(&gimbal_controller.small_yaw_angle_forward, 100.0f, small_yaw_angle_ff_c, 0.01f, 5, 5);
-    Feedforward_Init(&gimbal_controller.small_yaw_speed_forward, 500.0f, small_yaw_speed_ff_c, 0.01f, 5, 5);
+    // [SMALL_YAW_REMOVED] 小Yaw前馈参数和初始化已删除
+    // float small_yaw_angle_ff_c[3] = {0.f, 0.4f, 0.0f};
+    // float small_yaw_speed_ff_c[3] = {0.4f, 0.f, 0.0f};
+    // Feedforward_Init(&gimbal_controller.small_yaw_angle_forward, 100.0f, small_yaw_angle_ff_c, 0.01f, 5, 5);
+    // Feedforward_Init(&gimbal_controller.small_yaw_speed_forward, 500.0f, small_yaw_speed_ff_c, 0.01f, 5, 5);
     // 云台、机械臂的最小二乘法阶数经验值通常为3~5，LPF_rc在0.01~0.05
 
     float big_yaw_angle_ff_c[3] = {0.f, 0.15f, 0.0f}; // 大yaw前馈参数向量
@@ -110,6 +115,8 @@ float Gimbal_Pitch_Calculate(float set_point)
     return gimbal_controller.set_pitch_current;
 }
 
+// [SMALL_YAW_REMOVED] 小Yaw计算函数已删除，陀螺仪yaw数据改由大Yaw使用
+/*
 // 陀螺仪零漂问题解决，大小yaw可解耦控制
 float Gimbal_Small_Yaw_Calculate(float set_point)
 {
@@ -130,6 +137,7 @@ float Gimbal_Small_Yaw_Calculate(float set_point)
         return gimbal_controller.set_small_yaw_current;
     }
 }
+*/
 
 ZeroCheck_Typedef big_yaw_angle_zero_check;
 float big_yaw_angle_after_zero_check;
@@ -144,9 +152,11 @@ void BigYawZeroCheck(void)
 void Big_Yaw_Bias_Cal(void)
 {
     static float fix_motor_angle = 0;
-    if (fabsf(gimbal_controller.big_yaw_angle_pid.Err) < 1.0f && fabsf(gimbal_controller.small_yaw_angle_pid.Err) < 1.0f && big_yaw_controller.big_yaw_mode == 0 && big_yaw_controller.gimbal_last_mode != 0)
+    // [SMALL_YAW_REMOVED] 原条件中small_yaw_angle_pid.Err检查已移除，仅检查大Yaw稳定性
+    if (fabsf(gimbal_controller.big_yaw_angle_pid.Err) < 1.0f && big_yaw_controller.big_yaw_mode == 0 && big_yaw_controller.gimbal_last_mode != 0)
     {
-        fix_motor_angle = gimbal_controller.small_yaw_info.angle - GIMBAL_SMALL_YAW_ZERO_POINT;
+        // [SMALL_YAW_REMOVED] fix_motor_angle无需计算(小Yaw已删除)
+        // fix_motor_angle = gimbal_controller.small_yaw_info.angle - GIMBAL_SMALL_YAW_ZERO_POINT;
     }
 
     float big_yaw_angle_fix = big_yaw_controller.big_yaw_gyro_raw / 360.0f * 3.03f; //+ fix_motor_angle ;
@@ -159,7 +169,8 @@ void Big_Yaw_Bias_Cal(void)
     // if(calibration_flag){
     //    big_yaw_controller.big_yaw_gyro_bias = gimbal_controller.small_yaw_info.angle - GIMBAL_SMALL_YAW_ZERO_POINT;
     // }
-    big_yaw_controller.big_yaw_gyro_bias = gimbal_controller.small_yaw_info.angle - GIMBAL_SMALL_YAW_ZERO_POINT;
+    // [SMALL_YAW_REMOVED] 小Yaw删除后bias置0，原计算: small_yaw_info.angle - SMALL_YAW_ZERO_POINT
+    big_yaw_controller.big_yaw_gyro_bias = 0.0f;
     // 不修改反馈值dealed_big_yaw_gyro，偏置补偿在目标端处理
 }
 
@@ -194,7 +205,8 @@ float Gimbal_Big_Yaw_Calculate(float set_point)
     {
         gimbal_controller.set_big_yaw_current = LIMIT_MAX_MIN(gimbal_controller.set_big_yaw_current, 1200.0f, -1200.0f);
     }
-    if (gimbal_controller.small_yaw_recv.angle != 0 && big_yaw_controller.big_yaw_gyro_raw != 0) // 防止小yaw掉线，大yaw疯转
+    // [SMALL_YAW_REMOVED] 原条件检查small_yaw_recv.angle(防小Yaw掉线)已移除，仅检查大Yaw陀螺
+    if (big_yaw_controller.big_yaw_gyro_raw != 0) // 防止大yaw掉线疯转
     {
         return gimbal_controller.set_big_yaw_current;
     }
@@ -218,25 +230,29 @@ void GimbalClear(void)
     gimbal_controller.comp_pitch_current = 0;
 
     // yaw
-    PID_Clear(&gimbal_controller.small_yaw_angle_pid);
-    PID_Clear(&gimbal_controller.small_yaw_speed_pid);
+    // [SMALL_YAW_REMOVED] 小Yaw PID Clear已删除
+    // PID_Clear(&gimbal_controller.small_yaw_angle_pid);
+    // PID_Clear(&gimbal_controller.small_yaw_speed_pid);
     PID_Clear(&gimbal_controller.big_yaw_angle_pid);
     PID_Clear(&gimbal_controller.big_yaw_speed_pid);
 
-    Feedforward_Clear(&gimbal_controller.small_yaw_speed_forward);
-    Feedforward_Clear(&gimbal_controller.small_yaw_angle_forward);
+    // [SMALL_YAW_REMOVED] 小Yaw Feedforward Clear已删除
+    // Feedforward_Clear(&gimbal_controller.small_yaw_speed_forward);
+    // Feedforward_Clear(&gimbal_controller.small_yaw_angle_forward);
     Feedforward_Clear(&gimbal_controller.big_yaw_speed_forward);
     Feedforward_Clear(&gimbal_controller.big_yaw_angle_forward);
 
-    TD_Clear(&gimbal_controller.pos_small_yaw_td, gimbal_controller.gyro_yaw_angle);
-    TD_Clear(&gimbal_controller.speed_small_yaw_td, gimbal_controller.gyro_yaw_speed);
+    // [SMALL_YAW_REMOVED] 小Yaw TD Clear已删除
+    // TD_Clear(&gimbal_controller.pos_small_yaw_td, gimbal_controller.gyro_yaw_angle);
+    // TD_Clear(&gimbal_controller.speed_small_yaw_td, gimbal_controller.gyro_yaw_speed);
     TD_Clear(&gimbal_controller.pos_big_yaw_td, big_yaw_controller.dealed_big_yaw_gyro);
     TD_Clear(&gimbal_controller.speed_big_yaw_td, big_yaw_controller.big_yaw_gyro_speed);
 
-    gimbal_controller.target_small_yaw_angle = gimbal_controller.gyro_yaw_angle;
-    gimbal_controller.set_small_yaw_angle = gimbal_controller.gyro_yaw_angle;
-    gimbal_controller.set_small_yaw_speed = 0;
-    gimbal_controller.set_small_yaw_current = 0;
+    // [SMALL_YAW_REMOVED] 小Yaw目标角度/控制量清零已删除
+    // gimbal_controller.target_small_yaw_angle = gimbal_controller.gyro_yaw_angle;
+    // gimbal_controller.set_small_yaw_angle = gimbal_controller.gyro_yaw_angle;
+    // gimbal_controller.set_small_yaw_speed = 0;
+    // gimbal_controller.set_small_yaw_current = 0;
 
     gimbal_controller.target_big_yaw_angle = big_yaw_controller.dealed_big_yaw_gyro;
     gimbal_controller.set_big_yaw_angle = big_yaw_controller.dealed_big_yaw_gyro;
@@ -306,7 +322,8 @@ void updateGyro()
     gimbal_controller.gyro_last_pitch_angle = gimbal_controller.gyro_pitch_angle;
 
     // yaw
-    gimbal_controller.gyro_yaw_angle = GIMBAL_SMALL_YAW_GYRO_SIGN * INS.YawTotalAngle;
+    // [SMALL_YAW_REMOVED] GIMBAL_SMALL_YAW_GYRO_SIGN原为1.0f，直接使用
+    gimbal_controller.gyro_yaw_angle = 1.0f * INS.YawTotalAngle;
     speed = (gimbal_controller.gyro_yaw_angle - gimbal_controller.gyro_last_yaw_angle) / gimbal_controller.delta_t;
 
     iir(&gimbal_controller.gyro_yaw_speed, speed, 0.4);
@@ -383,23 +400,26 @@ void GimbalTestInit(GimbalTest_t *test)
     // 初始化方波信号发生器
     SquareWaveInit(&test->pitch_square, GIMBAL_SQUARE_LOW_ANGLE, GIMBAL_SQUARE_HIGH_ANGLE,
                    0.5f, GIMBAL_SQUARE_PERIOD_MS);
-    SquareWaveInit(&test->small_yaw_square, GIMBAL_SQUARE_LOW_ANGLE, GIMBAL_SQUARE_HIGH_ANGLE,
-                   0.5f, GIMBAL_SQUARE_PERIOD_MS);
+    // [SMALL_YAW_REMOVED] 小Yaw方波测试已删除
+    // SquareWaveInit(&test->small_yaw_square, GIMBAL_SQUARE_LOW_ANGLE, GIMBAL_SQUARE_HIGH_ANGLE,
+    //                0.5f, GIMBAL_SQUARE_PERIOD_MS);
 
     // 初始化目标函数
     GimbalTestResetCost(test);
 
     // 初始化周期追踪
     test->last_pitch_cycle = 0;
-    test->last_yaw_cycle = 0;
+    // [SMALL_YAW_REMOVED]
+    // test->last_yaw_cycle = 0;
 
     // 初始化历史记录
     test->last_pitch_ise = 0;
     test->last_pitch_control = 0;
     test->last_pitch_max_error = 0;
-    test->last_yaw_ise = 0;
-    test->last_yaw_control = 0;
-    test->last_yaw_max_error = 0;
+    // [SMALL_YAW_REMOVED]
+    // test->last_yaw_ise = 0;
+    // test->last_yaw_control = 0;
+    // test->last_yaw_max_error = 0;
 }
 
 /**
@@ -414,12 +434,13 @@ void GimbalTestResetCost(GimbalTest_t *test)
     test->pitch_cost.max_error = 0;
     test->pitch_cost.final_error = 0;
 
-    test->yaw_cost.ise = 0;
-    test->yaw_cost.control_cost = 0;
-    test->yaw_cost.total_cost = 0;
-    test->yaw_cost.cycle_time = 0;
-    test->yaw_cost.max_error = 0;
-    test->yaw_cost.final_error = 0;
+    // [SMALL_YAW_REMOVED] 小Yaw目标函数清零已删除
+    // test->yaw_cost.ise = 0;
+    // test->yaw_cost.control_cost = 0;
+    // test->yaw_cost.total_cost = 0;
+    // test->yaw_cost.cycle_time = 0;
+    // test->yaw_cost.max_error = 0;
+    // test->yaw_cost.final_error = 0;
 }
 
 /**

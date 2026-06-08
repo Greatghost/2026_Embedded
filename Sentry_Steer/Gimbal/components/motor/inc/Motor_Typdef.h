@@ -31,7 +31,8 @@ typedef enum MOTOR_APP_TYPE // 电机应用类型
     RIGHT_FRICTION_WHEEL_MOTOR,
     PITCH_MOTOR,
     BIG_YAW_MOTOR,
-    SMALL_YAW_MOTOR,
+    // [SMALL_YAW_REMOVED] 删除小Yaw, 保留枚举值占位以避免后续索引错乱
+    // SMALL_YAW_MOTOR,
     TOGGLE_MOTOR,
 		//BAY_MOTOR,
     MOTOR_APP_NUMS

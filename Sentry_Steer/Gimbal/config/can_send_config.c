@@ -31,11 +31,12 @@ void Motor_Config_Init()
     motor_communication[BIG_YAW_MOTOR].motor_type = DM_MOTOR;
     motor_communication[BIG_YAW_MOTOR].std_id = MOTOR_STD_ID_LIST[DM_MOTOR_1];
 
-    motor_communication[SMALL_YAW_MOTOR].can = CAN2;
-    motor_communication[SMALL_YAW_MOTOR].motor_id = 0x205;
-    motor_communication[SMALL_YAW_MOTOR].motor_id_type = DJI_0x1FE;
-    motor_communication[SMALL_YAW_MOTOR].motor_type = GM6020;
-    motor_communication[SMALL_YAW_MOTOR].std_id = MOTOR_STD_ID_LIST[DJI_0x1FE];
+    // [SMALL_YAW_REMOVED] 小Yaw电机通信配置已删除
+    // motor_communication[SMALL_YAW_MOTOR].can = CAN2;
+    // motor_communication[SMALL_YAW_MOTOR].motor_id = 0x205;
+    // motor_communication[SMALL_YAW_MOTOR].motor_id_type = DJI_0x1FE;
+    // motor_communication[SMALL_YAW_MOTOR].motor_type = GM6020;
+    // motor_communication[SMALL_YAW_MOTOR].std_id = MOTOR_STD_ID_LIST[DJI_0x1FE];
 
     motor_communication[TOGGLE_MOTOR].can = CAN1;
     motor_communication[TOGGLE_MOTOR].motor_id = 0x204;
@@ -75,11 +76,12 @@ void Motor_Config_Init()
     motor_communication[BIG_YAW_MOTOR].motor_type = DM_MOTOR;
     motor_communication[BIG_YAW_MOTOR].std_id = MOTOR_STD_ID_LIST[DM_MOTOR_1];
 
-    motor_communication[SMALL_YAW_MOTOR].can = CAN2;
-    motor_communication[SMALL_YAW_MOTOR].motor_id = 0x205;
-    motor_communication[SMALL_YAW_MOTOR].motor_id_type = DJI_0x1FE;
-    motor_communication[SMALL_YAW_MOTOR].motor_type = GM6020;
-    motor_communication[SMALL_YAW_MOTOR].std_id = MOTOR_STD_ID_LIST[DJI_0x1FE];
+    // [SMALL_YAW_REMOVED] 小Yaw电机通信配置已删除
+    // motor_communication[SMALL_YAW_MOTOR].can = CAN2;
+    // motor_communication[SMALL_YAW_MOTOR].motor_id = 0x205;
+    // motor_communication[SMALL_YAW_MOTOR].motor_id_type = DJI_0x1FE;
+    // motor_communication[SMALL_YAW_MOTOR].motor_type = GM6020;
+    // motor_communication[SMALL_YAW_MOTOR].std_id = MOTOR_STD_ID_LIST[DJI_0x1FE];
 
     motor_communication[TOGGLE_MOTOR].can = CAN1;
     motor_communication[TOGGLE_MOTOR].motor_id = 0x204;
