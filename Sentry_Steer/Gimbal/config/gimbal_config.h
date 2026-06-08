@@ -27,8 +27,10 @@
  */
 
 #define GIMBAL_TEST_CONFIG            0       // 0-正常控制, 1-Pitch方波测试, 2-小Yaw方波测试
-#define GIMBAL_CONTROL_DISCONNECT     0       
+#define GIMBAL_CONTROL_DISCONNECT     0
 // 0-正常更新目标角度, 1-目标角度保持不变,ozone修改gimbal_controller.target_pitch_angle并监控 gimbal_controller.gyro_pitch_angle和gimbal_controller.set_pitch_current
+
+#define DEBUG_ROBOT_CMD_SEND             // 开启: 0.5Hz向PC发送0x0303小地图指令(TypeID 9), 注释即屏蔽
 
 #define GIMBAL_SQUARE_LOW_ANGLE     -5.0f   // 方波低角度 (度)
 #define GIMBAL_SQUARE_HIGH_ANGLE    5.0f    // 方波高角度 (度)

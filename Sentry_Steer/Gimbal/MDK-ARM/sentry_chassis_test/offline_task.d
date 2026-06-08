@@ -1,9 +1,9 @@
 sentry_chassis_test\offline_task.o: ..\Task\src\Offline_Task.c
 sentry_chassis_test\offline_task.o: ../Task/inc/Offline_Task.h
 sentry_chassis_test\offline_task.o: ../Inc/FreeRTOSConfig.h
-sentry_chassis_test\offline_task.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdint.h
+sentry_chassis_test\offline_task.o: D:\keil5\ARM\ARMCC\Bin\..\include\stdint.h
 sentry_chassis_test\offline_task.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/FreeRTOS.h
-sentry_chassis_test\offline_task.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stddef.h
+sentry_chassis_test\offline_task.o: D:\keil5\ARM\ARMCC\Bin\..\include\stddef.h
 sentry_chassis_test\offline_task.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/projdefs.h
 sentry_chassis_test\offline_task.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/portable.h
 sentry_chassis_test\offline_task.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/deprecated_definitions.h
@@ -12,10 +12,10 @@ sentry_chassis_test\offline_task.o: ../Middlewares/Third_Party/FreeRTOS/Source/i
 sentry_chassis_test\offline_task.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/task.h
 sentry_chassis_test\offline_task.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/list.h
 sentry_chassis_test\offline_task.o: ../components/tools/inc/debug.h
-sentry_chassis_test\offline_task.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\string.h
-sentry_chassis_test\offline_task.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\math.h
-sentry_chassis_test\offline_task.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdio.h
-sentry_chassis_test\offline_task.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdlib.h
+sentry_chassis_test\offline_task.o: D:\keil5\ARM\ARMCC\Bin\..\include\string.h
+sentry_chassis_test\offline_task.o: D:\keil5\ARM\ARMCC\Bin\..\include\math.h
+sentry_chassis_test\offline_task.o: D:\keil5\ARM\ARMCC\Bin\..\include\stdio.h
+sentry_chassis_test\offline_task.o: D:\keil5\ARM\ARMCC\Bin\..\include\stdlib.h
 sentry_chassis_test\offline_task.o: ../components/tools/inc/tools.h
 sentry_chassis_test\offline_task.o: ../bsp/boards/inc/bsp_dwt.h
 sentry_chassis_test\offline_task.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h

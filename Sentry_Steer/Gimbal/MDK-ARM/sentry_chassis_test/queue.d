@@ -1,9 +1,9 @@
 sentry_chassis_test\queue.o: ../Middlewares/Third_Party/FreeRTOS/Source/queue.c
-sentry_chassis_test\queue.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdlib.h
-sentry_chassis_test\queue.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\string.h
+sentry_chassis_test\queue.o: D:\keil5\ARM\ARMCC\Bin\..\include\stdlib.h
+sentry_chassis_test\queue.o: D:\keil5\ARM\ARMCC\Bin\..\include\string.h
 sentry_chassis_test\queue.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/FreeRTOS.h
-sentry_chassis_test\queue.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stddef.h
-sentry_chassis_test\queue.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdint.h
+sentry_chassis_test\queue.o: D:\keil5\ARM\ARMCC\Bin\..\include\stddef.h
+sentry_chassis_test\queue.o: D:\keil5\ARM\ARMCC\Bin\..\include\stdint.h
 sentry_chassis_test\queue.o: ../Inc/FreeRTOSConfig.h
 sentry_chassis_test\queue.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/projdefs.h
 sentry_chassis_test\queue.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/portable.h

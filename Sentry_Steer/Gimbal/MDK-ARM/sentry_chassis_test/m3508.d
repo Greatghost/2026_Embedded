@@ -1,10 +1,10 @@
 sentry_chassis_test\m3508.o: ..\components\motor\src\M3508.c
 sentry_chassis_test\m3508.o: ../components/motor/inc/M3508.h
-sentry_chassis_test\m3508.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\string.h
-sentry_chassis_test\m3508.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdint.h
-sentry_chassis_test\m3508.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\math.h
-sentry_chassis_test\m3508.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdio.h
-sentry_chassis_test\m3508.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdlib.h
+sentry_chassis_test\m3508.o: D:\keil5\ARM\ARMCC\Bin\..\include\string.h
+sentry_chassis_test\m3508.o: D:\keil5\ARM\ARMCC\Bin\..\include\stdint.h
+sentry_chassis_test\m3508.o: D:\keil5\ARM\ARMCC\Bin\..\include\math.h
+sentry_chassis_test\m3508.o: D:\keil5\ARM\ARMCC\Bin\..\include\stdio.h
+sentry_chassis_test\m3508.o: D:\keil5\ARM\ARMCC\Bin\..\include\stdlib.h
 sentry_chassis_test\m3508.o: ../components/tools/inc/ZeroCheck.h
 sentry_chassis_test\m3508.o: ../components/tools/inc/tools.h
 sentry_chassis_test\m3508.o: ../components/algorithm/inc/my_filter.h

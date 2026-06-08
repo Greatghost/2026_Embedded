@@ -448,15 +448,22 @@ void PC_Send(uint32_t index)
     {
         SendtoPC(JUDGE_PC_DATA_BULLET_DATA_AND_RFID2);
     }
+    #ifdef DEBUG_ROBOT_CMD_SEND
+	// 调试: TypeID 9 小地图下发指令发送 (0.5Hz)
+	if (index % 1000 == 7)
+	{
+		SendtoPC(JUDGE_PC_DATA_ROBOT_COMMAND);
+	}
+    #endif
 
     if (index % 2 == 0) // 250HZ
     {
-#if COMMUNICATION_CHOOSE == COMMUNICATION_OF_IFANTRY
+    #if COMMUNICATION_CHOOSE == COMMUNICATION_OF_IFANTRY
         SendtoPC(); // 将信息发送给上位机
-#elif COMMUNICATION_CHOOSE == COMMUNICATION_OF_SENTRY
+    #elif COMMUNICATION_CHOOSE == COMMUNICATION_OF_SENTRY
         SendtoPC(USUAL_PC_DATA); // 将信息发送给上位机
 
-#endif
+    #endif
     }
     if (index % 100 == 3) // 5hz
     {

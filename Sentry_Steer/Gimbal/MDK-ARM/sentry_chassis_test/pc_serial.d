@@ -1,11 +1,11 @@
 sentry_chassis_test\pc_serial.o: ..\application\src\pc_serial.c
 sentry_chassis_test\pc_serial.o: ../application/inc/pc_serial.h
 sentry_chassis_test\pc_serial.o: ../components/algorithm/inc/algorithmOfCRC.h
-sentry_chassis_test\pc_serial.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\string.h
-sentry_chassis_test\pc_serial.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdint.h
-sentry_chassis_test\pc_serial.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\math.h
-sentry_chassis_test\pc_serial.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdio.h
-sentry_chassis_test\pc_serial.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdlib.h
+sentry_chassis_test\pc_serial.o: D:\keil5\ARM\ARMCC\Bin\..\include\string.h
+sentry_chassis_test\pc_serial.o: D:\keil5\ARM\ARMCC\Bin\..\include\stdint.h
+sentry_chassis_test\pc_serial.o: D:\keil5\ARM\ARMCC\Bin\..\include\math.h
+sentry_chassis_test\pc_serial.o: D:\keil5\ARM\ARMCC\Bin\..\include\stdio.h
+sentry_chassis_test\pc_serial.o: D:\keil5\ARM\ARMCC\Bin\..\include\stdlib.h
 sentry_chassis_test\pc_serial.o: ../Task/inc/ins_task.h
 sentry_chassis_test\pc_serial.o: ../components/devices/inc/BMI088driver.h
 sentry_chassis_test\pc_serial.o: ../Inc/main.h
@@ -23,7 +23,7 @@ sentry_chassis_test\pc_serial.o: ../Drivers/CMSIS/Include/mpu_armv7.h
 sentry_chassis_test\pc_serial.o: ../Drivers/CMSIS/Device/ST/STM32F4xx/Include/system_stm32f4xx.h
 sentry_chassis_test\pc_serial.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h
 sentry_chassis_test\pc_serial.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy/stm32_hal_legacy.h
-sentry_chassis_test\pc_serial.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stddef.h
+sentry_chassis_test\pc_serial.o: D:\keil5\ARM\ARMCC\Bin\..\include\stddef.h
 sentry_chassis_test\pc_serial.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_rcc_ex.h
 sentry_chassis_test\pc_serial.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_gpio.h
 sentry_chassis_test\pc_serial.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_gpio_ex.h

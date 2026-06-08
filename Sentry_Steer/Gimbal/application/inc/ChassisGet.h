@@ -55,6 +55,16 @@ typedef struct BulletExtendedRecv
   uint8_t  reserve;                      // 填充到8字节
 } BulletExtendedRecv_t;
 
+// 小地图下发指令接收结构 (0x0303, CAN ID 0x09E)
+typedef struct RobotCommand_ForSend
+{
+  int16_t  target_position_x_100;  // 目标X坐标 (float×100 → int16)，单位 0.01m
+  int16_t  target_position_y_100;  // 目标Y坐标 (float×100 → int16)，单位 0.01m
+  uint8_t  cmd_keyboard;           // 键盘按键命令
+  uint8_t  target_robot_id;        // 目标机器人ID
+  uint16_t cmd_source;             // 指令来源
+} RobotCommand_ForSend_t;  // sizeof == 8 字节，匹配 CAN DLC
+
 #pragma pack(pop)
 
 extern ChassisGetPack_1 chassis_pack_get_1;
@@ -62,5 +72,6 @@ extern ChassisSpeedRecv_t chassis_speed_recv;
 extern ShootDataRecv_t shoot_data_recv;       // 射击数据接收
 extern SentryInfoRecv_t sentry_info_recv;     // 哨兵信息接收
 extern BulletExtendedRecv_t bullet_extended_recv;  // 弹量扩展数据接收
+extern RobotCommand_ForSend_t robot_command_recv;  // 小地图下发指令接收
 
 #endif // !_CHASSIS_GET_H

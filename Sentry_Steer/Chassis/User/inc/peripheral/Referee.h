@@ -453,11 +453,11 @@ typedef struct // 0x0301 机器人间通信 数据结构体（兼容旧代码映
 
 typedef struct // 0x0303 小地图下发信息标识
 {
-	float target_position_x;  // 目标位置X坐标
-	float target_position_y;  // 目标位置Y坐标
-	float target_position_z;  // 目标位置Z坐标
-	uint8_t commd_keyboard;	  // 键盘按键命令
-	uint16_t target_robot_ID; // 目标机器人ID
+	float target_position_x;
+    float target_position_y;
+    uint8_t cmd_keyboard;
+    uint8_t target_robot_id;
+    uint16_t cmd_source;
 } ext_robot_command_t;
 
 typedef struct // 0x0305 小地图接收信息标识
@@ -748,6 +748,7 @@ typedef struct RefereeDataUpdate
 {
 	int8_t is_max_power_data_update; // 最大功率数据更新标志：1-已更新/0-未更新
 	int8_t is_power_data_update;	 // 功率数据更新标志：1-已更新/0-未更新
+	int8_t is_robot_command_update;  // 0x0303 小地图指令更新标志：1-已更新/0-未更新
 } RefereeDataUpdate;
 
 enum

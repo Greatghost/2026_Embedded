@@ -65,6 +65,17 @@ typedef struct PCRecvData
     uint16_t crc16;
     #endif
 } PCRecvData;
+
+// TypeID 9: RobotCmd - 小地图下发指令 (0x0303 CAN 0x09E)
+typedef struct PCSendDataRobotCmd
+{
+	uint8_t start_flag;
+	uint8_t data_pack_type;  // = JUDGE_PC_DATA_ROBOT_COMMAND = 9
+	RobotCommand_ForSend_t cmd;  // 8 bytes 小地图指令原样转发
+	uint32_t reserved;       // 填充至12字节data
+	uint8_t crc8;
+} PCSendDataRobotCmd_t;  // sizeof == 15 bytes
+
 #pragma pack(pop) // 不进行字节对齐
 
 #define PC_SENDBUF_SIZE sizeof(PCSendData)
@@ -94,7 +105,8 @@ typedef enum
 	JUDGE_PC_DATA_POS = 5,
 	JUDGE_PC_DATA_EXTENDED = 6,
 	JUDGE_PC_DATA_SENTRY_DATA = 7,      // TypeID 7: 哨兵信息 (0x020D + 0x0207初速度)
-	JUDGE_PC_DATA_BULLET_DATA_AND_RFID2 = 8  // TypeID 8: 弹量数据+RFID扩展 (0x0207+0x0208+rfid_status_2)
+	JUDGE_PC_DATA_BULLET_DATA_AND_RFID2 = 8, // TypeID 8: 弹量数据+RFID扩展
+	JUDGE_PC_DATA_ROBOT_COMMAND = 9     // TypeID 9: 小地图下发指令 (0x0303)
 }PC_dataType_enum;
 typedef enum{
 	OFFLINE_START = 0,
@@ -261,6 +273,17 @@ typedef struct PCSendDataBulletAndRfid2
 }PCSendDataBulletAndRfid2_t;  // sizeof == 15 bytes (1+1+12+1)
 
 
+
+// TypeID 9: RobotCmd - 小地图下发指令 (0x0303 CAN 0x09E)
+typedef struct PCSendDataRobotCmd
+{
+	uint8_t start_flag;
+	uint8_t data_pack_type;  // = JUDGE_PC_DATA_ROBOT_COMMAND = 9
+	RobotCommand_ForSend_t cmd;  // 8 bytes 小地图指令原样转发
+	uint32_t reserved;       // 填充至12字节data
+	uint8_t crc8;
+} PCSendDataRobotCmd_t;  // sizeof == 15 bytes
+
 #pragma pack(pop) //
 
 
@@ -298,6 +321,7 @@ void NAVReceive(uint8_t Buf[]);
 void SendtoNAV(void);
 
 extern PCRecvData_1 pc_recv_data_1;
+extern PCSendDataRobotCmd_t PCSendRobotCmd;  // TypeID 9
 #endif
 
 #endif // !_PC_SERIAL_H

@@ -257,6 +257,11 @@ void MotorReceive(CAN_HandleTypeDef *hcan, CAN_RxHeaderTypeDef *rx_header, uint8
 		// 弹量扩展字段接收 (0x0208扩展)
 		memcpy(&bullet_extended_recv, data, sizeof(BulletExtendedRecv_t));
 	}
+	else if (hcan->Instance == CAN2 && rx_header->StdId == ROBOT_COMMAND_CAN_ID)
+	{
+		// 小地图下发指令接收 (0x09E, 来自底盘裁判系统0x0303)
+		memcpy(&robot_command_recv, data, sizeof(RobotCommand_ForSend_t));
+	}
 }
 
 /**********************************************************************************************************

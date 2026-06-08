@@ -133,6 +133,16 @@ typedef struct SentryCmd_FromGimbal
 	uint8_t  reserve[4];        // 填充到8字节
 } SentryCmd_FromGimbal_t;
 
+// 小地图下发指令发送包 (0x0303)
+typedef struct RobotCommand_ForSend
+{
+	int16_t  target_position_x_100;  // 目标X坐标 (float*100 → int16)
+	int16_t  target_position_y_100;  // 目标Y坐标 (float*100 → int16)
+	uint8_t  cmd_keyboard;           // 键盘按键命令
+	uint8_t  target_robot_id;        // 目标机器人ID
+	uint16_t cmd_source;             // 指令来源
+} RobotCommand_ForSend_t;
+
 
 #pragma pack(pop)
 
@@ -142,6 +152,7 @@ extern ShootData_ForSend_t shoot_data_send;
 extern SentryInfo_ForSend_t sentry_info_send;
 extern BulletExtended_ForSend_t bullet_extended_send;
 extern SentryCmd_FromGimbal_t sentry_cmd_from_gimbal;  // 接收云台转发的SentryCmd
+extern RobotCommand_ForSend_t robot_command_send;     // 0x0303小地图下发指令
 
 void GimbalSendPack(void);
 void JudgeDataCanSend(void);
@@ -149,5 +160,7 @@ void ChassisSpeedPack(void);  // 底盘速度数据打包发送
 void ShootDataPack(void);     // 射击数据打包发送 (TypeID 7/8)
 void SentryInfoPack(void);    // 哨兵信息打包发送 (TypeID 7)
 void BulletExtendedPack(void); // 弹量扩展字段打包发送 (TypeID 8)
+void RobotCommandPack(void);   // 小地图下发指令打包 (0x0303)
+void Can2SendRobotCommand(RobotCommand_ForSend_t *data); // CAN2发送小地图指令
 
 #endif // !_GIMBAL_SEND_H

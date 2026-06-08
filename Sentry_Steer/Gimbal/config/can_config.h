@@ -49,6 +49,7 @@
 #define GET_SHOOT_DATA_CAN_ID 0x09B           // 接收底盘射击数据(0x0207)
 #define GET_SENTRY_INFO_CAN_ID 0x09C          // 接收哨兵信息(0x020D)
 #define GET_BULLET_EXTENDED_CAN_ID 0x09D      // 接收弹量扩展字段(0x0208扩展)
+#define ROBOT_COMMAND_CAN_ID 0x09E              // 接收小地图下发指令(0x0303)
 // 新增: 发送SentryCmd给底盘
 #define SEND_TO_CHASSIS_SENTRY_CMD_CAN_ID 0x15A  // 发送SentryCmd给底盘
 #define CHASSIS_CAN_COMM_CAN_Handlerx hcan1
@@ -76,7 +77,7 @@
 #define CAN2_FIFO0_ID0 GET_FROM_BIG_YAW_CAN_ID
 #define CAN2_FIFO0_ID1 PITCH_MOTOR_CAN_ID
 #define CAN2_FIFO0_ID2 SMALL_YAW_MOTOR_CAN_ID
-#define CAN2_FIFO0_ID3 0x000
+#define CAN2_FIFO0_ID3 ROBOT_COMMAND_CAN_ID
 
 // FIFO 1 接收ID
 #define CAN2_FIFO1_ID0 0x003
@@ -123,6 +124,7 @@
 #define GET_SHOOT_DATA_CAN_ID 0x09B           // 接收底盘射击数据(0x0207)
 #define GET_SENTRY_INFO_CAN_ID 0x09C          // 接收哨兵信息(0x020D)
 #define GET_BULLET_EXTENDED_CAN_ID 0x09D      // 接收弹量扩展字段(0x0208扩展)
+#define ROBOT_COMMAND_CAN_ID 0x09E              // 接收小地图下发指令(0x0303)
 // 新增: 发送SentryCmd给底盘
 #define SEND_TO_CHASSIS_SENTRY_CMD_CAN_ID 0x15A  // 发送SentryCmd给底盘
 #define CHASSIS_CAN_COMM_CAN_Handlerx hcan1
@@ -150,7 +152,7 @@
 #define CAN2_FIFO0_ID0 GET_FROM_BIG_YAW_CAN_ID
 #define CAN2_FIFO0_ID1 PITCH_MOTOR_CAN_ID
 #define CAN2_FIFO0_ID2 SMALL_YAW_MOTOR_CAN_ID
-#define CAN2_FIFO0_ID3 0x000
+#define CAN2_FIFO0_ID3 ROBOT_COMMAND_CAN_ID
 
 // FIFO 1 接收ID
 #define CAN2_FIFO1_ID0 0x003

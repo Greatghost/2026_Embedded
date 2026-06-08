@@ -81,6 +81,7 @@ void Referee_StructInit(void)
 	memset(&referee_data.Student_Interactive_Header_Data, 0, sizeof(referee_data.Student_Interactive_Header_Data));
 	 memset(&referee_data.Robot_Interactive_Data, 0, sizeof(referee_data.Robot_Interactive_Data));
 	memset(&referee_data.Robot_Command, 0, sizeof(referee_data.Robot_Command));
+	referee_data_updater.is_robot_command_update = 0;
 	memset(&referee_data.Client_Map_Command, 0, sizeof(referee_data.Client_Map_Command));
 	// 清零雷达站发送的数据
 	memset(&referee_data.Radar_Alert_Info, 0, sizeof(referee_data.Radar_Alert_Info));
@@ -429,11 +430,19 @@ void Referee_SolveFifoData(uint8_t *frame)
 		}
 		break;
 	}
-	// 机器人控制指令 0x0303
+	// 机器人控制指令 0x0303 (带去重)
 	case ROBOT_COMMAND_CMD_ID:
+	{
 		global_debugger.referee_debugger.cmd_0x0303_num++;
-		memcpy(&referee_data.Robot_Command, frame + index, sizeof(ext_robot_command_t));
+
+		// 去重：与上次接收数据比较，相同时跳过
+		if (memcmp(frame + index, &referee_data.Robot_Command, sizeof(ext_robot_command_t)) != 0)
+		{
+			memcpy(&referee_data.Robot_Command, frame + index, sizeof(ext_robot_command_t));
+			referee_data_updater.is_robot_command_update = TRUE;
+		}
 		break;
+	}
 		//	case CLIENT_MAP_COMMAND_CMD_ID:
 		//		memcpy(&referee_data.Client_Map_Command, frame + index, sizeof(ext_client_map_command_t));
 		//		break;

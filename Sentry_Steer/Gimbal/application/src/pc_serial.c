@@ -122,6 +122,7 @@ PCSendDataPosition_t PCSendPosition;
 PCSendDataExtended_t PCSendExtended;
 PCSendDataSentry_t PCSendSentry;
 PCSendDataBulletAndRfid2_t PCSendBulletAndRfid2;
+PCSendDataRobotCmd_t PCSendRobotCmd;
 
 ext_shoot_data_t last_shoot_data;
 
@@ -305,6 +306,18 @@ void SendtoPCBulletAndRfid2(unsigned char* buff)
 	memcpy(buff, (void *)&PCSendBulletAndRfid2, PC_SEND_BLOOD_SIZE);
 }
 
+// TypeID 9: 发送小地图下发指令
+void SendtoPCRobotCmd(unsigned char* buff)
+{
+	PCSendRobotCmd.start_flag = '!';
+	PCSendRobotCmd.data_pack_type = JUDGE_PC_DATA_ROBOT_COMMAND;
+	PCSendRobotCmd.cmd = robot_command_recv;  // 8 bytes 原样转发
+	PCSendRobotCmd.reserved = 0;
+	PCSendRobotCmd.crc8 = 0;
+	Append_CRC8_Check_Sum((unsigned char *)&PCSendRobotCmd, PC_SEND_BLOOD_SIZE);
+	memcpy(buff, (void *)&PCSendRobotCmd, PC_SEND_BLOOD_SIZE);
+}
+
 void SendtoPC(uint8_t data_type)
 {
 	if(data_type == USUAL_PC_DATA)
@@ -342,6 +355,10 @@ void SendtoPC(uint8_t data_type)
 	else if(data_type == JUDGE_PC_DATA_BULLET_DATA_AND_RFID2)
 	{
 		SendtoPCBulletAndRfid2(SendToPC_Buff);
+	}
+	else if(data_type == JUDGE_PC_DATA_ROBOT_COMMAND)
+	{
+		SendtoPCRobotCmd(SendToPC_Buff);
 	}
 	CDC_Transmit_FS(SendToPC_Buff,PC_SENDBUF_SIZE);
 }

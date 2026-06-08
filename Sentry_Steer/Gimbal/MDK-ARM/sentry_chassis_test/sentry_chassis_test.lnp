@@ -1,4 +1,4 @@
---cpu=Cortex-M4.fp
+--cpu=Cortex-M4.fp.sp
 "sentry_chassis_test\startup_stm32f407xx.o"
 "sentry_chassis_test\arm_atan2_f32.o"
 "sentry_chassis_test\main.o"
@@ -71,7 +71,7 @@
 "sentry_chassis_test\wbus_decoder.o"
 "sentry_chassis_test\bsp_can.o"
 "sentry_chassis_test\bsp_dwt.o"
-"sentry_chassis_test\bsp_led_1.o"
+"sentry_chassis_test\bsp_led.o"
 "sentry_chassis_test\bsp_pwm.o"
 "sentry_chassis_test\bsp_rc.o"
 "sentry_chassis_test\bsp_spi.o"

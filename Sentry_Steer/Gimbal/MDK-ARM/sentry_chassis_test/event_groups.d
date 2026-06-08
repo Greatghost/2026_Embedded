@@ -1,8 +1,8 @@
 sentry_chassis_test\event_groups.o: ../Middlewares/Third_Party/FreeRTOS/Source/event_groups.c
-sentry_chassis_test\event_groups.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdlib.h
+sentry_chassis_test\event_groups.o: D:\keil5\ARM\ARMCC\Bin\..\include\stdlib.h
 sentry_chassis_test\event_groups.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/FreeRTOS.h
-sentry_chassis_test\event_groups.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stddef.h
-sentry_chassis_test\event_groups.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdint.h
+sentry_chassis_test\event_groups.o: D:\keil5\ARM\ARMCC\Bin\..\include\stddef.h
+sentry_chassis_test\event_groups.o: D:\keil5\ARM\ARMCC\Bin\..\include\stdint.h
 sentry_chassis_test\event_groups.o: ../Inc/FreeRTOSConfig.h
 sentry_chassis_test\event_groups.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/projdefs.h
 sentry_chassis_test\event_groups.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/portable.h

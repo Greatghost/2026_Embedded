@@ -33,6 +33,8 @@ SentryInfo_ForSend_t sentry_info_send;
 BulletExtended_ForSend_t bullet_extended_send;
 // 接收云台转发的SentryCmd 全局实例
 SentryCmd_FromGimbal_t sentry_cmd_from_gimbal;
+// 小地图下发指令发送包 全局实例 (0x0303)
+RobotCommand_ForSend_t robot_command_send;
 // 外部声明：超级电容控制器
 extern NingCapController cap_controller;
 // 雷达消息更新标志位
@@ -221,6 +223,39 @@ void Can2SendBulletExtended(BulletExtended_ForSend_t *data)
   tx_message.DLC = 0x08;
   tx_message.StdId = SEND_TO_GIMBAL_BULLET_EXTENDED_CAN_ID;
   memcpy(tx_message.Data, data, sizeof(BulletExtended_ForSend_t));
+  CAN_Transmit(CAN2, &tx_message);
+}
+
+/**
+ * @brief  小地图下发指令打包 (0x0303)
+ * @param  无
+ * @retval 无
+ * @note   将裁判系统下发的 float 坐标压缩为 int16(×100)，通过CAN2发送给云台
+ */
+void RobotCommandPack(void)
+{
+  ext_robot_command_t *cur = &referee_data.Robot_Command;
+
+  robot_command_send.target_position_x_100 = (int16_t)(cur->target_position_x * 100.0f);
+  robot_command_send.target_position_y_100 = (int16_t)(cur->target_position_y * 100.0f);
+  robot_command_send.cmd_keyboard         = cur->cmd_keyboard;
+  robot_command_send.target_robot_id      = cur->target_robot_id;
+  robot_command_send.cmd_source           = cur->cmd_source;
+}
+
+/**
+ * @brief  小地图下发指令发送（CAN2）
+ * @param  data: 指令数据指针
+ * @retval 无
+ */
+void Can2SendRobotCommand(RobotCommand_ForSend_t *data)
+{
+  CanTxMsg tx_message;
+  tx_message.IDE = CAN_ID_STD;
+  tx_message.RTR = CAN_RTR_DATA;
+  tx_message.DLC = 0x08;
+  tx_message.StdId = SEND_TO_GIMBAL_ROBOT_COMMAND_CAN_ID;
+  memcpy(tx_message.Data, data, sizeof(RobotCommand_ForSend_t));
   CAN_Transmit(CAN2, &tx_message);
 }
 
@@ -616,6 +651,13 @@ void JudgeDataCanSend(void)
   {
     BulletExtendedPack();
     Can2SendBulletExtended(&bullet_extended_send);
+  }
+  // 10Hz 发送小地图下发指令 (0x0303)，由Referee层去重后置位触发
+  if (send_count % 20 == 0 && referee_data_updater.is_robot_command_update)
+  {
+      RobotCommandPack();
+      Can2SendRobotCommand(&robot_command_send);
+      referee_data_updater.is_robot_command_update = FALSE;
   }
   // 计数器溢出重置
   if (send_count == 3000)
