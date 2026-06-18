@@ -59,7 +59,7 @@ void GimbalPidInit()
     // pitch DM MIT模式 (t_ff转矩控制，Kp/Kd为DM内环)
 	PID_Init(&gimbal_controller.pitch_angle_pid, 80.0f, 5.0f, 0.0f, 10.0f, 0.0f, 0.0f, 0, 0, 0, 0.02f, 1, DerivativeFilter | Integral_Limit| Trapezoid_Intergral);
 	PID_Init(&gimbal_controller.pitch_speed_pid, 300.0f, 20.0f, 0.0f, 10.0f, 1.0f, 0, 0, 0, 0.0018, 0, 1, Integral_Limit | Trapezoid_Intergral);
-    // DM电机内环阻尼 (P_des在Motor_Data_Pack中同步为当前位置，Kp提供位置保持刚度)
+    // DM电机内环阻尼 (P_des在GimbalClear中一次性同步为当前位置，Kp提供位置保持刚度)
 	gimbal_controller.DM_Pitch_Motor.Kp = 10;
 	gimbal_controller.DM_Pitch_Motor.Kd = 5;
 
@@ -231,6 +231,11 @@ void GimbalClear(void)
     gimbal_controller.set_pitch_speed = 0;
     gimbal_controller.set_pitch_current = 0;
     gimbal_controller.comp_pitch_current = 0;
+
+    // DM电机P_des一次性同步为当前位置，之后Kp提供弹簧保持力防止重力下坠
+    // P_Receive为度[0,360]，P_des为弧度，转换: (deg-180)*PI/180
+    gimbal_controller.DM_Pitch_Motor.P_des = (gimbal_controller.DM_Pitch_Motor.P_Receive - 180.0f) * PI / 180.0f;
+    gimbal_controller.DM_Big_Yaw_Motor.P_des = (gimbal_controller.DM_Big_Yaw_Motor.P_Receive - 180.0f) * PI / 180.0f;
 
     // yaw
     // [SMALL_YAW_REMOVED] 小Yaw PID Clear已删除
