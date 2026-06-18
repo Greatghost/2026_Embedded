@@ -56,9 +56,12 @@ void GimbalPidInit()
 
 #elif ROBOT == TIGER
 
-    // pitch VOL LOOP
-	PID_Init(&gimbal_controller.pitch_angle_pid, 500.0f, 48.0f, 0.0f, 40.0f, 0.0f, 0.0f, 0, 0, 0, 0.02f, 1, DerivativeFilter | Integral_Limit| Trapezoid_Intergral);
-	PID_Init(&gimbal_controller.pitch_speed_pid, 15000, 1200, 0.1f, 35.0f, 1.0f, 0, 0, 0, 0.0018, 0, 1, Integral_Limit | Trapezoid_Intergral);
+    // pitch DM MIT模式 (t_ff转矩控制，Kp/Kd为DM内环)
+	PID_Init(&gimbal_controller.pitch_angle_pid, 80.0f, 5.0f, 0.0f, 10.0f, 0.0f, 0.0f, 0, 0, 0, 0.02f, 1, DerivativeFilter | Integral_Limit| Trapezoid_Intergral);
+	PID_Init(&gimbal_controller.pitch_speed_pid, 300.0f, 20.0f, 0.0f, 10.0f, 1.0f, 0, 0, 0, 0.0018, 0, 1, Integral_Limit | Trapezoid_Intergral);
+    // DM电机内环阻尼 (P_des在Motor_Data_Pack中同步为当前位置，Kp提供位置保持刚度)
+	gimbal_controller.DM_Pitch_Motor.Kp = 10;
+	gimbal_controller.DM_Pitch_Motor.Kd = 5;
 
     // [SMALL_YAW_REMOVED] 小Yaw PID初始化已删除
     // PID_Init(&gimbal_controller.small_yaw_angle_pid, 100.0, 0, 0.05, 15.0f, 0, 0.0f, 0, 0, 0.0, 0.0f, 1, DerivativeFilter);
