@@ -57,11 +57,11 @@ void GimbalPidInit()
 #elif ROBOT == TIGER
 
     // pitch DM MIT模式 (t_ff转矩控制，Kp/Kd为DM内环)
-	PID_Init(&gimbal_controller.pitch_angle_pid, 80.0f, 5.0f, 0.0f, 10.0f, 0.0f, 0.0f, 0, 0, 0, 0.02f, 1, DerivativeFilter | Integral_Limit| Trapezoid_Intergral);
-	PID_Init(&gimbal_controller.pitch_speed_pid, 300.0f, 20.0f, 0.0f, 10.0f, 1.0f, 0, 0, 0, 0.0018, 0, 1, Integral_Limit | Trapezoid_Intergral);
-    // DM电机内环阻尼 (P_des在GimbalClear中一次性同步为当前位置，Kp提供位置保持刚度)
-	gimbal_controller.DM_Pitch_Motor.Kp = 10;
-	gimbal_controller.DM_Pitch_Motor.Kd = 5;
+		PID_Init(&gimbal_controller.pitch_angle_pid, PITCH_ANGLE_MAXOUT, PITCH_ANGLE_ILIMIT, 0.0f, PITCH_ANGLE_KP, PITCH_ANGLE_KI, PITCH_ANGLE_KD, 0, 0, 0.02f, 0.0f, 1, DerivativeFilter | Integral_Limit| Trapezoid_Intergral);
+	PID_Init(&gimbal_controller.pitch_speed_pid, PITCH_SPEED_MAXOUT, PITCH_SPEED_ILIMIT, 0.0f, PITCH_SPEED_KP, PITCH_SPEED_KI, PITCH_SPEED_KD, 0, 0, 0.0018, 0, 1, 0);
+    // DM电机内环阻尼
+	gimbal_controller.DM_Pitch_Motor.Kp = PITCH_DM_KP;
+	gimbal_controller.DM_Pitch_Motor.Kd = PITCH_DM_KD;
 
     // [SMALL_YAW_REMOVED] 小Yaw PID初始化已删除
     // PID_Init(&gimbal_controller.small_yaw_angle_pid, 100.0, 0, 0.05, 15.0f, 0, 0.0f, 0, 0, 0.0, 0.0f, 1, DerivativeFilter);
@@ -323,7 +323,7 @@ void updateGyro()
 {
     // 注意陀螺仪安装的Pitch和roll轴方向
     gimbal_controller.delta_t = DWT_GetDeltaT(&gimbal_controller.last_cnt);
-    gimbal_controller.gyro_pitch_angle = GIMBAL_PITCH_GYRO_SIGN * (INS.Pitch - GIMBAL_PITCH_BIAS);
+    gimbal_controller.gyro_pitch_angle = GIMBAL_PITCH_GYRO_SIGN * (INS.Roll - GIMBAL_PITCH_BIAS); // 陀螺仪Pitch/Roll装反，用Roll替代Pitch
     float speed = (gimbal_controller.gyro_pitch_angle - gimbal_controller.gyro_last_pitch_angle) / gimbal_controller.delta_t;
 
     iir(&gimbal_controller.gyro_pitch_speed, speed, 0.5);
@@ -339,28 +339,27 @@ void updateGyro()
 }
 
 /**
- * @brief 重力补偿 - 使用多项式模型拟合静止电流
+ * @brief 重力补偿 - 使用4次多项式拟合静止电流
  *        val(x) = p1*x^4 + p2*x^3 + p3*x^2 + p4*x + p5
- *        x: pitch角度(度), val: 补偿电流值
+ *        x: gyro_pitch_angle(度), val: 补偿电流值(t_ff)
+ *        标定日期: 2026/06/19, R²=0.891, RMSE=57.1
  */
 float GimbalPitchComp()
 {
-    // 多项式系数 (Poly4拟合结果 - 2026/04/28更新)
-    const static float p1 =  0.0001f;
-    const static float p2 =  0.0111f;
-    const static float p3 = -1.5359f;
-    const static float p4 =  52.829f;
-    const static float p5 =  585.75f;
+    // Poly3拟合, 上下行平均消摩擦, RMSE=29.0, R²=0.949, 标定日期:2026/06/19
+    const static float p1 =  0.057431f;  // x^3
+    const static float p2 =  2.001924f;  // x^2
+    const static float p3 = 31.241212f;  // x
+    const static float p4 = 221.963597f; // const
 
+    // Clamp到标定有效范围，防止外推失控
     float x = gimbal_controller.gyro_pitch_angle;
+    x = (x > 5.0f) ? 5.0f : (x < -20.0f) ? -20.0f : x;
 
-    // 多项式计算: p1*x^4 + p2*x^3 + p3*x^2 + p4*x + p5
     float x2 = x * x;
     float x3 = x2 * x;
-    float x4 = x3 * x;
-    float comp_current = p1 * x4 + p2 * x3 + p3 * x2 + p4 * x + p5;
+    float comp_current = p1 * x3 + p2 * x2 + p3 * x + p4;
 
-    // IIR滤波平滑输出
     iir(&gimbal_controller.comp_pitch_current, comp_current, 0.7f);
     return gimbal_controller.comp_pitch_current;
 }

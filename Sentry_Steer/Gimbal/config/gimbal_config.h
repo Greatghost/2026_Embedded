@@ -105,7 +105,24 @@
 #define GIMBAL_PITCH_MOTOR_SIGN 1.0f // 云台PITCH电机方向，向上为正
 
 #define GIMBAL_ANGLE_MIN 275.0f // 电机角软限位
-#define GIMBAL_ANGLE_MAX 315.0f
+#define GIMBAL_ANGLE_MAX 330.0f
+
+// Pitch PID参数
+#define PITCH_ANGLE_KP      23.0f
+#define PITCH_ANGLE_KI       0.0f
+#define PITCH_ANGLE_KD       0.0f
+#define PITCH_ANGLE_MAXOUT   100.0f
+#define PITCH_ANGLE_ILIMIT   5.0f
+
+#define PITCH_SPEED_KP       30.0f
+#define PITCH_SPEED_KI        13.0f
+#define PITCH_SPEED_KD        0.0f
+#define PITCH_SPEED_MAXOUT    700.0f
+#define PITCH_SPEED_ILIMIT    0.0f
+
+// DM电机内环阻尼 (Kp=0: 纯MIT力矩控制)
+#define PITCH_DM_KP          0.0f
+#define PITCH_DM_KD          5.0f
 
 #define GIMBAL_PITCH_COMP 4000.0f        // 暂不使用
 #define GIMBAL_PITCH_COMP_COEF 1.0f      // 暂不使用
