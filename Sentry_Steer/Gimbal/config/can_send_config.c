@@ -8,13 +8,13 @@ void Motor_Config_Init()
 
 #if ROBOT == GOBLIN
     motor_communication[LEFT_FRICTION_WHEEL_MOTOR].can = CAN2;
-    motor_communication[LEFT_FRICTION_WHEEL_MOTOR].motor_id = 0x201;
+    motor_communication[LEFT_FRICTION_WHEEL_MOTOR].motor_id = 0x202; // 电调实际ID
     motor_communication[LEFT_FRICTION_WHEEL_MOTOR].motor_id_type = DJI_0x200;
     motor_communication[LEFT_FRICTION_WHEEL_MOTOR].motor_type = M3508;
     motor_communication[LEFT_FRICTION_WHEEL_MOTOR].std_id = MOTOR_STD_ID_LIST[DJI_0x200]; // 发送ID
 
     motor_communication[RIGHT_FRICTION_WHEEL_MOTOR].can = CAN2;
-    motor_communication[RIGHT_FRICTION_WHEEL_MOTOR].motor_id = 0x202;
+    motor_communication[RIGHT_FRICTION_WHEEL_MOTOR].motor_id = 0x201; // 电调实际ID
     motor_communication[RIGHT_FRICTION_WHEEL_MOTOR].motor_id_type = DJI_0x200;
     motor_communication[RIGHT_FRICTION_WHEEL_MOTOR].motor_type = M3508;
     motor_communication[RIGHT_FRICTION_WHEEL_MOTOR].std_id = MOTOR_STD_ID_LIST[DJI_0x200];
@@ -53,13 +53,13 @@ void Motor_Config_Init()
 #elif ROBOT == TIGER
 
 		motor_communication[LEFT_FRICTION_WHEEL_MOTOR].can = CAN2;
-    motor_communication[LEFT_FRICTION_WHEEL_MOTOR].motor_id = 0x201;
+    motor_communication[LEFT_FRICTION_WHEEL_MOTOR].motor_id = 0x202; // 电调实际ID
     motor_communication[LEFT_FRICTION_WHEEL_MOTOR].motor_id_type = DJI_0x200;
     motor_communication[LEFT_FRICTION_WHEEL_MOTOR].motor_type = M3508;
     motor_communication[LEFT_FRICTION_WHEEL_MOTOR].std_id = MOTOR_STD_ID_LIST[DJI_0x200]; // 发送ID
 
     motor_communication[RIGHT_FRICTION_WHEEL_MOTOR].can = CAN2;
-    motor_communication[RIGHT_FRICTION_WHEEL_MOTOR].motor_id = 0x202;
+    motor_communication[RIGHT_FRICTION_WHEEL_MOTOR].motor_id = 0x201; // 电调实际ID
     motor_communication[RIGHT_FRICTION_WHEEL_MOTOR].motor_id_type = DJI_0x200;
     motor_communication[RIGHT_FRICTION_WHEEL_MOTOR].motor_type = M3508;
     motor_communication[RIGHT_FRICTION_WHEEL_MOTOR].std_id = MOTOR_STD_ID_LIST[DJI_0x200];

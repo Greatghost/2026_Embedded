@@ -18,8 +18,8 @@
 #define PITCH_MOTOR_CAN CAN2
 
 // 摩擦轮电机
-#define LEFT_FRICTION_WHEEL_CAN_ID 0x201  // 摩擦轮ID1(左)
-#define RIGHT_FRICTION_WHEEL_CAN_ID 0x202 // 摩擦轮ID2(右)
+#define LEFT_FRICTION_WHEEL_CAN_ID 0x202  // 摩擦轮ID1(左) — 电调实际ID
+#define RIGHT_FRICTION_WHEEL_CAN_ID 0x201 // 摩擦轮ID2(右) — 电调实际ID
 #define FRICTION_WHEEL_CAN CAN2
 
 // 大Yaw轴电机接收
@@ -93,8 +93,8 @@
 #define PITCH_MOTOR_CAN CAN2
 
 // 摩擦轮电机
-#define LEFT_FRICTION_WHEEL_CAN_ID 0x201  // 摩擦轮ID1(左)
-#define RIGHT_FRICTION_WHEEL_CAN_ID 0x202 // 摩擦轮ID2(右)
+#define LEFT_FRICTION_WHEEL_CAN_ID 0x202  // 摩擦轮ID1(左) — 电调实际ID
+#define RIGHT_FRICTION_WHEEL_CAN_ID 0x201 // 摩擦轮ID2(右) — 电调实际ID
 #define FRICTION_WHEEL_CAN CAN2
 
 // 大Yaw轴电机接收
