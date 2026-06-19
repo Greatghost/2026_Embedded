@@ -1,0 +1,46 @@
+Gravity Compensation Fit v2 — Hysteresis-averaged
+Paired: 28, Clean: 28
+
+3rd: RMSE=29.0, R²=0.9493
+  p1 = 0.057431 ± 0.016727
+  p2 = 2.001924 ± 0.449437
+  p3 = 31.241212 ± 2.865208
+  p4 = 221.963597 ± 10.297422
+
+4rd: RMSE=22.0, R²=0.9708
+  p1 = 0.007644 ± 0.001855
+  p2 = 0.320182 ± 0.065069
+  p3 = 4.230975 ± 0.643341
+  p4 = 30.792684 ± 2.222620
+  p5 = 198.620846 ± 9.784981
+
+Selected: 4rd-order
+Data points:
+  gyro= -21.510  I_avg=   -53.4  I_down=  316.3  I_up= -423.2  fric= 369.7
+  gyro= -20.576  I_avg=   -82.9  I_down=  291.8  I_up= -457.6  fric= 374.7
+  gyro= -19.614  I_avg=   -76.3  I_down=  292.2  I_up= -444.8  fric= 368.5
+  gyro= -18.900  I_avg=   -21.8  I_down=  315.6  I_up= -359.2  fric= 337.4
+  gyro= -17.783  I_avg=   -42.0  I_down=  301.2  I_up= -385.3  fric= 343.3
+  gyro= -16.709  I_avg=   -57.5  I_down=  279.8  I_up= -394.9  fric= 337.3
+  gyro= -16.115  I_avg=    22.3  I_down=  368.5  I_up= -323.9  fric= 346.2
+  gyro= -14.981  I_avg=    -1.7  I_down=  323.9  I_up= -327.3  fric= 325.6
+  gyro= -13.504  I_avg=    -1.4  I_down=  332.0  I_up= -334.8  fric= 333.4
+  gyro= -13.120  I_avg=    21.3  I_down=  377.5  I_up= -334.8  fric= 356.1
+  gyro= -12.099  I_avg=    19.6  I_down=  391.8  I_up= -352.6  fric= 372.2
+  gyro= -11.313  I_avg=    61.6  I_down=  390.1  I_up= -267.0  fric= 328.5
+  gyro= -10.235  I_avg=    46.5  I_down=  380.2  I_up= -287.1  fric= 333.7
+  gyro=  -9.502  I_avg=    97.9  I_down=  483.1  I_up= -287.3  fric= 385.2
+  gyro=  -8.358  I_avg=    70.1  I_down=  441.7  I_up= -301.6  fric= 371.6
+  gyro=  -7.479  I_avg=    93.6  I_down=  410.5  I_up= -223.2  fric= 316.9
+  gyro=  -6.480  I_avg=    93.9  I_down=  417.9  I_up= -230.0  fric= 323.9
+  gyro=  -5.714  I_avg=   139.2  I_down=  483.8  I_up= -205.4  fric= 344.6
+  gyro=  -4.477  I_avg=    93.5  I_down=  425.7  I_up= -238.7  fric= 332.2
+  gyro=  -3.821  I_avg=   159.9  I_down=  453.3  I_up= -133.5  fric= 293.4
+  gyro=  -2.857  I_avg=   167.6  I_down=  486.1  I_up= -150.9  fric= 318.5
+  gyro=  -1.745  I_avg=   145.8  I_down=  472.9  I_up= -181.2  fric= 327.1
+  gyro=  -0.088  I_avg=   212.3  I_down=  519.6  I_up=  -95.1  fric= 307.4
+  gyro=   0.983  I_avg=   198.6  I_down=  488.4  I_up=  -91.3  fric= 289.8
+  gyro=   1.740  I_avg=   246.1  I_down=  565.9  I_up=  -73.7  fric= 319.8
+  gyro=   2.128  I_avg=   268.4  I_down=  565.9  I_up=  -29.1  fric= 297.5
+  gyro=   2.368  I_avg=   319.2  I_down=  565.9  I_up=   72.5  fric= 246.7
+  gyro=   4.562  I_avg=   476.0  I_down=  557.9  I_up=  394.1  fric=  81.9

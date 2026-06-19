@@ -1,0 +1,64 @@
+Gravity Compensation Fit Results
+================================
+
+Data file: Ozone_DataGraph_260619.csv
+Total samples: 12522, Duration: 155s
+Segments: 35, Clean points: 28, Excluded: 7
+
+Excluded points:
+  gyro=0.000, I=0.0, target=0.0  [power-up initial]
+  gyro=5.008, I=600.0, target=8.0  [saturated]
+  gyro=5.844, I=600.0, target=9.0  [saturated]
+  gyro=5.847, I=600.0, target=10.0  [saturated]
+  gyro=5.922, I=600.0, target=11.0  [saturated]
+  gyro=-19.123, I=-479.1, target=-21.0  [bottom-edge anomaly]
+  gyro=11.213, I=49.3, target=11.4  [high-end isolated]
+
+=== Comparison: 3rd vs 4th order ===
+
+3rd-order: RMSE=67.67, R²=0.846594
+         p1 (x³) =     0.143370  ±   0.046635
+         p2 (x²) =     2.335897  ±   1.084257
+          p3 (x) =    16.198423  ±   5.801058
+      p4 (const) =   469.866258  ±  24.614407
+
+4th-order: RMSE=57.13, R²=0.890681
+         p1 (x⁴) =    -0.020176  ±   0.006625
+         p2 (x³) =    -0.449467  ±   0.198766
+         p3 (x²) =    -1.461691  ±   1.558522
+          p4 (x) =    24.290357  ±   5.664194
+      p5 (const) =   514.928641  ±  25.873622
+
+Selected: 4th-order polynomial
+RMSE = 57.13
+R²   = 0.890681
+
+Clean data points used for fitting:
+  gyro= -19.102  current=  -229.8  target= -20.0  err= -0.90  std=   4.5
+  gyro= -18.968  current=    -7.5  target= -19.0  err= -0.03  std=   4.6
+  gyro= -18.590  current=   150.7  target= -18.0  err=  0.59  std=   4.4
+  gyro= -17.892  current=   227.1  target= -17.0  err=  0.89  std=   5.1
+  gyro= -16.972  current=   249.4  target= -16.0  err=  0.97  std=   4.1
+  gyro= -16.050  current=   268.3  target= -15.0  err=  1.05  std=   3.7
+  gyro= -15.192  current=   304.1  target= -14.0  err=  1.19  std=   3.8
+  gyro= -14.196  current=   304.9  target= -13.0  err=  1.20  std=   4.4
+  gyro= -13.311  current=   335.1  target= -12.0  err=  1.31  std=   3.2
+  gyro= -12.280  current=   326.2  target= -11.0  err=  1.28  std=   3.9
+  gyro= -11.449  current=   369.0  target= -10.0  err=  1.45  std=   3.1
+  gyro= -10.495  current=   381.2  target=  -9.0  err=  1.49  std=   3.1
+  gyro=  -9.372  current=   349.5  target=  -8.0  err=  1.37  std=   3.8
+  gyro=  -8.285  current=   327.8  target=  -7.0  err=  1.28  std=   3.4
+  gyro=  -7.668  current=   424.6  target=  -6.0  err=  1.67  std=   4.4
+  gyro=  -6.591  current=   405.9  target=  -5.0  err=  1.59  std=   3.7
+  gyro=  -5.476  current=   375.8  target=  -4.0  err=  1.48  std=   3.7
+  gyro=  -4.704  current=   434.3  target=  -3.0  err=  1.70  std=   3.4
+  gyro=  -3.884  current=   480.8  target=  -2.0  err=  1.88  std=   4.0
+  gyro=  -2.784  current=   455.1  target=  -1.0  err=  1.78  std=   4.1
+  gyro=  -1.773  current=   452.0  target=   0.0  err=  1.77  std=   4.5
+  gyro=  -0.730  current=   441.4  target=   1.0  err=  1.73  std=   5.1
+  gyro=  -0.244  current=   571.8  target=   2.0  err=  2.24  std=   5.0
+  gyro=   0.982  current=   514.8  target=   3.0  err=  2.02  std=   5.0
+  gyro=   2.063  current=   494.4  target=   4.0  err=  1.94  std=   4.9
+  gyro=   2.836  current=   551.9  target=   5.0  err=  2.16  std=   5.1
+  gyro=   3.746  current=   573.8  target=   6.0  err=  2.25  std=   5.9
+  gyro=   4.794  current=   562.5  target=   7.0  err=  2.21  std=   6.0
