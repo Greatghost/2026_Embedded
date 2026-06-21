@@ -62,36 +62,22 @@ void GimbalPidInit()
     // DM电机内环阻尼
 	gimbal_controller.DM_Pitch_Motor.Kp = PITCH_DM_KP;
 	gimbal_controller.DM_Pitch_Motor.Kd = PITCH_DM_KD;
+	gimbal_controller.DM_Big_Yaw_Motor.Kp = 0;
+	gimbal_controller.DM_Big_Yaw_Motor.Kd = 5;
 
     // [SMALL_YAW_REMOVED] 小Yaw PID初始化已删除
     // PID_Init(&gimbal_controller.small_yaw_angle_pid, 100.0, 0, 0.05, 15.0f, 0, 0.0f, 0, 0, 0.0, 0.0f, 1, DerivativeFilter);
     // PID_Init(&gimbal_controller.small_yaw_speed_pid, GM6020_MAX_CURRENT, 5000, 0.5, 120.0f, 80.0f, 0, 0, 0, 0.f, 0, 1, Integral_Limit | Trapezoid_Intergral);
 
-    // yaw DM MOTOR CURRENT LOOP
-    PID_Init(&gimbal_controller.big_yaw_angle_pid, 360.0, 0, 0.05, 32.0f, 0.f, 0.1f, 0, 0, 0.0, 0.02f, 1, DerivativeFilter);
-    PID_Init(&gimbal_controller.big_yaw_speed_pid, 6000, 1200, 0.5, 33.0f, 1.0f, 0, 0, 0, 0.0018, 0, 1, Integral_Limit | Trapezoid_Intergral);
+    // yaw DM MIT模式 (t_ff转矩控制，单Yaw)
+    PID_Init(&gimbal_controller.big_yaw_angle_pid, 120.0, 0, 0.0f, 23.0f, 0.0f, 0.1f, 0, 0, 0.0f, 0.02f, 1, DerivativeFilter);
+    PID_Init(&gimbal_controller.big_yaw_speed_pid, 1500.0, 300.0f, 0.0f, 80.0f, 15.0f, 0, 0, 0, 0.0018, 0, 1, Integral_Limit | Trapezoid_Intergral);
 
     // 跟踪微分器
-    //    TD_Init(&gimbal_controller.pos_big_yaw_td, 10000, 0.01);
-    //    TD_Init(&gimbal_controller.speed_big_yaw_td, 90000, 0.01);
-    //    TD_Init(&gimbal_controller.pos_small_yaw_td, 30000, 0.003);
-    //    TD_Init(&gimbal_controller.speed_small_yaw_td, 90000, 0.01);
     TD_Init(&gimbal_controller.pos_big_yaw_td, 20000, 0.01);
     TD_Init(&gimbal_controller.speed_big_yaw_td, 90000, 0.01);
-    // [SMALL_YAW_REMOVED] 小Yaw TD初始化已删除
-    // TD_Init(&gimbal_controller.pos_small_yaw_td, 40000, 0.01);
-    // TD_Init(&gimbal_controller.speed_small_yaw_td, 90000, 0.01);
 
-    // Feedforward_Init( Feedforward_t,float max_out, float *c, float lpf_rc, uint16_t ref_dot_ols_order, uint16_t ref_ddot_ols_orde)
-
-    // [SMALL_YAW_REMOVED] 小Yaw前馈参数和初始化已删除
-    // float small_yaw_angle_ff_c[3] = {0.f, 0.4f, 0.0f};
-    // float small_yaw_speed_ff_c[3] = {0.4f, 0.f, 0.0f};
-    // Feedforward_Init(&gimbal_controller.small_yaw_angle_forward, 100.0f, small_yaw_angle_ff_c, 0.01f, 5, 5);
-    // Feedforward_Init(&gimbal_controller.small_yaw_speed_forward, 500.0f, small_yaw_speed_ff_c, 0.01f, 5, 5);
-    // 云台、机械臂的最小二乘法阶数经验值通常为3~5，LPF_rc在0.01~0.05
-
-    float big_yaw_angle_ff_c[3] = {0.f, 0.15f, 0.0f}; // 大yaw前馈参数向量
+    float big_yaw_angle_ff_c[3] = {0.f, 0.15f, 0.0f};
     Feedforward_Init(&gimbal_controller.big_yaw_angle_forward, 100.0f, big_yaw_angle_ff_c, 0.01f, 5, 5);
     float big_yaw_speed_ff_c[3] = {1.0f, 0.4f, 0.0f};
     Feedforward_Init(&gimbal_controller.big_yaw_speed_forward, 500.0f, big_yaw_speed_ff_c, 0.01f, 5, 5);
@@ -162,9 +148,8 @@ void Big_Yaw_Bias_Cal(void)
         // fix_motor_angle = gimbal_controller.small_yaw_info.angle - GIMBAL_SMALL_YAW_ZERO_POINT;
     }
 
-    float big_yaw_angle_fix = big_yaw_controller.big_yaw_gyro_raw / 360.0f * 3.03f; //+ fix_motor_angle ;
-
-    big_yaw_controller.dealed_big_yaw_gyro = big_yaw_controller.big_yaw_gyro_raw + big_yaw_angle_fix;
+    // [SINGLE_YAW] 改用云台自身IMU Yaw作为角度反馈，替代底盘CAN 0x166
+    big_yaw_controller.dealed_big_yaw_gyro = gimbal_controller.gyro_yaw_angle;
 
     // 小yaw上电电机角偏置校准：记录进入云台模式时小yaw相对于中心的偏移量
     // uint8_t calibration_flag;
@@ -186,7 +171,7 @@ float Gimbal_Big_Yaw_Calculate(float set_point)
     // iir(&big_yaw_angle_after_iir,gimbal_controller.set_big_yaw_angle,0.8f);
     gimbal_controller.set_big_yaw_speed = PID_Calculate(&gimbal_controller.big_yaw_angle_pid, big_yaw_controller.dealed_big_yaw_gyro, gimbal_controller.set_big_yaw_angle) + Feedforward_Calculate(&gimbal_controller.big_yaw_angle_forward, gimbal_controller.set_big_yaw_angle);
     TD_Calculate(&gimbal_controller.speed_big_yaw_td, gimbal_controller.set_big_yaw_speed);
-    gimbal_controller.set_big_yaw_current = GIMBAL_BIG_YAW_MOTOR_SIGN * (PID_Calculate(&gimbal_controller.big_yaw_speed_pid, big_yaw_controller.big_yaw_gyro_speed, gimbal_controller.set_big_yaw_speed) + Feedforward_Calculate(&gimbal_controller.big_yaw_speed_forward, gimbal_controller.set_big_yaw_speed));
+    gimbal_controller.set_big_yaw_current = GIMBAL_BIG_YAW_MOTOR_SIGN * (PID_Calculate(&gimbal_controller.big_yaw_speed_pid, gimbal_controller.gyro_yaw_speed, gimbal_controller.set_big_yaw_speed) + Feedforward_Calculate(&gimbal_controller.big_yaw_speed_forward, gimbal_controller.set_big_yaw_speed));
 
     // 大yaw缓启动
 
@@ -201,15 +186,15 @@ float Gimbal_Big_Yaw_Calculate(float set_point)
         else
         {
             big_yaw_controller.gimbal_enable_flag = 1;
-            gimbal_controller.big_yaw_angle_pid.MaxOut = 300;
+            gimbal_controller.big_yaw_angle_pid.MaxOut = 120;  // [SINGLE_YAW] 保持初始化值
         }
     }
     if (big_yaw_controller.gimbal_enable_flag == 0)
     {
         gimbal_controller.set_big_yaw_current = LIMIT_MAX_MIN(gimbal_controller.set_big_yaw_current, 1200.0f, -1200.0f);
     }
-    // [SMALL_YAW_REMOVED] 原条件检查small_yaw_recv.angle(防小Yaw掉线)已移除，仅检查大Yaw陀螺
-    if (big_yaw_controller.big_yaw_gyro_raw != 0) // 防止大yaw掉线疯转
+    // [SINGLE_YAW] 防掉线保护改为检查DM电机编码器，替代旧底盘IMU检查
+    if (gimbal_controller.DM_Big_Yaw_Motor.P_Receive != 0)
     {
         return gimbal_controller.set_big_yaw_current;
     }

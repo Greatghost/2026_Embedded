@@ -495,3 +495,91 @@
 ```
 
 > **关键**: 大Yaw DM_Motor 直接响应目标角度，不再通过小Yaw间接联动。陀螺仪 Yaw 数据保留作为大Yaw 速度环反馈。
+
+---
+
+## 11. Big Yaw 完整数据流（2026-06-19 调试用）
+
+### 11.1 反馈链路（读）
+
+```
+底盘IMU ──CAN2 0x166──▶ bsp_can.c RX中断
+  ├─ memcpy → big_yaw_controller.big_yaw_gyro_raw    (float, 4字节)
+  └─ memcpy → big_yaw_controller.big_yaw_gyro_speed  (float, 4字节)
+        │
+        ▼ Big_Yaw_Bias_Cal() @ GimbalTask 500Hz
+  dealed_big_yaw_gyro = big_yaw_gyro_raw   // 2026/06/19: 删除3.03修正因子
+
+DM_Big_Yaw_Motor ──CAN1 0x10──▶ bsp_can.c RX中断
+  └─ DM_Motor_Receive() → P_Receive, V_Receive, ERR_State, Motor_Enable
+```
+
+### 11.2 控制链路（写）
+
+```
+DJIRemoteUpdate() @ 250Hz (ChassisSolver.c)
+  │  摇杆LEFT_CH_LR + 鼠标mouse.x
+  ▼
+gimbal_controller.target_big_yaw_angle  ←── 上位机 pc_yaw (自瞄模式)
+        │
+        ▼ GimbalTask @ 500Hz, switch(gimbal_action)
+        │
+  ┌─────┴──────────────────────────────────────────┐
+  │ GIMBAL_ACT_MODE:  Gimbal_Act_Cal()              │
+  │   target → IIR动态跟随 → Gimbal_Big_Yaw_Calculate(target) → control │
+  │ GIMBAL_AUTO_AIM:  Gimbal_Autoaim_Cal()          │
+  │   pc_yaw → target → Gimbal_Big_Yaw_Calculate(target) → control │
+  │ GIMBAL_POWERDOWN: Gimbal_Powerdown_Cal()        │
+  │   control = 0                                    │
+  └────────────────────────────────────────────────┘
+        │
+        ▼ Motor_Data_Pack() @ 500Hz
+  DM_Big_Yaw_Motor.t_ff = motor_communication[BIG_YAW_MOTOR].control
+  DM_Motor_Control(&DM_Big_Yaw_Motor, ..., DM_MIT_CONTROL) → CAN数据打包
+  is_has_motor_data[0][DM_MOTOR_1] = TRUE
+        │
+        ▼ Motor_Data_Send_1() @ 500Hz (每3次中的2次)
+  CanSend(&hcan1, motor_send_data[0][DM_MOTOR_1], MOTOR_STD_ID_LIST[5]=0x05)
+        │
+        ▼ CAN1 0x05 ──▶ DM_Big_Yaw_Motor
+```
+
+### 11.3 Gimbal_Big_Yaw_Calculate() 内部
+
+```
+set_point ──▶ TD(pos_big_yaw_td) ──▶ set_big_yaw_angle
+  │                                     反馈: dealed_big_yaw_gyro
+  ├─ Angle PID (Kp=15, MaxOut=120) ──▶ set_big_yaw_speed
+  │   + Feedforward(angle_forward)
+  │
+  ├─ TD(speed_big_yaw_td) ──▶ 
+  │   反馈: big_yaw_gyro_speed
+  ├─ Speed PID (Kp=25, MaxOut=1500) ──▶ set_big_yaw_current
+  │   + Feedforward(speed_forward)
+  │
+  └─ GIMBAL_BIG_YAW_MOTOR_SIGN × set_big_yaw_current → t_ff
+     + 缓启动: 误差<5°时MaxOut从160逐步放大到120
+     + 保护: big_yaw_gyro_raw==0 时返回0 (防掉线疯转)
+```
+
+### 11.4 关键 Debug 变量
+
+| 变量 | 位置 | 正常值 |
+|------|------|--------|
+| `motor_communication[3].control` | 控制命令(中间) | = set_big_yaw_current |
+| `DM_Big_Yaw_Motor.t_ff` | 最终发给电机 | 同 control |
+| `is_has_motor_data[0][5]` | CAN1发送标志 | = 1 |
+| `DM_Big_Yaw_Motor.Motor_Enable` | 电机使能 | = 1 |
+| `DM_Big_Yaw_Motor.ERR_State` | 错误状态 | = 1 (正常) |
+| `remote_controller.gimbal_action` | 当前模式 | 1=ACT, 2=AUTO_AIM |
+| `set_big_yaw_current` | PID输出 | 摇杆推时非零 |
+
+### 11.5 当前调试状态 (2026/06/19)
+
+**现象**: `set_big_yaw_current=1435` 但 `motor_communication[3].control=0`，`DM_Big_Yaw_Motor.t_ff=0`
+
+**排查中**: 
+- 枚举值正确: BIG_YAW_MOTOR=3, MOTOR_APP_NUMS=5
+- can_send_config 正确: motor_type=DM_MOTOR, can=CAN1, motor_id=0x05
+- is_has_motor_data[0][5]=1 ✓ (CAN打包正常)
+- 下一步: 确认 gimbal_action 实际值

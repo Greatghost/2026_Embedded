@@ -159,7 +159,7 @@
           <Type>0</Type>
           <LineNumber>459</LineNumber>
           <EnabledFlag>1</EnabledFlag>
-          <Address>134227302</Address>
+          <Address>134227266</Address>
           <ByteObject>0</ByteObject>
           <HtxType>0</HtxType>
           <ManyObjects>0</ManyObjects>
@@ -175,7 +175,7 @@
           <Type>0</Type>
           <LineNumber>65</LineNumber>
           <EnabledFlag>1</EnabledFlag>
-          <Address>134265570</Address>
+          <Address>134265682</Address>
           <ByteObject>0</ByteObject>
           <HtxType>0</HtxType>
           <ManyObjects>0</ManyObjects>
@@ -191,7 +191,7 @@
           <Type>0</Type>
           <LineNumber>122</LineNumber>
           <EnabledFlag>1</EnabledFlag>
-          <Address>134225996</Address>
+          <Address>134225960</Address>
           <ByteObject>0</ByteObject>
           <HtxType>0</HtxType>
           <ManyObjects>0</ManyObjects>
@@ -207,7 +207,7 @@
           <Type>0</Type>
           <LineNumber>617</LineNumber>
           <EnabledFlag>1</EnabledFlag>
-          <Address>134227992</Address>
+          <Address>134227956</Address>
           <ByteObject>0</ByteObject>
           <HtxType>0</HtxType>
           <ManyObjects>0</ManyObjects>
@@ -223,7 +223,7 @@
           <Type>0</Type>
           <LineNumber>678</LineNumber>
           <EnabledFlag>1</EnabledFlag>
-          <Address>134228380</Address>
+          <Address>134228344</Address>
           <ByteObject>0</ByteObject>
           <HtxType>0</HtxType>
           <ManyObjects>0</ManyObjects>
@@ -415,6 +415,11 @@
           <count>35</count>
           <WinNumber>1</WinNumber>
           <ItemText>CAN2-&gt;ESR</ItemText>
+        </Ww>
+        <Ww>
+          <count>36</count>
+          <WinNumber>1</WinNumber>
+          <ItemText>JudgeData_update</ItemText>
         </Ww>
       </WatchWindow1>
       <WatchWindow2>
