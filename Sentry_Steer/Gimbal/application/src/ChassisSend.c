@@ -1,7 +1,7 @@
 #include "ChassisSend.h"
 
 ChassisSendPack1 chassis_send_pack1;
-//ChassisSendPack2 chassis_send_pack2;
+ChassisSendPack2 chassis_send_pack2;
 
 //void Pack_InfantryMode()
 //{
@@ -50,11 +50,20 @@ void Pack_InfantryMode()
   // through_hole_flag 在 ChassisSolver.c 中设置
 
   if (motor_communication[BIG_YAW_MOTOR].motor_type == DM_MOTOR)
-    chassis_send_pack1.yaw_motor_angle = (int16_t)(gimbal_controller.DM_Big_Yaw_Motor.P_Receive * 90);
+    chassis_send_pack1.yaw_motor_angle = (int16_t)((gimbal_controller.DM_Big_Yaw_Motor.P_Receive - GIMBAL_BIG_YAW_ZERO_POINT) * 90);
   else if (motor_communication[BIG_YAW_MOTOR].motor_type == GM6020)
     chassis_send_pack1.yaw_motor_angle = gimbal_controller.big_yaw_recv.angle;
 
   chassis_send_pack1.robot_speed_x = (int8_t)(chassis_solver.chassis_speed_x * 30.0f);
   chassis_send_pack1.robot_speed_y = (int8_t)(chassis_solver.chassis_speed_y * 30.0f);
   chassis_send_pack1.robot_speed_w = (int8_t)(chassis_solver.chassis_speed_w * 7.0f);
+}
+
+void Pack_SentryCoord(void)
+{
+	extern int16_t sentry_position_x_cm;
+	extern int16_t sentry_position_y_cm;
+	chassis_send_pack2.sentry_x_cm = sentry_position_x_cm;
+	chassis_send_pack2.sentry_y_cm = sentry_position_y_cm;
+	memset(chassis_send_pack2.reserved, 0, 4);
 }

@@ -70,16 +70,16 @@ void GimbalPidInit()
     // PID_Init(&gimbal_controller.small_yaw_speed_pid, GM6020_MAX_CURRENT, 5000, 0.5, 120.0f, 80.0f, 0, 0, 0, 0.f, 0, 1, Integral_Limit | Trapezoid_Intergral);
 
     // yaw DM MIT模式 (t_ff转矩控制，单Yaw)
-    PID_Init(&gimbal_controller.big_yaw_angle_pid, 120.0, 0, 0.0f, 23.0f, 0.0f, 0.1f, 0, 0, 0.0f, 0.02f, 1, DerivativeFilter);
-    PID_Init(&gimbal_controller.big_yaw_speed_pid, 1500.0, 300.0f, 0.0f, 80.0f, 15.0f, 0, 0, 0, 0.0018, 0, 1, Integral_Limit | Trapezoid_Intergral);
+    PID_Init(&gimbal_controller.big_yaw_angle_pid, 120.0, 0, 0.0f, 10.0f, 0.0f, 0.1f, 0, 0, 0.0f, 0.02f, 1, DerivativeFilter);
+    PID_Init(&gimbal_controller.big_yaw_speed_pid, 1200.0, 200.0f, 0.0f, 30.0f, 5.0f, 0, 0, 0, 0.0018, 0, 1, Integral_Limit | Trapezoid_Intergral);
 
     // 跟踪微分器
     TD_Init(&gimbal_controller.pos_big_yaw_td, 20000, 0.01);
     TD_Init(&gimbal_controller.speed_big_yaw_td, 90000, 0.01);
 
-    float big_yaw_angle_ff_c[3] = {0.f, 0.15f, 0.0f};
+    float big_yaw_angle_ff_c[3] = {0.f, 0.7f, 0.0f};     // 速度FF: 目标速度×0.7→速度指令
     Feedforward_Init(&gimbal_controller.big_yaw_angle_forward, 100.0f, big_yaw_angle_ff_c, 0.01f, 5, 5);
-    float big_yaw_speed_ff_c[3] = {1.0f, 0.4f, 0.0f};
+    float big_yaw_speed_ff_c[3] = {5.0f, 0.5f, 0.f};      // 力矩FF: 速度×5.0+加速度×0.5→t_ff
     Feedforward_Init(&gimbal_controller.big_yaw_speed_forward, 500.0f, big_yaw_speed_ff_c, 0.01f, 5, 5);
 
 #endif

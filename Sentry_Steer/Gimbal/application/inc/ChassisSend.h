@@ -74,12 +74,20 @@ typedef struct ChassisSendPack1
   // 总计: 2 + 1 + 2 + 3 = 8字节
 } ChassisSendPack1;
 
+// TypeID=0x01 哨兵坐标 → CAN 0x151
+typedef struct ChassisSendPack2
+{
+	int16_t sentry_x_cm;    // 哨兵X坐标 (cm)
+	int16_t sentry_y_cm;    // 哨兵Y坐标 (cm)
+	uint8_t reserved[4];    // 预留凑满8字节
+} ChassisSendPack2;
+
 #pragma pack(pop)
 
 extern ChassisSendPack1 chassis_send_pack1;
-//extern ChassisSendPack2 chassis_send_pack2;
+extern ChassisSendPack2 chassis_send_pack2;
 
 void Pack_InfantryMode(void);
-void Pack_Yaw(void);
+void Pack_SentryCoord(void);
 
 #endif // !_CHASSIS_SEND_H

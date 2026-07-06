@@ -128,6 +128,7 @@ typedef struct PC_StateControl
 typedef struct PCRecvData_1
 {
 	uint8_t Head;           // '!' = 0x21
+	uint8_t TypeID;         // 帧类型: 0x00=标准控制帧
 	int8_t Aim_v_x;         // Velocity.X
 	int8_t Aim_v_y;         // Velocity.Y
 	float Aim_Yaw;          // 4 bytes
@@ -135,7 +136,27 @@ typedef struct PCRecvData_1
 	uint8_t FireCode;       // FireCode位域 (bit0-1:FireStatus, bit2-3:CapState, bit4:HoleMode, bit5:AimMode, bit6-7:Rotate)
 	uint32_t SentryCmd;     // 4 bytes - 裁判系统0x0301/0x0120 sentry_cmd，姿态在bit21-22
 	uint8_t tail;           // 0x00
-} PCRecvData_1;  // sizeof == 17 bytes
+} PCRecvData_1;  // sizeof == 18 bytes
+
+// 下行帧TypeID定义
+#define PC_TYPEID_CONTROL   0x00  // 标准控制帧 (PCRecvData_1)
+#define PC_TYPEID_COORD     0x01  // 哨兵坐标帧 (SentryCoord_t)
+
+// TypeID=0x01: 哨兵坐标帧 18 bytes
+#pragma pack(1)
+typedef struct {
+	uint8_t  head;          // 0x21
+	uint8_t  type_id;       // 0x01
+	int16_t  x_cm;          // X坐标 (cm) 小端
+	int16_t  y_cm;          // Y坐标 (cm) 小端
+	uint8_t  reserved[10];  // 预留 0x00
+	uint8_t  crc8;          // CRC8 (poly=0x31, init=0xFF, 覆盖byte0-15)
+} SentryCoord_t;  // sizeof == 18 bytes
+#pragma pack()
+
+extern int16_t sentry_position_x_cm;
+extern int16_t sentry_position_y_cm;
+
 typedef struct PCSendData //
 {
     uint8_t start_flag;

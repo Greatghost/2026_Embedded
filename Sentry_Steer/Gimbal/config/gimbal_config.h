@@ -124,6 +124,9 @@
 #define PITCH_DM_KP          0.0f
 #define PITCH_DM_KD          5.0f
 
+// 大Yaw零点: 云台朝正前方时DM_Big_Yaw_Motor.P_Receive的值
+#define GIMBAL_BIG_YAW_ZERO_POINT  142.0f
+
 #define GIMBAL_PITCH_COMP 4000.0f        // 暂不使用
 #define GIMBAL_PITCH_COMP_COEF 1.0f      // 暂不使用
 

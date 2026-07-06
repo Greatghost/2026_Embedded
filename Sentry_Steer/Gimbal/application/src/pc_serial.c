@@ -131,11 +131,26 @@ char PC_Receive_Flag_2_Armor = 0;
 
 int shootflg_test = 0;
 
+// 哨兵坐标缓存 (TypeID=0x01)
+int16_t sentry_position_x_cm = 0;
+int16_t sentry_position_y_cm = 0;
+
+// CRC8: poly=0x31, init=0xFF
+static uint8_t crc8_calc(const uint8_t *data, uint8_t len)
+{
+	uint8_t crc = 0xFF;
+	for (uint8_t i = 0; i < len; i++) {
+		crc ^= data[i];
+		for (uint8_t b = 0; b < 8; b++)
+			crc = (crc & 0x80) ? (crc << 1) ^ 0x31 : crc << 1;
+	}
+	return crc;
+}
 
 void PCReceive(unsigned char *PCbuffer)
 {
 	LossUpdate(&global_debugger.pc_receive_debugger, 0.02);
-	if(PCbuffer[0] == '!' )
+	if(PCbuffer[0] == '!' && PCbuffer[1] == 0x00) // TypeID=0: 标准控制帧
 	{
 		memcpy(&pc_recv_data_1,PCbuffer,PC_RECVBUF_SIZE);
 		pc_yaw = pc_recv_data_1.Aim_Yaw;
@@ -156,6 +171,17 @@ void PCReceive(unsigned char *PCbuffer)
 
 		// 新增: 转发SentryCmd给底盘 (2026-05-06协议)
 		Can1SendSentryCmd(pc_recv_data_1.SentryCmd);
+	}
+	else if(PCbuffer[0] == '!' && PCbuffer[1] == PC_TYPEID_COORD) // TypeID=0x01: 哨兵坐标
+	{
+		SentryCoord_t coord;
+		memcpy(&coord, PCbuffer, sizeof(SentryCoord_t));
+		// CRC8校验: 覆盖byte0-15 (head+type+data)
+		if(crc8_calc(PCbuffer, 16) == coord.crc8)
+		{
+			sentry_position_x_cm = coord.x_cm;
+			sentry_position_y_cm = coord.y_cm;
+		}
 	}
 }
 

@@ -39,6 +39,13 @@ void ChassisTask(void *pvParameters)
 				// {//Motor_Data_Pack_1();
 				// Motor_Data_Send_1();
 				// }
+        //哨兵坐标 → CAN 0x151 (10Hz)
+        if (i % 50 == 0) //10Hz
+        {
+            Pack_SentryCoord();
+            memcpy(send_to_chassis_data[1], &chassis_send_pack2, 8);
+            CanSend(&CHASSIS_CAN_COMM_CAN_Handlerx, send_to_chassis_data[1], SEND_TO_CHASSIS_CAN_ID_2, &chassis_tx_header[1], &chassis_send_wait_time[1]);
+        }
 
 //        // 1 kHZ
 //        Pack_Yaw();
