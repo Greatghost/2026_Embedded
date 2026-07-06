@@ -22,8 +22,8 @@ void FrictionWheel_Init()
 /*  根据机器人等级获得摩擦轮转速 */
 void setFrictionSpeed(int8_t shoot_level)
 {
-  friction_wheels.set_speed_l = BULLET_17MM_23MS_SPEED_L; // 不再限制弹速
-  friction_wheels.set_speed_r = BULLET_17MM_23MS_SPEED_R;
+  friction_wheels.set_speed_l = -BULLET_17MM_23MS_SPEED_L; // 不再限制弹速
+  friction_wheels.set_speed_r = -BULLET_17MM_23MS_SPEED_R;
 }
 
 void FrictionWheel_Set(float speed1, float speed2) // 度/s
