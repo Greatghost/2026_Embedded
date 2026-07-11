@@ -1,5 +1,6 @@
 #include "can_receive.h"
-#include "GimbalSend.h"  // 添加引用以获取sentry_cmd_from_gimbal结构体
+#include "GimbalSend.h"   // 获取sentry_cmd_from_gimbal结构体
+#include "GimbalReceive.h" // 获取gimbal_receiver_pack1/2结构体
 
 void CanReceiveAll(CAN_TypeDef *can, CanRxMsg *rx_message)
 {
@@ -98,11 +99,11 @@ void CanReceiveAll(CAN_TypeDef *can, CanRxMsg *rx_message)
             LossUpdate(&global_debugger.gimbal_comm_debugger[0], 0.0085f);
             offline_detector.gimbal_comm_off_time = 0;
             break;
-//        case GIMBAL_COMM_CAN_ID_2:
-//            memcpy(&gimbal_receiver_pack2, rx_message->Data, 8);
-//						Gimbal_msgs_Decode2();
-//            LossUpdate(&global_debugger.gimbal_comm_debugger[1], 0.0015f);
-//            break;
+        case GIMBAL_COMM_CAN_ID_2:
+            memcpy(&gimbal_receiver_pack2, rx_message->Data, 8);
+            Gimbal_msgs_Decode2();
+            LossUpdate(&global_debugger.gimbal_comm_debugger[1], 0.1f);  // 10Hz周期
+            break;
         case GET_FROM_GIMBAL_SENTRY_CMD_CAN_ID:
             // 接收云台转发的SentryCmd
             memcpy(&sentry_cmd_from_gimbal, rx_message->Data, sizeof(SentryCmd_FromGimbal_t));

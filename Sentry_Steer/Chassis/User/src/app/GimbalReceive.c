@@ -12,11 +12,15 @@
 #include "Referee.h"  // 用于访问sentry_decision_referee
 
 GimbalReceivePack1 gimbal_receiver_pack1;
-//GimbalReceivePack2 gimbal_receiver_pack2;
+GimbalReceivePack2 gimbal_receiver_pack2;
 int8_t gimbal_receive_1_update; // 更新标志，说明收到了一帧消息
 int8_t gimbal_receive_2_update;
 int8_t gimbal_receive_3_update;
 int16_t jump_up_cnt = 0;
+
+// 上位机下发哨兵坐标 (CAN 0x151)，单位 cm
+int16_t sentry_coord_x_cm = 0;
+int16_t sentry_coord_y_cm = 0;
 
 float transition_mode_counter; // 计时器
 
@@ -54,10 +58,12 @@ void Gimbal_msgs_Decode1()
   }
 }
 
-//void Gimbal_msgs_Decode2()
-//{
-//  enum PowerControlState power_state = (enum PowerControlState)gimbal_receiver_pack2.super_power;
-//  enum FlyControlState fly_or_not = (enum FlyControlState)gimbal_receiver_pack2.fly_state;
-//  setSuperPower(power_state);
-//  setFlyMode(fly_or_not);
-//}
+void Gimbal_msgs_Decode2()
+{
+  // 存储上位机下发的哨兵坐标 (CAN 0x151)
+  sentry_coord_x_cm = gimbal_receiver_pack2.sentry_x_cm;
+  sentry_coord_y_cm = gimbal_receiver_pack2.sentry_y_cm;
+
+  // 更新接收标志
+  gimbal_receive_2_update = 1;
+}

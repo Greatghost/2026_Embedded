@@ -27,14 +27,12 @@
 //  int8_t robot_speed_w;
 //} GimbalReceivePack1;
 
-//typedef struct GimbalReceivePack2 // 云台yaw和pitch角度
-//{
-//  int16_t yaw_motor_angle; // 云台yaw轴电机角度
-//  int16_t gimbal_pitch;    // 底盘//不画这个UI了
-//  int16_t gimbal_yaw_speed;
-//  uint16_t super_power : 1;
-//  uint16_t fly_state : 1;
-//} GimbalReceivePack2;
+typedef struct GimbalReceivePack2 // 上位机下发哨兵坐标 (CAN 0x151)
+{
+  int16_t sentry_x_cm;       // 哨兵 X 坐标 (cm)，来自上位机定位，范围 0~2800
+  int16_t sentry_y_cm;       // 哨兵 Y 坐标 (cm)，来自上位机定位，范围 0~1500
+  uint8_t reserved[4];       // 预留 0x00
+} GimbalReceivePack2;
 
 typedef struct GimbalReceivePack1
 {
@@ -67,11 +65,15 @@ typedef struct GimbalReceivePack1
 
 #pragma pack(pop)
 
-//extern GimbalReceivePack2 gimbal_receiver_pack2;
 extern GimbalReceivePack1 gimbal_receiver_pack1;
+extern GimbalReceivePack2 gimbal_receiver_pack2;
 
 extern int8_t gimbal_receive_1_update;
 extern int8_t gimbal_receive_2_update;
+
+// 上位机下发哨兵坐标 (CAN 0x151)，单位 cm
+extern int16_t sentry_coord_x_cm;
+extern int16_t sentry_coord_y_cm;
 
 void Gimbal_msgs_Decode1(void);
 void Gimbal_msgs_Decode2(void);
