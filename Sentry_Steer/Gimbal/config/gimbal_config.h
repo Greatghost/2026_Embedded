@@ -108,21 +108,41 @@
 #define GIMBAL_ANGLE_MAX 330.0f
 
 // Pitch PID参数
-#define PITCH_ANGLE_KP      23.0f
-#define PITCH_ANGLE_KI       0.0f
+#define PITCH_ANGLE_KP      30.0f
+#define PITCH_ANGLE_KI       5.0f
 #define PITCH_ANGLE_KD       0.0f
-#define PITCH_ANGLE_MAXOUT   100.0f
+#define PITCH_ANGLE_MAXOUT   120.0f
 #define PITCH_ANGLE_ILIMIT   5.0f
 
 #define PITCH_SPEED_KP       30.0f
-#define PITCH_SPEED_KI        13.0f
+#define PITCH_SPEED_KI        10.0f
 #define PITCH_SPEED_KD        0.0f
-#define PITCH_SPEED_MAXOUT    700.0f
+#define PITCH_SPEED_MAXOUT    16000.0f
+
+// 动态Kp: 小误差时增强保持刚度抗后坐力 (注释此行即禁用)
+//#define USE_PITCH_DYNAMIC_KP
+#define PITCH_ANGLE_KP_HOLD  1.5f    // 角度误差<0.5°时Kp放大倍数
+#define PITCH_SPEED_KP_HOLD   1.5f    // 速度误差<10°/s时Kp放大倍数
 #define PITCH_SPEED_ILIMIT    0.0f
+
+// Pitch角度前馈 (目标角度速度→速度指令)
+#define PITCH_ANGLE_FF_VEL     0.0f
+#define PITCH_ANGLE_FF_ACC     1.0f
+#define PITCH_ANGLE_FF_JERK    0.0f
+#define PITCH_ANGLE_FF_MAXOUT  50.0f
+
+// Pitch速度前馈 (c[0]=速度系数, c[1]=加速度系数, c[2]=加加速度系数)
+#define PITCH_SPEED_FF_VEL     7.0f
+#define PITCH_SPEED_FF_ACC     0.1f
+#define PITCH_SPEED_FF_JERK    0.0f
+#define PITCH_SPEED_FF_MAXOUT  500.0f
 
 // DM电机内环阻尼 (Kp=0: 纯MIT力矩控制)
 #define PITCH_DM_KP          0.0f
 #define PITCH_DM_KD          5.0f
+
+// 重力补偿 (注释此行即禁用)
+#define PITCH_GRAVITY_COMP_ENABLE
 
 // 大Yaw零点: 云台朝正前方时DM_Big_Yaw_Motor.P_Receive的值
 #define GIMBAL_BIG_YAW_ZERO_POINT  142.0f

@@ -1,5 +1,6 @@
 #include "Gimbal.h"
 #include "robot_config.h"
+#include "gimbal_config.h"
 
 GimbalController gimbal_controller;
 BigYawController big_yaw_controller;
@@ -65,13 +66,19 @@ void GimbalPidInit()
 	gimbal_controller.DM_Big_Yaw_Motor.Kp = 0;
 	gimbal_controller.DM_Big_Yaw_Motor.Kd = 5;
 
+    // Pitch角度前馈 + 速度前馈
+    float pitch_angle_ff_c[3] = {PITCH_ANGLE_FF_VEL, PITCH_ANGLE_FF_ACC, PITCH_ANGLE_FF_JERK};
+    Feedforward_Init(&gimbal_controller.pitch_angle_forward, PITCH_ANGLE_FF_MAXOUT, pitch_angle_ff_c, 0.01f, 5, 5);
+    float pitch_speed_ff_c[3] = {PITCH_SPEED_FF_VEL, PITCH_SPEED_FF_ACC, PITCH_SPEED_FF_JERK};
+    Feedforward_Init(&gimbal_controller.pitch_speed_forward, PITCH_SPEED_FF_MAXOUT, pitch_speed_ff_c, 0.01f, 5, 5);
+
     // [SMALL_YAW_REMOVED] 小Yaw PID初始化已删除
     // PID_Init(&gimbal_controller.small_yaw_angle_pid, 100.0, 0, 0.05, 15.0f, 0, 0.0f, 0, 0, 0.0, 0.0f, 1, DerivativeFilter);
     // PID_Init(&gimbal_controller.small_yaw_speed_pid, GM6020_MAX_CURRENT, 5000, 0.5, 120.0f, 80.0f, 0, 0, 0, 0.f, 0, 1, Integral_Limit | Trapezoid_Intergral);
 
     // yaw DM MIT模式 (t_ff转矩控制，单Yaw)
     PID_Init(&gimbal_controller.big_yaw_angle_pid, 120.0, 0, 0.0f, 10.0f, 0.0f, 0.1f, 0, 0, 0.0f, 0.02f, 1, DerivativeFilter);
-    PID_Init(&gimbal_controller.big_yaw_speed_pid, 1200.0, 200.0f, 0.0f, 30.0f, 5.0f, 0, 0, 0, 0.0018, 0, 1, Integral_Limit | Trapezoid_Intergral);
+    PID_Init(&gimbal_controller.big_yaw_speed_pid, 16000.0, 200.0f, 0.0f, 30.0f, 5.0f, 0, 0, 0, 0.0018, 0, 1, Integral_Limit | Trapezoid_Intergral);
 
     // 跟踪微分器
     TD_Init(&gimbal_controller.pos_big_yaw_td, 20000, 0.01);
@@ -93,11 +100,34 @@ float Gimbal_Pitch_Calculate(float set_point)
 {
     // pitch 三环 + 重力补偿前馈
     gimbal_controller.set_pitch_angle = set_point;
-    gimbal_controller.set_pitch_speed = PID_Calculate(&gimbal_controller.pitch_angle_pid, gimbal_controller.gyro_pitch_angle, gimbal_controller.set_pitch_angle);
-    gimbal_controller.set_pitch_current = GIMBAL_PITCH_MOTOR_SIGN * PID_Calculate(&gimbal_controller.pitch_speed_pid, gimbal_controller.gyro_pitch_speed, gimbal_controller.set_pitch_speed);
+
+    // ===== 角度环Kp =====
+    gimbal_controller.pitch_angle_pid.Kp = PITCH_ANGLE_KP;   // 每帧复位到基准
+#ifdef USE_PITCH_DYNAMIC_KP
+    // 动态Kp: 误差<0.5°→增强保持刚度, 误差>2°→正常跟踪, 中间线性过渡
+    {
+        float pitch_err = fabsf(set_point - gimbal_controller.gyro_pitch_angle);
+        float kp_ratio = (pitch_err > 2.0f) ? 1.0f : (pitch_err < 0.5f) ? PITCH_ANGLE_KP_HOLD : 1.0f + (PITCH_ANGLE_KP_HOLD - 1.0f) * (2.0f - pitch_err) / 1.5f;
+        gimbal_controller.pitch_angle_pid.Kp *= kp_ratio;
+    }
+#endif
+
+    gimbal_controller.set_pitch_speed = PID_Calculate(&gimbal_controller.pitch_angle_pid, gimbal_controller.gyro_pitch_angle, gimbal_controller.set_pitch_angle) + Feedforward_Calculate(&gimbal_controller.pitch_angle_forward, gimbal_controller.set_pitch_angle);
+
+    // ===== 速度环Kp =====
+    gimbal_controller.pitch_speed_pid.Kp = PITCH_SPEED_KP;   // 每帧复位到基准
+#ifdef USE_PITCH_DYNAMIC_KP
+    // 动态Kp: 速度误差<10°/s→增强保持刚度, >50°/s→正常跟踪
+    {
+        float speed_err = fabsf(gimbal_controller.set_pitch_speed - gimbal_controller.gyro_pitch_speed);
+        float spd_kp_ratio = (speed_err > 50.0f) ? 1.0f : (speed_err < 10.0f) ? PITCH_SPEED_KP_HOLD : 1.0f + (PITCH_SPEED_KP_HOLD - 1.0f) * (50.0f - speed_err) / 40.0f;
+        gimbal_controller.pitch_speed_pid.Kp *= spd_kp_ratio;
+    }
+#endif
+    gimbal_controller.set_pitch_current = GIMBAL_PITCH_MOTOR_SIGN * (PID_Calculate(&gimbal_controller.pitch_speed_pid, gimbal_controller.gyro_pitch_speed, gimbal_controller.set_pitch_speed) + Feedforward_Calculate(&gimbal_controller.pitch_speed_forward, gimbal_controller.set_pitch_speed));
 
     // 添加重力补偿前馈,调试模式下可以关闭重力补偿以观察重力对系统的影响
-    #if GIMBAL_CONTROL_DISCONNECT == 0
+    #ifdef PITCH_GRAVITY_COMP_ENABLE
     gimbal_controller.set_pitch_current += GimbalPitchComp();
     #endif
 

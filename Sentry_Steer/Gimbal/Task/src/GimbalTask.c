@@ -22,33 +22,6 @@ void Gimbal_Powerdown_Cal()
     // SawToothInit(&saw_tooth_wave, 16.0f, 10, 200, gimbal_controller.gyro_yaw_angle);
 }
 
-void BigYawSetpointSet(void)
-{
-
-    // 	if (big_yaw_controller.big_yaw_mode == 0)//跟随模式
-    // 	{
-    //     gimbal_controller.target_big_yaw_angle = pc_yaw+ big_yaw_controller.big_yaw_gyro_bias;
-    //   }
-    //     if (big_yaw_controller.big_yaw_mode == 1)//辅瞄打弹模式
-    // 	{
-    //         if(fabsf(big_yaw_controller.dealed_big_yaw_gyro + big_yaw_controller.big_yaw_gyro_bias -big_yaw_controller.big_yaw_gyro_raw) < 15.0f)
-    //         {
-    //             gimbal_controller.target_big_yaw_angle = gimbal_controller.target_big_yaw_angle;
-    //         }
-    //         else
-    //         {
-    //             //使用iir函数滤波
-    //             iir(&gimbal_controller.target_big_yaw_angle,big_yaw_controller.dealed_big_yaw_gyro + big_yaw_controller.big_yaw_gyro_bias,0.85);
-    //             //gimbal_controller.target_big_yaw_angle = pc_yaw+ big_yaw_controller.big_yaw_gyro_bias;
-    //         }
-    //     }
-    float delta_angle = fabsf(gimbal_controller.target_big_yaw_angle - (big_yaw_controller.dealed_big_yaw_gyro + 0.6 * big_yaw_controller.big_yaw_gyro_bias));
-    // 动态增益，y = -0.0004233^2 + 0.000567 + 0.998,对应点(0,0.998),(10,0.95),(30,0.6),在正半轴单调递减
-    float dynamic_gain = -0.0004233 * delta_angle * delta_angle - 0.000567 * delta_angle + 0.998f;
-    dynamic_gain = LIMIT_MAX_MIN(dynamic_gain, 1.0f, 0.5f);
-    iir(&gimbal_controller.target_big_yaw_angle, big_yaw_controller.dealed_big_yaw_gyro + 0.6 * big_yaw_controller.big_yaw_gyro_bias, dynamic_gain);
-}
-
 void Gimbal_Autoaim_Cal()
 {
     PCRecvData_1 pc_recv_data_temp = pc_recv_data_1;
@@ -62,7 +35,6 @@ void Gimbal_Autoaim_Cal()
             gimbal_controller.target_pitch_angle = pc_pitch;
             // [SMALL_YAW_REMOVED] PCyaw直接作为大Yaw输入
             gimbal_controller.target_big_yaw_angle = pc_yaw;
-            BigYawSetpointSet();
         }
     }
 
@@ -99,7 +71,6 @@ void Gimbal_Small_Buff_Cal()
             gimbal_controller.target_pitch_angle = pc_pitch;
             // [SMALL_YAW_REMOVED] PCyaw直接作为大Yaw输入
             gimbal_controller.target_big_yaw_angle = pc_yaw;
-            BigYawSetpointSet();
         }
     }
 
@@ -193,12 +164,15 @@ void Gimbal_Act_Cal()
     // motor_communication[SMALL_YAW_MOTOR].control = Gimbal_Small_Yaw_Calculate(gimbal_controller.target_small_yaw_angle);
 
     // 大Yaw动态跟随
-    float delta_angle = fabsf(gimbal_controller.target_big_yaw_angle - (big_yaw_controller.dealed_big_yaw_gyro + 0.6 * big_yaw_controller.big_yaw_gyro_bias));
-    float dynamic_gain = -0.0004233 * delta_angle * delta_angle - 0.000567 * delta_angle + 0.999f;
-    dynamic_gain = LIMIT_MAX_MIN(dynamic_gain, 1.0f, 0.5f);
-    iir(&gimbal_controller.target_big_yaw_angle, big_yaw_controller.dealed_big_yaw_gyro + 0.6 * big_yaw_controller.big_yaw_gyro_bias, dynamic_gain);
+    // float delta_angle = fabsf(gimbal_controller.target_big_yaw_angle - (big_yaw_controller.dealed_big_yaw_gyro + 0.6 * big_yaw_controller.big_yaw_gyro_bias));
+    // float dynamic_gain = -0.0004233 * delta_angle * delta_angle - 0.000567 * delta_angle + 0.999f;
+    // dynamic_gain = LIMIT_MAX_MIN(dynamic_gain, 1.0f, 0.5f);
+    // iir(&gimbal_controller.target_big_yaw_angle, big_yaw_controller.dealed_big_yaw_gyro + 0.6 * big_yaw_controller.big_yaw_gyro_bias, dynamic_gain);
+    // motor_communication[BIG_YAW_MOTOR].control = Gimbal_Big_Yaw_Calculate(gimbal_controller.target_big_yaw_angle);
+    
+    // [SINGLE_YAW] 目标角度由遥控器/上位机直接控制，不再通过IIR动态跟随
     motor_communication[BIG_YAW_MOTOR].control = Gimbal_Big_Yaw_Calculate(gimbal_controller.target_big_yaw_angle);
-
+    
     big_yaw_controller.gimbal_last_mode = 1;
 }
 
@@ -416,6 +390,14 @@ void updataSensors()
 
 void PC_Send(uint32_t index)
 {
+//    // [DEBUG] 临时: 只发TypeID=0，验证SendToPC_Buff缓冲冲突
+//    if (index % 2 == 0) // 250HZ
+//    {
+//      SendtoPC(USUAL_PC_DATA);
+//    }
+//    return;
+
+//    // === 以下暂时屏蔽 ===
     if (JudgeData_update)
     {
 
@@ -437,7 +419,7 @@ void PC_Send(uint32_t index)
             Blood_update = 0;
         }
     }
-    if (index % 25 == 0)
+    if (index % 50 == 13) // 10Hz, 避开USUAL_PC_DATA的偶数index
     {
         SendtoPC(JUDGE_PC_DATA_EXTENDED);
     }
