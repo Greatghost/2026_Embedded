@@ -143,7 +143,6 @@ typedef struct PCRecvData_1
 #define PC_TYPEID_COORD     0x01  // 哨兵坐标帧 (SentryCoord_t)
 
 // TypeID=0x01: 哨兵坐标帧 18 bytes
-#pragma pack(1)
 typedef struct {
 	uint8_t  head;          // 0x21
 	uint8_t  type_id;       // 0x01
@@ -152,7 +151,6 @@ typedef struct {
 	uint8_t  reserved[10];  // 预留 0x00
 	uint8_t  crc8;          // CRC8 (poly=0x31, init=0xFF, 覆盖byte0-15)
 } SentryCoord_t;  // sizeof == 18 bytes
-#pragma pack()
 
 extern int16_t sentry_position_x_cm;
 extern int16_t sentry_position_y_cm;
