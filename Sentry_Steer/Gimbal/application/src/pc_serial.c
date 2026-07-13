@@ -95,7 +95,7 @@ void SendtoPC(void)
 unsigned char PCbuffer[PC_RECVBUF_SIZE];
 unsigned char SendToPC_Buff[PC_SENDBUF_SIZE];
 
-PCRecvData_1 pc_recv_data_1;
+// [旧协议] PCRecvData_1 pc_recv_data_1; // 2026-07-12 协议迁移
 PCSendData pc_send_data;
 PCSendDataJudge PC_send_data_judge;
 PCSendDataBlood_1 pc_send_data_blood_1;
@@ -131,7 +131,7 @@ char PC_Receive_Flag_2_Armor = 0;
 
 int shootflg_test = 0;
 
-// 哨兵坐标缓存 (TypeID=0x01)
+// 哨兵坐标缓存 (DownlinkTypeID=0x04, 2026-07-12协议迁移)
 int16_t sentry_position_x_cm = 0;
 int16_t sentry_position_y_cm = 0;
 
@@ -150,38 +150,53 @@ static uint8_t crc8_calc(const uint8_t *data, uint8_t len)
 void PCReceive(unsigned char *PCbuffer)
 {
 	LossUpdate(&global_debugger.pc_receive_debugger, 0.02);
-	if(PCbuffer[0] == '!' && PCbuffer[1] == 0x00) // TypeID=0: 标准控制帧
+	if(PCbuffer[0] != '!') return;
+
+	switch(PCbuffer[1])
 	{
-		memcpy(&pc_recv_data_1,PCbuffer,PC_RECVBUF_SIZE);
-		pc_yaw = pc_recv_data_1.Aim_Yaw;
-		pc_pitch = pc_recv_data_1.Aim_Pitch;
-		NAV_cmd.Nav_Speed_x =  pc_recv_data_1.Aim_v_x/50.0f;
-		NAV_cmd.Nav_Speed_y =  pc_recv_data_1.Aim_v_y/50.0f;
-		Shoot_Cmd.Shoot_State = pc_recv_data_1.FireCode & 0x03;
-		PC_statecontrol.CapState = (pc_recv_data_1.FireCode >> 2) & 0x03;
-		PC_statecontrol.if_through_hole = (pc_recv_data_1.FireCode >> 4) & 0x01;
-		big_yaw_controller.big_yaw_mode = (pc_recv_data_1.FireCode >> 5) & 0x01;
-		PC_statecontrol.RotateState = (pc_recv_data_1.FireCode >> 6) & 0x03;
-
-		uint8_t posture_from_cmd = (pc_recv_data_1.SentryCmd >> 21) & 0x03;
-		if(posture_from_cmd >= 1 && posture_from_cmd <= 3)
-		{
-			current_posture = posture_from_cmd;
-		}
-
-		// 新增: 转发SentryCmd给底盘 (2026-05-06协议)
-		Can1SendSentryCmd(pc_recv_data_1.SentryCmd);
+	case PC_DOWNLINK_CONTROL: // 0x00 — 13B GimbalControlFrame
+	{
+		GimbalControlFrame_t *f = (GimbalControlFrame_t *)PCbuffer;
+		pc_yaw = f->yaw;
+		pc_pitch = f->pitch;
+		NAV_cmd.Nav_Speed_x = f->vel_x / 50.0f;
+		NAV_cmd.Nav_Speed_y = f->vel_y / 50.0f;
+		Shoot_Cmd.Shoot_State = f->fire_code & 0x03;
+		PC_statecontrol.CapState = (f->fire_code >> 2) & 0x03;
+		PC_statecontrol.if_through_hole = (f->fire_code >> 4) & 0x01;
+		big_yaw_controller.big_yaw_mode = (f->fire_code >> 5) & 0x01;
+		PC_statecontrol.RotateState = (f->fire_code >> 6) & 0x03;
+		break;
 	}
-	else if(PCbuffer[0] == '!' && PCbuffer[1] == PC_TYPEID_COORD) // TypeID=0x01: 哨兵坐标
+	case PC_DOWNLINK_SENTRY_CMD: // 0x01 — 6B SentryCommandFrame
 	{
-		SentryCoord_t coord;
-		memcpy(&coord, PCbuffer, sizeof(SentryCoord_t));
-		// CRC8校验: 覆盖byte0-15 (head+type+data)
-		if(crc8_calc(PCbuffer, 16) == coord.crc8)
+		SentryCommandFrame_t *f = (SentryCommandFrame_t *)PCbuffer;
+		uint32_t cmd = f->sentry_cmd;
+		// 姿态提取 V2.0: bit21-23 (1~6)
+		uint8_t posture_from_cmd = (cmd >> 21) & 0x07;
+		if(posture_from_cmd >= 1 && posture_from_cmd <= 6)
+			current_posture = posture_from_cmd;
+		Can1SendSentryCmd(cmd);
+		break;
+	}
+	case PC_DOWNLINK_MAP_PATH: // 0x02 — 107B, 转发0x0307
+		Can1SendMapPath(PCbuffer + 2);
+		break;
+	case PC_DOWNLINK_CUSTOM_INFO: // 0x03 — 36B, 转发0x0308
+		Can1SendCustomInfo(PCbuffer + 2);
+		break;
+	case PC_DOWNLINK_COORD: // 0x04 — 17B SentryCoordinateFrame
+	{
+		SentryCoordinateFrame_t *f = (SentryCoordinateFrame_t *)PCbuffer;
+		if(crc8_calc(PCbuffer, 16) == f->crc8)
 		{
-			sentry_position_x_cm = coord.x_cm;
-			sentry_position_y_cm = coord.y_cm;
+			sentry_position_x_cm = f->x_cm;
+			sentry_position_y_cm = f->y_cm;
 		}
+		break;
+	}
+	default:
+		break;
 	}
 }
 

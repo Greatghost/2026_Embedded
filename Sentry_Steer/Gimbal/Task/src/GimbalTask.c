@@ -24,7 +24,7 @@ void Gimbal_Powerdown_Cal()
 
 void Gimbal_Autoaim_Cal()
 {
-    PCRecvData_1 pc_recv_data_temp = pc_recv_data_1;
+    // [旧协议] PCRecvData_1 pc_recv_data_temp = pc_recv_data_1; // 2026-07-12 协议迁移，不再需要
     // 设置目标角度
     // [SMALL_YAW_REMOVED] target_small_yaw_angle → target_big_yaw_angle
     //if (fabsf(gimbal_controller.target_pitch_angle - pc_pitch) < 60.0f && fabsf(gimbal_controller.target_big_yaw_angle - pc_yaw) < 70.0f)
@@ -61,7 +61,7 @@ void Gimbal_Autoaim_Cal()
 
 void Gimbal_Small_Buff_Cal()
 {
-    PCRecvData_1 pc_recv_data_temp = pc_recv_data_1;
+    // [旧协议] PCRecvData_1 pc_recv_data_temp = pc_recv_data_1; // 2026-07-12 协议迁移，不再需要
     // 设置目标角度
     // [SMALL_YAW_REMOVED] target_small_yaw_angle → target_big_yaw_angle
     if (fabsf(gimbal_controller.target_pitch_angle - pc_pitch) < 60.0f && fabsf(gimbal_controller.target_big_yaw_angle - pc_yaw) < 70.0f)
