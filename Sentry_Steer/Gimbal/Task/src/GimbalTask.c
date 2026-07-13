@@ -441,6 +441,12 @@ void PC_Send(uint32_t index)
 	}
     #endif
 
+    // 新增: TypeID 10 哨兵姿态时长发送 (10Hz)
+    if (index % 50 == 45)
+    {
+        SendtoPC(JUDGE_PC_DATA_SENTRY_DURATION);
+    }
+
     if (index % 2 == 0) // 250HZ
     {
     #if COMMUNICATION_CHOOSE == COMMUNICATION_OF_IFANTRY

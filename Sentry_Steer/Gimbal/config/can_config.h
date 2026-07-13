@@ -50,6 +50,8 @@
 #define GET_SENTRY_INFO_CAN_ID 0x09C          // 接收哨兵信息(0x020D)
 #define GET_BULLET_EXTENDED_CAN_ID 0x09D      // 接收弹量扩展字段(0x0208扩展)
 #define ROBOT_COMMAND_CAN_ID 0x09E              // 接收小地图下发指令(0x0303)
+#define GET_SENTRY_DURATION_CAN_ID 0x09F          // 接收哨兵姿态时长数据(0x020D扩展)
+#define GET_DAMAGE_DIFF_CAN_ID 0x0A0            // 接收伤害值差数据(0x0003扩展)
 // 新增: 发送SentryCmd给底盘
 #define SEND_TO_CHASSIS_SENTRY_CMD_CAN_ID 0x15A  // 发送SentryCmd给底盘
 #define CHASSIS_CAN_COMM_CAN_Handlerx hcan1
@@ -125,6 +127,8 @@
 #define GET_SENTRY_INFO_CAN_ID 0x09C          // 接收哨兵信息(0x020D)
 #define GET_BULLET_EXTENDED_CAN_ID 0x09D      // 接收弹量扩展字段(0x0208扩展)
 #define ROBOT_COMMAND_CAN_ID 0x09E              // 接收小地图下发指令(0x0303)
+#define GET_SENTRY_DURATION_CAN_ID 0x09F          // 接收哨兵姿态时长数据(0x020D扩展)
+#define GET_DAMAGE_DIFF_CAN_ID 0x0A0            // 接收伤害值差数据(0x0003扩展)
 // 新增: 发送SentryCmd给底盘
 #define SEND_TO_CHASSIS_SENTRY_CMD_CAN_ID 0x15A  // 发送SentryCmd给底盘
 #define CHASSIS_CAN_COMM_CAN_Handlerx hcan1

@@ -41,7 +41,7 @@ typedef struct ShootDataRecv
 typedef struct SentryInfoRecv
 {
   uint32_t sentry_info;       // 0x020D offset 0 (4字节)
-  uint16_t sentry_info_2;     // 0x020D offset 4 (2字节)
+  uint16_t sentry_info_2;     // 0x020D offset 4 (2字节), bit15=sentry_is_enhanced_posture
   uint8_t  reserve[2];        // 填充到8字节
 } SentryInfoRecv_t;
 
@@ -65,6 +65,26 @@ typedef struct RobotCommand_ForSend
   uint16_t cmd_source;             // 指令来源
 } RobotCommand_ForSend_t;  // sizeof == 8 字节，匹配 CAN DLC
 
+// 哨兵姿态时长接收结构 (0x020D扩展, CAN ID 0x09F, 10Hz)
+typedef struct SentryDuration
+{
+  uint8_t normal_attack_duration;   // 普通进攻姿态剩余秒数
+  uint8_t normal_defend_duration;   // 普通防御姿态剩余秒数
+  uint8_t normal_move_duration;     // 普通移动姿态剩余秒数
+  uint8_t reserved_duration_1;      // 保留
+  uint8_t enhanced_attack_duration;  // 强化进攻姿态剩余秒数
+  uint8_t enhanced_defend_duration;  // 强化防御姿态剩余秒数
+  uint8_t enhanced_move_duration;    // 强化移动姿态剩余秒数
+  uint8_t reserved_duration_2;      // 保留
+} SentryDuration_t;  // sizeof == 8
+
+// 伤害值差接收结构 (0x0003扩展, CAN ID 0x0A0, 10Hz)
+typedef struct DamageDiff
+{
+  int16_t damage_difference;   // 伤害值差 (己方HP总和 − 敌方HP总和)，正值=领先
+  uint8_t reserve[6];          // 保留 0x00
+} DamageDiff_t;  // sizeof == 8
+
 #pragma pack(pop)
 
 extern ChassisGetPack_1 chassis_pack_get_1;
@@ -73,5 +93,7 @@ extern ShootDataRecv_t shoot_data_recv;       // 射击数据接收
 extern SentryInfoRecv_t sentry_info_recv;     // 哨兵信息接收
 extern BulletExtendedRecv_t bullet_extended_recv;  // 弹量扩展数据接收
 extern RobotCommand_ForSend_t robot_command_recv;  // 小地图下发指令接收
+extern SentryDuration_t sentry_duration;           // 哨兵姿态时长接收 (0x09F)
+extern DamageDiff_t damage_diff;                 // 伤害值差接收 (0x0A0)
 
 #endif // !_CHASSIS_GET_H

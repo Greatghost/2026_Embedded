@@ -34,89 +34,92 @@ void changeSupplyMode()
 
 void PCStateControl() // 比赛专用
 {
-	// 暂时注释比赛开始检查
-	// if(JudgeRecieveData.is_game_start ==0)
-	// {
-	// 	setRobotState(CONTROL_MODE);
+    // 暂时注释比赛开始检查
+    // if(JudgeRecieveData.is_game_start ==0)
+    // {
+    // 	setRobotState(CONTROL_MODE);
     //     setControlModeAction(NOT_FOLLOW_GIMBAL);
     //     setShootAction(SHOOT_FIRE_MODE);
     //     setGimbalAction(GIMBAL_ACT_MODE);
     //     setSuperPower(POWER_TO_BATTERY);
-	// 	chassis_solver.chassis_speed_x = 0.f;
-	// 	chassis_solver.chassis_speed_y = 0.f;
-	// 	chassis_solver.chassis_speed_w = 0.f;
-	// }
-	// else
-	{
-		setRobotState(CONTROL_MODE);
+    // 	chassis_solver.chassis_speed_x = 0.f;
+    // 	chassis_solver.chassis_speed_y = 0.f;
+    // 	chassis_solver.chassis_speed_w = 0.f;
+    // }
+    // else
+    {
+        setRobotState(CONTROL_MODE);
 
-		// 暂时注释血量检查
-		// if(JudgeRecieveData2.Self_blood == 0)
-		// {
-		// 	setControlModeAction(NOT_CONTROL_MODE);
-		// 	chassis_solver.chassis_speed_x = 0;
-		// 	chassis_solver.chassis_speed_y = 0;
-		// 	chassis_solver.chassis_speed_w = 0;
-		// 	return;
-		// }
+        // 暂时注释血量检查
+        // if(JudgeRecieveData2.Self_blood == 0)
+        // {
+        // 	setControlModeAction(NOT_CONTROL_MODE);
+        // 	chassis_solver.chassis_speed_x = 0;
+        // 	chassis_solver.chassis_speed_y = 0;
+        // 	chassis_solver.chassis_speed_w = 0;
+        // 	return;
+        // }
 
-		if(fabsf(INS.Pitch) >80.0f || fabsf(INS.Roll) > 60.0f)
-		{
-			setAllModeOff();//翻车检测
-			return;
-		}
+        if (fabsf(INS.Pitch) > 80.0f || fabsf(INS.Roll) > 60.0f)
+        {
+            setAllModeOff(); // 翻车检测
+            return;
+        }
 
-		// 删除过洞模式检查，直接根据 RotateState 设置速度
-		if(PC_statecontrol.RotateState == 0)
-		{
-			setControlModeAction(NOT_FOLLOW_GIMBAL);
-			chassis_solver.chassis_speed_w = 0.f;
-		}
-		else
-		{
-			setControlModeAction(CV_ROTATE);
-			switch (PC_statecontrol.RotateState)
-			{
-			case 1:
-				chassis_solver.chassis_speed_w = 0.5f * MAX_YAW_SPEED;
-				break;
-			case 2:
-				chassis_solver.chassis_speed_w = 0.75f * MAX_YAW_SPEED;
-				break;
-			case 3:
-				chassis_solver.chassis_speed_w = 1.0f * MAX_YAW_SPEED;
-				break;
+        // 删除过洞模式检查，直接根据 RotateState 设置速度
+        if (PC_statecontrol.RotateState == 0)
+        {
+            setControlModeAction(NOT_FOLLOW_GIMBAL);
+            chassis_solver.chassis_speed_w = 0.f;
+        }
+        else
+        {
+            setControlModeAction(CV_ROTATE);
+            switch (PC_statecontrol.RotateState)
+            {
+            case 1:
+                chassis_solver.chassis_speed_w = 0.5f * MAX_YAW_SPEED;
+                break;
+            case 2:
+                chassis_solver.chassis_speed_w = 0.75f * MAX_YAW_SPEED;
+                break;
+            case 3:
+                chassis_solver.chassis_speed_w = 1.0f * MAX_YAW_SPEED;
+                break;
 
-			default:
-				chassis_solver.chassis_speed_w = 0.0f * MAX_YAW_SPEED;
-				break;
-			}
-		}
+            default:
+                chassis_solver.chassis_speed_w = 0.0f * MAX_YAW_SPEED;
+                break;
+            }
+        }
 
-		chassis_solver.chassis_speed_x = NAV_cmd.Nav_Speed_x;
-		chassis_solver.chassis_speed_y = NAV_cmd.Nav_Speed_y;
+        chassis_solver.chassis_speed_x = NAV_cmd.Nav_Speed_x;
+        chassis_solver.chassis_speed_y = NAV_cmd.Nav_Speed_y;
 
+        if (PC_statecontrol.CapState == 1)
+        {
+            setSuperPower(POWER_TO_SuperPower);
+        }
+        else
+        {
+            setSuperPower(POWER_TO_BATTERY);
+        }
 
-		if(PC_statecontrol.CapState==1)
-		{
-			setSuperPower(POWER_TO_SuperPower);
-		}
-		else
-		{
-			setSuperPower(POWER_TO_BATTERY);
-		}
+        setShootAction(SHOOT_AUTO_AIM_MODE); // 辅瞄爽打
+        setGimbalAction(GIMBAL_AUTO_AIM_MODE);
 
-		setShootAction(SHOOT_AUTO_AIM_MODE); // 辅瞄爽打
-		setGimbalAction(GIMBAL_AUTO_AIM_MODE);
-
-	}
-
+        // 摇杆推上 → 手动打弹（自瞄模式下也可手动触发）
+        if ((remote_controller.dji_remote.rc.ch[RIGHT_CH_UD] - CH_MIDDLE) > 330)
+            toggle_controller.is_shoot = TRUE;
+        else
+            toggle_controller.is_shoot = FALSE;
+    }
 }
 
 void DJIKeyMouseUpdate(ChassisSolver *infantry)
 {
     uint8_t R_flag = 0;
-		uint8_t Hole_flag = 0;
+    uint8_t Hole_flag = 0;
     if (offline_detector.remote_state == REMOTE_OFF)
     {
         setAllModeOff();
@@ -138,10 +141,10 @@ void DJIKeyMouseUpdate(ChassisSolver *infantry)
             setControlModeAction(NOT_FOLLOW_GIMBAL);
             setShootAction(SHOOT_FIRE_MODE);
             // setGimbalAction(GIMBAL_ACT_MODE);//为了大、小符
-						if (remote_controller.gimbal_action == GIMBAL_POWERDOWN)  // 复位
-						{
-							  setGimbalAction(GIMBAL_ACT_MODE);//为了大、小符
-						}
+            if (remote_controller.gimbal_action == GIMBAL_POWERDOWN) // 复位
+            {
+                setGimbalAction(GIMBAL_ACT_MODE); // 为了大、小符
+            }
         }
         else if (remote_controller.dji_remote.rc.s[LEFT_SW] == Mid)
         {
@@ -157,19 +160,19 @@ void DJIKeyMouseUpdate(ChassisSolver *infantry)
             setShootAction(SHOOT_POWERDOWN_MODE);
             setGimbalAction(GIMBAL_ACT_MODE); // 可环顾四周
         }
-				
+
 #elif ROBOT == TIGER
 
-if (remote_controller.dji_remote.rc.s[LEFT_SW] == Up) // 高自由度活动
+        if (remote_controller.dji_remote.rc.s[LEFT_SW] == Up) // 高自由度活动
         {
             setRobotState(CONTROL_MODE);
             setControlModeAction(NOT_FOLLOW_GIMBAL);
             setShootAction(SHOOT_FIRE_MODE);
             // setGimbalAction(GIMBAL_ACT_MODE);//为了大、小符
-						if (remote_controller.gimbal_action == GIMBAL_POWERDOWN)  // 复位
-						{
-							  setGimbalAction(GIMBAL_ACT_MODE);//为了大、小符
-						}
+            if (remote_controller.gimbal_action == GIMBAL_POWERDOWN) // 复位
+            {
+                setGimbalAction(GIMBAL_ACT_MODE); // 为了大、小符
+            }
         }
         else if (remote_controller.dji_remote.rc.s[LEFT_SW] == Mid)
         {
@@ -211,8 +214,8 @@ if (remote_controller.dji_remote.rc.s[LEFT_SW] == Up) // 高自由度活动
             case KEY_B:
                 break;
             case KEY_V:
-								Hole_flag = 1;
-               // setControlModeAction(FOLLOW_GIMBAL);
+                Hole_flag = 1;
+                // setControlModeAction(FOLLOW_GIMBAL);
                 break;
             case KEY_SHIFT:
                 setSuperPower(POWER_TO_SuperPower);
@@ -237,8 +240,8 @@ if (remote_controller.dji_remote.rc.s[LEFT_SW] == Up) // 高自由度活动
             case KEY_X:
                 break;
             case KEY_C:
-								Hole_flag = 1;
-               // setControlModeAction(FOLLOW_GIMBAL);
+                Hole_flag = 1;
+                // setControlModeAction(FOLLOW_GIMBAL);
                 break;
             case KEY_D:
                 speed_x += 1.0f;
@@ -259,17 +262,17 @@ if (remote_controller.dji_remote.rc.s[LEFT_SW] == Up) // 高自由度活动
             switch (key_and) // 按键上升沿
             {
             case KEY_B:
-//								if(R_flag)
-//									
-//								//	bomb_bay_controller.is_motor_init = 0;//卡死过，重新初始化
-//								else
-//								{
-//                if (bomb_bay_controller.cover_state == BOMB_BAY_COVER_ON)
-//                 //   CloseCoverCommand();
-//                else
-//                    OpenCoverCommand();
-//								}
-									;
+                //								if(R_flag)
+                //
+                //								//	bomb_bay_controller.is_motor_init = 0;//卡死过，重新初始化
+                //								else
+                //								{
+                //                if (bomb_bay_controller.cover_state == BOMB_BAY_COVER_ON)
+                //                 //   CloseCoverCommand();
+                //                else
+                //                    OpenCoverCommand();
+                //								}
+                ;
                 break;
             case KEY_V:
                 break;
@@ -282,7 +285,7 @@ if (remote_controller.dji_remote.rc.s[LEFT_SW] == Up) // 高自由度活动
                 if (remote_controller.chassis_format == CROSS_MODE)
                     remote_controller.chassis_format = X_MODE;
                 else
-                    remote_controller.chassis_format = CROSS_MODE;							
+                    remote_controller.chassis_format = CROSS_MODE;
                 break;
 
             case KEY_E:
@@ -346,9 +349,9 @@ if (remote_controller.dji_remote.rc.s[LEFT_SW] == Up) // 高自由度活动
             case KEY_Q:
                 break;
             case KEY_E:
-								
-								gimbal_controller.target_big_yaw_angle /* [SMALL_YAW_REMOVED] 原为target_small_yaw */ += 180;
-								
+
+                gimbal_controller.target_big_yaw_angle /* [SMALL_YAW_REMOVED] 原为target_small_yaw */ += 180;
+
                 break;
             case KEY_R:
                 break;
@@ -389,15 +392,15 @@ if (remote_controller.dji_remote.rc.s[LEFT_SW] == Up) // 高自由度活动
         else
             chassis_solver.chassis_speed_w = 0.0f;
 
-				//过洞底盘跟随 并 限制功率从而缓速移动
-				if(Hole_flag)
-				{
-						setControlModeAction(FOLLOW_GIMBAL);
-						chassis_send_pack1.through_hole_flag = 1;
-				}
-				else
-						chassis_send_pack1.through_hole_flag = 0;
-				
+        // 过洞底盘跟随 并 限制功率从而缓速移动
+        if (Hole_flag)
+        {
+            setControlModeAction(FOLLOW_GIMBAL);
+            chassis_send_pack1.through_hole_flag = 1;
+        }
+        else
+            chassis_send_pack1.through_hole_flag = 0;
+
         // 鼠标操作
         if (remote_controller.gimbal_action == GIMBAL_ACT_MODE || remote_controller.gimbal_action == GIMBAL_TEST_MODE)
         {
@@ -407,10 +410,10 @@ if (remote_controller.dji_remote.rc.s[LEFT_SW] == Up) // 高自由度活动
 #endif
         }
 
-            // Pitch控制：仅在正常模式下响应遥控器
+        // Pitch控制：仅在正常模式下响应遥控器
 #if (GIMBAL_TEST_CONFIG != GIMBAL_CONFIG_PITCH_SQUARE && GIMBAL_CONTROL_DISCONNECT == 0)
-            gimbal_controller.target_pitch_angle -= remote_controller.dji_remote.mouse.y * 0.005f;
-            gimbal_controller.target_pitch_angle -= remote_controller.dji_remote.mouse.z * 0.001f;
+        gimbal_controller.target_pitch_angle -= remote_controller.dji_remote.mouse.y * 0.005f;
+        gimbal_controller.target_pitch_angle -= remote_controller.dji_remote.mouse.z * 0.001f;
 #endif
 
         // 鼠标左键检测
@@ -453,11 +456,11 @@ if (remote_controller.dji_remote.rc.s[LEFT_SW] == Up) // 高自由度活动
         {
             setGimbalAction(GIMBAL_ACT_MODE);
         }
-				
-				if(offline_detector.pitch_motor_state == PITCH_MOTOR_OFF && offline_detector.yaw_motor_state == YAW_MOTOR_OFF)
-				{
-						setGimbalAction(GIMBAL_POWERDOWN); // 可环顾四周
-				}
+
+        if (offline_detector.pitch_motor_state == PITCH_MOTOR_OFF && offline_detector.yaw_motor_state == YAW_MOTOR_OFF)
+        {
+            setGimbalAction(GIMBAL_POWERDOWN); // 可环顾四周
+        }
     }
 }
 
@@ -493,30 +496,30 @@ void setAllModeOff()
     setControlModeAction(NOT_CONTROL_MODE);
     setShootAction(SHOOT_POWERDOWN_MODE);
     setGimbalAction(GIMBAL_POWERDOWN);
-    //DisableCoverCommand();
-	big_yaw_controller.gimbal_last_mode == 0;
+    // DisableCoverCommand();
+    big_yaw_controller.gimbal_last_mode == 0;
 }
 
-//遥控器模式部分保留，其余调整为哨兵专用模式
-//锯齿波测试
+// 遥控器模式部分保留，其余调整为哨兵专用模式
+// 锯齿波测试
 SawToothWave gimbal_saw_tooth;
 StepFunction gimbal_step;
-int saw_tooth_init_flag=0,step_init_flag=0;
+int saw_tooth_init_flag = 0, step_init_flag = 0;
 
 /*
-	遥控器操作模式：
-		左上：
-			右上：打弹测试
-			右中：云台检录
-			右下：普通移动
-		左中：
-			右上：辅瞄测试
-			右中：比赛模式，会小陀螺
-			右下：导航模式，不会小陀螺
-		左下：
-			右上：小陀螺,另一个方向
-			右中：小陀螺
-			右下：下电
+    遥控器操作模式：
+        左上：
+            右上：打弹测试
+            右中：云台检录
+            右下：普通移动
+        左中：
+            右上：辅瞄测试
+            右中：比赛模式，会小陀螺
+            右下：导航模式，不会小陀螺
+        左下：
+            右上：小陀螺,另一个方向
+            右中：小陀螺
+            右下：下电
 */
 
 void DJIRemoteUpdate(ChassisSolver *infantry)
@@ -530,7 +533,7 @@ void DJIRemoteUpdate(ChassisSolver *infantry)
         {
         case Down:
             setAllModeOff();
-            //测试锯齿波用
+            // 测试锯齿波用
             saw_tooth_init_flag = 0;
             step_init_flag = 0;
             break;
@@ -543,23 +546,21 @@ void DJIRemoteUpdate(ChassisSolver *infantry)
             setGimbalAction(GIMBAL_ACT_MODE);
             setSuperPower(POWER_TO_BATTERY);
 
-            
-                // 云台控制 - Yaw
+            // 云台控制 - Yaw
 #if (GIMBAL_TEST_CONFIG != GIMBAL_CONFIG_SMALLYAW_SQUARE && GIMBAL_CONTROL_DISCONNECT == 0)
-                gimbal_controller.target_big_yaw_angle /* [SMALL_YAW_REMOVED] 原为target_small_yaw */ -= (remote_controller.dji_remote.rc.ch[LEFT_CH_LR] - CH_MIDDLE) * MAX_SW_YAW_SPEED / CH_RANGE * infantry->delta_t;
-                gimbal_controller.target_big_yaw_angle  -= (remote_controller.dji_remote.rc.ch[LEFT_CH_LR] - CH_MIDDLE) * MAX_SW_YAW_SPEED / CH_RANGE * infantry->delta_t;
+            gimbal_controller.target_big_yaw_angle /* [SMALL_YAW_REMOVED] 原为target_small_yaw */ -= (remote_controller.dji_remote.rc.ch[LEFT_CH_LR] - CH_MIDDLE) * MAX_SW_YAW_SPEED / CH_RANGE * infantry->delta_t;
+            gimbal_controller.target_big_yaw_angle -= (remote_controller.dji_remote.rc.ch[LEFT_CH_LR] - CH_MIDDLE) * MAX_SW_YAW_SPEED / CH_RANGE * infantry->delta_t;
 #endif
 
-                // 云台控制 - Pitch
+            // 云台控制 - Pitch
 #if (GIMBAL_TEST_CONFIG != GIMBAL_CONFIG_PITCH_SQUARE && GIMBAL_CONTROL_DISCONNECT == 0)
-                gimbal_controller.target_pitch_angle += (remote_controller.dji_remote.rc.ch[LEFT_CH_UD] - CH_MIDDLE) * MAX_SW_PITCH_SPEED / CH_RANGE * infantry->delta_t;
+            gimbal_controller.target_pitch_angle += (remote_controller.dji_remote.rc.ch[LEFT_CH_UD] - CH_MIDDLE) * MAX_SW_PITCH_SPEED / CH_RANGE * infantry->delta_t;
 #endif
 
-    
             // 底盘控制
-                chassis_solver.chassis_speed_x = (remote_controller.dji_remote.rc.ch[RIGHT_CH_UD] - CH_MIDDLE) * 1.0f / CH_RANGE * MAX_X_SPEED;
-                chassis_solver.chassis_speed_y = (remote_controller.dji_remote.rc.ch[RIGHT_CH_LR] - CH_MIDDLE) * 1.0f / CH_RANGE * MAX_Y_SPEED;
-                chassis_solver.chassis_speed_w = -0.5f * MAX_YAW_SPEED;
+            chassis_solver.chassis_speed_x = (remote_controller.dji_remote.rc.ch[RIGHT_CH_UD] - CH_MIDDLE) * 1.0f / CH_RANGE * MAX_X_SPEED;
+            chassis_solver.chassis_speed_y = (remote_controller.dji_remote.rc.ch[RIGHT_CH_LR] - CH_MIDDLE) * 1.0f / CH_RANGE * MAX_Y_SPEED;
+            chassis_solver.chassis_speed_w = -0.5f * MAX_YAW_SPEED;
             // 检录要求变向小陀螺
             //   if (remote_controller.control_mode_action == CV_ROTATE)
             //   {
@@ -569,10 +570,10 @@ void DJIRemoteUpdate(ChassisSolver *infantry)
             //           chassis_solver.Rotate_Counter++;
             //       if (chassis_solver.Rotate_Counter % 2 == 1)
             //           chassis_solver.chassis_speed_w *= -1;
-                      
+
             //   }
-   			// 			else
-   			// 				chassis_solver.chassis_speed_w = 0.0f;
+            // 			else
+            // 				chassis_solver.chassis_speed_w = 0.0f;
 
             break;
         case Up:
@@ -583,49 +584,47 @@ void DJIRemoteUpdate(ChassisSolver *infantry)
             setGimbalAction(GIMBAL_ACT_MODE);
             setSuperPower(POWER_TO_SuperPower);
 
-            //OpenCoverCommand();
+            // OpenCoverCommand();
 
-        // 云台控制 - Yaw
+            // 云台控制 - Yaw
 #if (GIMBAL_TEST_CONFIG != GIMBAL_CONFIG_SMALLYAW_SQUARE && GIMBAL_CONTROL_DISCONNECT == 0)
-                gimbal_controller.target_big_yaw_angle /* [SMALL_YAW_REMOVED] 原为target_small_yaw */ -= (remote_controller.dji_remote.rc.ch[LEFT_CH_LR] - CH_MIDDLE) * MAX_SW_YAW_SPEED / CH_RANGE * infantry->delta_t;
-                gimbal_controller.target_big_yaw_angle  -= (remote_controller.dji_remote.rc.ch[LEFT_CH_LR] - CH_MIDDLE) * MAX_SW_YAW_SPEED / CH_RANGE * infantry->delta_t;
+            gimbal_controller.target_big_yaw_angle /* [SMALL_YAW_REMOVED] 原为target_small_yaw */ -= (remote_controller.dji_remote.rc.ch[LEFT_CH_LR] - CH_MIDDLE) * MAX_SW_YAW_SPEED / CH_RANGE * infantry->delta_t;
+            gimbal_controller.target_big_yaw_angle -= (remote_controller.dji_remote.rc.ch[LEFT_CH_LR] - CH_MIDDLE) * MAX_SW_YAW_SPEED / CH_RANGE * infantry->delta_t;
 #endif
 
-                // 云台控制 - Pitch
+            // 云台控制 - Pitch
 #if (GIMBAL_TEST_CONFIG != GIMBAL_CONFIG_PITCH_SQUARE && GIMBAL_CONTROL_DISCONNECT == 0)
-                gimbal_controller.target_pitch_angle += (remote_controller.dji_remote.rc.ch[LEFT_CH_UD] - CH_MIDDLE) * MAX_SW_PITCH_SPEED / CH_RANGE * infantry->delta_t;
+            gimbal_controller.target_pitch_angle += (remote_controller.dji_remote.rc.ch[LEFT_CH_UD] - CH_MIDDLE) * MAX_SW_PITCH_SPEED / CH_RANGE * infantry->delta_t;
 #endif
 
-    
             // 底盘控制
-                chassis_solver.chassis_speed_x = (remote_controller.dji_remote.rc.ch[RIGHT_CH_UD] - CH_MIDDLE) * 1.0f / CH_RANGE * MAX_X_SPEED;
-                chassis_solver.chassis_speed_y = (remote_controller.dji_remote.rc.ch[RIGHT_CH_LR] - CH_MIDDLE) * 1.0f / CH_RANGE * MAX_Y_SPEED;
-                chassis_solver.chassis_speed_w = 0.75f * MAX_YAW_SPEED;
+            chassis_solver.chassis_speed_x = (remote_controller.dji_remote.rc.ch[RIGHT_CH_UD] - CH_MIDDLE) * 1.0f / CH_RANGE * MAX_X_SPEED;
+            chassis_solver.chassis_speed_y = (remote_controller.dji_remote.rc.ch[RIGHT_CH_LR] - CH_MIDDLE) * 1.0f / CH_RANGE * MAX_Y_SPEED;
+            chassis_solver.chassis_speed_w = 0.75f * MAX_YAW_SPEED;
 
-				//            if((remote_controller.dji_remote.rc.ch[RIGHT_CH_UD] - CH_MIDDLE) > 330)
-//            {
-//                toggle_controller.is_shoot = TRUE;
-//            }
-//            else
-//            {
-//                toggle_controller.is_shoot = FALSE;
-//            
-//            }
-                
+            //            if((remote_controller.dji_remote.rc.ch[RIGHT_CH_UD] - CH_MIDDLE) > 330)
+            //            {
+            //                toggle_controller.is_shoot = TRUE;
+            //            }
+            //            else
+            //            {
+            //                toggle_controller.is_shoot = FALSE;
+            //
+            //            }
+
             break;
         default:
             setAllModeOff();
-            //测试锯齿波用
+            // 测试锯齿波用
             saw_tooth_init_flag = 0;
             step_init_flag = 0;
             break;
         }
-       
-		
+
         break;
     case Mid:
         // 测导航模式：右拨杆之前在Down位置时触发
-        if(remote_controller.dji_remote.rc.Previous_rc_Right_SW == Down)
+        if (remote_controller.dji_remote.rc.Previous_rc_Right_SW == Down)
         {
             setRobotState(CONTROL_MODE);
             setControlModeAction(NOT_FOLLOW_GIMBAL);
@@ -647,7 +646,7 @@ void DJIRemoteUpdate(ChassisSolver *infantry)
                 PCStateControl(); // NUC模式，允许旋转
                 break;
             case Mid:
-                PCStateControl(); //比赛专用
+                PCStateControl(); // 比赛专用
                 break;
             case Up:
                 // 辅瞄测试
@@ -657,21 +656,27 @@ void DJIRemoteUpdate(ChassisSolver *infantry)
                 setGimbalAction(GIMBAL_AUTO_AIM_MODE);
                 setSuperPower(POWER_TO_BATTERY);
 
-                //OpenCoverCommand();
+                // OpenCoverCommand();
 
                 // 云台控制
-    #if (GIMBAL_TEST_CONFIG != GIMBAL_CONFIG_SMALLYAW_SQUARE && GIMBAL_CONTROL_DISCONNECT == 0)
+#if (GIMBAL_TEST_CONFIG != GIMBAL_CONFIG_SMALLYAW_SQUARE && GIMBAL_CONTROL_DISCONNECT == 0)
                 gimbal_controller.target_big_yaw_angle /* [SMALL_YAW_REMOVED] 原为target_small_yaw */ -= (remote_controller.dji_remote.rc.ch[LEFT_CH_LR] - CH_MIDDLE) * MAX_SW_YAW_SPEED / CH_RANGE * infantry->delta_t;
-                gimbal_controller.target_big_yaw_angle  -= (remote_controller.dji_remote.rc.ch[LEFT_CH_LR] - CH_MIDDLE) * MAX_SW_YAW_SPEED / CH_RANGE * infantry->delta_t;
-    #endif
-    #if (GIMBAL_TEST_CONFIG != GIMBAL_CONFIG_PITCH_SQUARE && GIMBAL_CONTROL_DISCONNECT == 0)
+                gimbal_controller.target_big_yaw_angle -= (remote_controller.dji_remote.rc.ch[LEFT_CH_LR] - CH_MIDDLE) * MAX_SW_YAW_SPEED / CH_RANGE * infantry->delta_t;
+#endif
+#if (GIMBAL_TEST_CONFIG != GIMBAL_CONFIG_PITCH_SQUARE && GIMBAL_CONTROL_DISCONNECT == 0)
                 gimbal_controller.target_pitch_angle += (remote_controller.dji_remote.rc.ch[LEFT_CH_UD] - CH_MIDDLE) * MAX_SW_PITCH_SPEED / CH_RANGE * infantry->delta_t;
-    #endif
+#endif
 
                 // 底盘控制
-                 chassis_solver.chassis_speed_x = 0;//(remote_controller.dji_remote.rc.ch[RIGHT_CH_LR] - CH_MIDDLE) * 1.0f / CH_RANGE;
-                 chassis_solver.chassis_speed_y = 0;//(remote_controller.dji_remote.rc.ch[RIGHT_CH_UD] - CH_MIDDLE) * 1.0f / CH_RANGE;
-                             chassis_solver.chassis_speed_w = 0;
+                chassis_solver.chassis_speed_x = 0; //(remote_controller.dji_remote.rc.ch[RIGHT_CH_LR] - CH_MIDDLE) * 1.0f / CH_RANGE;
+                chassis_solver.chassis_speed_y = 0; //(remote_controller.dji_remote.rc.ch[RIGHT_CH_UD] - CH_MIDDLE) * 1.0f / CH_RANGE;
+                chassis_solver.chassis_speed_w = 0;
+
+                // 摇杆推上 → 手动打弹（自瞄模式下也可手动触发）
+                if ((remote_controller.dji_remote.rc.ch[RIGHT_CH_UD] - CH_MIDDLE) > 330)
+                    toggle_controller.is_shoot = TRUE;
+                else
+                    toggle_controller.is_shoot = FALSE;
 
                 break;
             default:
@@ -680,7 +685,7 @@ void DJIRemoteUpdate(ChassisSolver *infantry)
             }
         }
 
-    break;
+        break;
     case Up:
         // 左上为遥控器控制
         switch (remote_controller.dji_remote.rc.s[RIGHT_SW])
@@ -692,10 +697,10 @@ void DJIRemoteUpdate(ChassisSolver *infantry)
             setShootAction(SHOOT_POWERDOWN_MODE);
             setGimbalAction(GIMBAL_ACT_MODE);
             setSuperPower(POWER_TO_BATTERY);
-					big_yaw_controller.big_yaw_mode = 0;
-					saw_tooth_init_flag = 0;
+            big_yaw_controller.big_yaw_mode = 0;
+            saw_tooth_init_flag = 0;
 
-            //OpenCoverCommand();
+            // OpenCoverCommand();
 
             // 云台控制
 #if (GIMBAL_TEST_CONFIG != GIMBAL_CONFIG_SMALLYAW_SQUARE && GIMBAL_CONTROL_DISCONNECT == 0)
@@ -709,7 +714,7 @@ void DJIRemoteUpdate(ChassisSolver *infantry)
             // 底盘控制
             chassis_solver.chassis_speed_x = (remote_controller.dji_remote.rc.ch[RIGHT_CH_UD] - CH_MIDDLE) * 1.0f / CH_RANGE * MAX_X_SPEED;
             chassis_solver.chassis_speed_y = (remote_controller.dji_remote.rc.ch[RIGHT_CH_LR] - CH_MIDDLE) * 1.0f / CH_RANGE * MAX_Y_SPEED;
-						chassis_solver.chassis_speed_w = 0.f;
+            chassis_solver.chassis_speed_w = 0.f;
             break;
         case Mid:
 
@@ -720,58 +725,30 @@ void DJIRemoteUpdate(ChassisSolver *infantry)
             setGimbalAction(GIMBAL_ACT_MODE);
             setSuperPower(POWER_TO_SuperPower);
             big_yaw_controller.big_yaw_mode = 0;
-            
 
-            //CloseCoverCommand();
-//				
-				if(0==saw_tooth_init_flag)
-						{
-							// 10度
-							SawToothInit(&gimbal_saw_tooth,6.0f, 1, 250, gimbal_controller.gyro_yaw_angle);	
-							//yaw 30度响应测试，t单位为ms
-						//sawtoothinit(&gimbal_saw_tooth,30.0f, 1, 1000, gimbal_controller.gyro_yaw_angle);
-							saw_tooth_init_flag = 1;
-						}
-                // if(0 == step_init_flag)
-                // {
-                //     //yaw 30度响应测试
-                //     StepInit(&gimbal_step,gimbal_controller.gyro_yaw_angle,30,1);
-                // }
-						
-        	     // saw_tooth_init_flag = 1;
-                // step_init_flag = 1;
-						
-                // 云台控制
-#if (GIMBAL_TEST_CONFIG != GIMBAL_CONFIG_SMALLYAW_SQUARE && GIMBAL_CONTROL_DISCONNECT == 0)
-                gimbal_controller.target_big_yaw_angle /* [SMALL_YAW_REMOVED] 原为target_small_yaw */ -= (remote_controller.dji_remote.rc.ch[LEFT_CH_LR] - CH_MIDDLE) * MAX_SW_YAW_SPEED / CH_RANGE * infantry->delta_t;
-                gimbal_controller.target_big_yaw_angle  -= (remote_controller.dji_remote.rc.ch[LEFT_CH_LR] - CH_MIDDLE) * MAX_SW_YAW_SPEED / CH_RANGE * infantry->delta_t;
-#endif
+            // CloseCoverCommand();
+            //
+            if (0 == saw_tooth_init_flag)
+            {
+                // 10度
+                SawToothInit(&gimbal_saw_tooth, 6.0f, 1, 250, gimbal_controller.gyro_yaw_angle);
+                // yaw 30度响应测试，t单位为ms
+                // sawtoothinit(&gimbal_saw_tooth,30.0f, 1, 1000, gimbal_controller.gyro_yaw_angle);
+                saw_tooth_init_flag = 1;
+            }
+            // if(0 == step_init_flag)
+            // {
+            //     //yaw 30度响应测试
+            //     StepInit(&gimbal_step,gimbal_controller.gyro_yaw_angle,30,1);
+            // }
 
-#if (GIMBAL_TEST_CONFIG != GIMBAL_CONFIG_PITCH_SQUARE && GIMBAL_CONTROL_DISCONNECT == 0)
-                gimbal_controller.target_pitch_angle += (remote_controller.dji_remote.rc.ch[LEFT_CH_UD] - CH_MIDDLE) * MAX_SW_PITCH_SPEED / CH_RANGE * infantry->delta_t;
-#endif
-
-            // 底盘控制
-								chassis_solver.chassis_speed_x = (remote_controller.dji_remote.rc.ch[RIGHT_CH_UD] - CH_MIDDLE) * 1.0f / CH_RANGE * MAX_X_SPEED;
-                chassis_solver.chassis_speed_y = (remote_controller.dji_remote.rc.ch[RIGHT_CH_LR] - CH_MIDDLE) * 1.0f / CH_RANGE * MAX_Y_SPEED;
-                chassis_solver.chassis_speed_w = 0;//0.5f*MAX_YAW_SPEED;
-
-            break;
-        case Up:
-            // 底盘不动，打弹
-            setRobotState(CONTROL_MODE);
-            setControlModeAction(FOLLOW_GIMBAL);
-						setShootAction(SHOOT_FIRE_MODE); // 辅瞄爽打
-            setGimbalAction(GIMBAL_ACT_MODE);
-            setSuperPower(POWER_TO_BATTERY);
-					big_yaw_controller.big_yaw_mode = 0;
-
-            //OpenCoverCommand();
+            // saw_tooth_init_flag = 1;
+            // step_init_flag = 1;
 
             // 云台控制
 #if (GIMBAL_TEST_CONFIG != GIMBAL_CONFIG_SMALLYAW_SQUARE && GIMBAL_CONTROL_DISCONNECT == 0)
             gimbal_controller.target_big_yaw_angle /* [SMALL_YAW_REMOVED] 原为target_small_yaw */ -= (remote_controller.dji_remote.rc.ch[LEFT_CH_LR] - CH_MIDDLE) * MAX_SW_YAW_SPEED / CH_RANGE * infantry->delta_t;
-            gimbal_controller.target_big_yaw_angle  -= (remote_controller.dji_remote.rc.ch[LEFT_CH_LR] - CH_MIDDLE) * MAX_SW_YAW_SPEED / CH_RANGE * infantry->delta_t;
+            gimbal_controller.target_big_yaw_angle -= (remote_controller.dji_remote.rc.ch[LEFT_CH_LR] - CH_MIDDLE) * MAX_SW_YAW_SPEED / CH_RANGE * infantry->delta_t;
 #endif
 
 #if (GIMBAL_TEST_CONFIG != GIMBAL_CONFIG_PITCH_SQUARE && GIMBAL_CONTROL_DISCONNECT == 0)
@@ -779,28 +756,64 @@ void DJIRemoteUpdate(ChassisSolver *infantry)
 #endif
 
             // 底盘控制
-//             chassis_solver.chassis_speed_x = (remote_controller.dji_remote.rc.ch[RIGHT_CH_LR] - CH_MIDDLE) * 1.0f / CH_RANGE * MAX_X_SPEED;
-//            chassis_solver.chassis_speed_y = (remote_controller.dji_remote.rc.ch[RIGHT_CH_UD] - CH_MIDDLE) * 1.0f / CH_RANGE * MAX_Y_SPEED;
-						chassis_solver.chassis_speed_w = 0.f*MAX_YAW_SPEED;
-						if((remote_controller.dji_remote.rc.ch[RIGHT_CH_UD] - CH_MIDDLE) > 330)
+            chassis_solver.chassis_speed_x = (remote_controller.dji_remote.rc.ch[RIGHT_CH_UD] - CH_MIDDLE) * 1.0f / CH_RANGE * MAX_X_SPEED;
+            chassis_solver.chassis_speed_y = (remote_controller.dji_remote.rc.ch[RIGHT_CH_LR] - CH_MIDDLE) * 1.0f / CH_RANGE * MAX_Y_SPEED;
+            chassis_solver.chassis_speed_w = 0; // 0.5f*MAX_YAW_SPEED;
+
+            break;
+        case Up:
+            // 底盘不动，打弹
+            setRobotState(CONTROL_MODE);
+            setControlModeAction(FOLLOW_GIMBAL);
+            setGimbalAction(GIMBAL_ACT_MODE);
+
+            // 双杆同时推过半程 → UNSTOPPABLE 射击，否则正常射击
+            if ((abs((int)remote_controller.dji_remote.rc.ch[LEFT_CH_UD] - CH_MIDDLE) > 330 
+                    || abs((int)remote_controller.dji_remote.rc.ch[LEFT_CH_LR] - CH_MIDDLE) > 330) 
+                    && (abs((int)remote_controller.dji_remote.rc.ch[RIGHT_CH_UD] - CH_MIDDLE) > 330 
+                    || abs((int)remote_controller.dji_remote.rc.ch[RIGHT_CH_LR] - CH_MIDDLE) > 330)){
+                setShootAction(SHOOT_UNSTOPPABLE_MODE);
+            }                
+            else{
+                setShootAction(SHOOT_FIRE_MODE);
+            }
+            setSuperPower(POWER_TO_BATTERY);
+            big_yaw_controller.big_yaw_mode = 0;
+
+            // OpenCoverCommand();
+
+            // 云台控制
+#if (GIMBAL_TEST_CONFIG != GIMBAL_CONFIG_SMALLYAW_SQUARE && GIMBAL_CONTROL_DISCONNECT == 0)
+            gimbal_controller.target_big_yaw_angle /* [SMALL_YAW_REMOVED] 原为target_small_yaw */ -= (remote_controller.dji_remote.rc.ch[LEFT_CH_LR] - CH_MIDDLE) * MAX_SW_YAW_SPEED / CH_RANGE * infantry->delta_t;
+            gimbal_controller.target_big_yaw_angle -= (remote_controller.dji_remote.rc.ch[LEFT_CH_LR] - CH_MIDDLE) * MAX_SW_YAW_SPEED / CH_RANGE * infantry->delta_t;
+#endif
+
+#if (GIMBAL_TEST_CONFIG != GIMBAL_CONFIG_PITCH_SQUARE && GIMBAL_CONTROL_DISCONNECT == 0)
+            gimbal_controller.target_pitch_angle += (remote_controller.dji_remote.rc.ch[LEFT_CH_UD] - CH_MIDDLE) * MAX_SW_PITCH_SPEED / CH_RANGE * infantry->delta_t;
+#endif
+
+            // 底盘控制
+            //             chassis_solver.chassis_speed_x = (remote_controller.dji_remote.rc.ch[RIGHT_CH_LR] - CH_MIDDLE) * 1.0f / CH_RANGE * MAX_X_SPEED;
+            //            chassis_solver.chassis_speed_y = (remote_controller.dji_remote.rc.ch[RIGHT_CH_UD] - CH_MIDDLE) * 1.0f / CH_RANGE * MAX_Y_SPEED;
+            chassis_solver.chassis_speed_w = 0.f * MAX_YAW_SPEED;
+            if ((remote_controller.dji_remote.rc.ch[RIGHT_CH_UD] - CH_MIDDLE) > 330)
             {
                 toggle_controller.is_shoot = TRUE;
             }
             else
             {
                 toggle_controller.is_shoot = FALSE;
-            
             }
-					
+
             break;
         default:
             setAllModeOff();
             break;
         }
-    break;
+        break;
     default:
         setAllModeOff();
-    break;
+        break;
     }
 
     remote_controller.dji_remote.rc.Previous_rc_Right_SW = remote_controller.dji_remote.rc.s[RIGHT_SW]; // 给小陀螺变向用
@@ -809,7 +822,7 @@ void DJIRemoteUpdate(ChassisSolver *infantry)
     // {
     //     setAllModeOff();
     // }
-    //哨兵会关遥控器
+    // 哨兵会关遥控器
 }
 
 /**

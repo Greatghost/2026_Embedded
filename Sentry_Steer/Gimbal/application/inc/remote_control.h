@@ -79,7 +79,8 @@ enum SHOOT_ACTION
     SHOOT_TEST_MODE,      // 弹道测试模式
     SHOOT_FIRE_MODE,      // 射击模式
     SHOOT_AUTO_AIM_MODE,  // 自瞄模式
-    SHOOT_SUPPLY_MODE     // 补给模式
+    SHOOT_SUPPLY_MODE,    // 补给模式
+    SHOOT_UNSTOPPABLE_MODE // 双杆触发连射模式
 };
 
 enum CHASSIS_FORMAT

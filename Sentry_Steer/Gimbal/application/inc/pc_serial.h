@@ -106,7 +106,8 @@ typedef enum
 	JUDGE_PC_DATA_EXTENDED = 6,
 	JUDGE_PC_DATA_SENTRY_DATA = 7,      // TypeID 7: 哨兵信息 (0x020D + 0x0207初速度)
 	JUDGE_PC_DATA_BULLET_DATA_AND_RFID2 = 8, // TypeID 8: 弹量数据+RFID扩展
-	JUDGE_PC_DATA_ROBOT_COMMAND = 9     // TypeID 9: 小地图下发指令 (0x0303)
+	JUDGE_PC_DATA_ROBOT_COMMAND = 9,    // TypeID 9: 小地图下发指令 (0x0303)
+	JUDGE_PC_DATA_SENTRY_DURATION = 10 // TypeID 10: 哨兵姿态时长 (CAN 0x09F)
 }PC_dataType_enum;
 typedef enum{
 	OFFLINE_START = 0,
@@ -277,8 +278,8 @@ typedef struct PCSendDataExtended
 	uint8_t start_flag;
 	uint8_t data_pack_type;  // = JUDGE_PC_DATA_EXTENDED = 6
 
-	int16_t UWB_yaw_10;
-	uint8_t sentry_posture;  // 哨兵姿态: 1=进攻, 2=防御, 3=移动, 0=未知
+	int16_t damage_difference; // 伤害值差 (己方−敌方HP总和, CAN 0x0A0)
+	uint8_t sentry_posture;  // 姿态回读已移至TypeID 7, 此处置0
 	uint8_t reserve_8;
 	uint32_t gimbal_vel_data1;  // 小YAW偏差角度 + 底盘w速度: byte0+byte1=小YAW偏差角度*10(int16)单位0.1度, byte2+byte3=底盘角速度*100(int16)单位0.01rad/s
 	uint32_t gimbal_vel_data2;  // 底盘速度数据: byte0+byte1=底盘x速度(int16), 单位0.01 m/s; byte2+byte3=底盘y速度(int16), 单位0.01 m/s (通过舵电机角度与轮电机速度反解)
@@ -325,6 +326,23 @@ typedef struct PCSendDataRobotCmd
 	uint32_t reserved;       // 填充至12字节data
 	uint8_t crc8;
 } PCSendDataRobotCmd_t;  // sizeof == 15 bytes
+
+// TypeID 10: SentryDuration - 哨兵姿态时长 (0x020D扩展, CAN 0x09F)
+typedef struct PCSendDataSentryDuration
+{
+	uint8_t start_flag;           // '!'
+	uint8_t data_pack_type;       // = JUDGE_PC_DATA_SENTRY_DURATION = 10
+	uint8_t normal_attack_duration;
+	uint8_t normal_defend_duration;
+	uint8_t normal_move_duration;
+	uint8_t reserved_duration_1;
+	uint8_t enhanced_attack_duration;
+	uint8_t enhanced_defend_duration;
+	uint8_t enhanced_move_duration;
+	uint8_t reserved_duration_2;
+	uint32_t reserved;            // 填充至12字节payload
+	uint8_t crc8;
+} PCSendDataSentryDuration_t;  // sizeof == 15 bytes
 
 #pragma pack(pop) //
 

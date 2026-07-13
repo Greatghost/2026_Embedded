@@ -123,6 +123,7 @@ PCSendDataExtended_t PCSendExtended;
 PCSendDataSentry_t PCSendSentry;
 PCSendDataBulletAndRfid2_t PCSendBulletAndRfid2;
 PCSendDataRobotCmd_t PCSendRobotCmd;
+PCSendDataSentryDuration_t PCSendSentryDuration;
 
 ext_shoot_data_t last_shoot_data;
 
@@ -302,8 +303,8 @@ void SendtoPCExtend(unsigned char* buff)
 {
 	PCSendExtended.start_flag = '!';
 	PCSendExtended.data_pack_type = JUDGE_PC_DATA_EXTENDED;
-	PCSendExtended.UWB_yaw_10 = JudgeRecieveData2.yaw_10;
-	PCSendExtended.sentry_posture = JudgeRecieveData.sentry_posture;
+	PCSendExtended.damage_difference = damage_diff.damage_difference;
+	PCSendExtended.sentry_posture = 0;  // 姿态回读已移至TypeID 7
 	PCSendExtended.reserve_8 = 0;
 	// [SMALL_YAW_REMOVED] 变量改名: small_yaw_offset → yaw_bias_offset (数据来源不变)
 	int16_t yaw_bias_offset_angle_10 = (int16_t)(big_yaw_controller.big_yaw_gyro_bias * 10.0f);
@@ -360,6 +361,29 @@ void SendtoPCRobotCmd(unsigned char* buff)
 	memcpy(buff, (void *)&PCSendRobotCmd, PC_SEND_BLOOD_SIZE);
 }
 
+// TypeID 10: 发送哨兵姿态时长 (CAN 0x09F)
+void SendtoPCSentryDuration(unsigned char* buff)
+{
+	static volatile uint32_t sentry_duration_send_cnt = 0;
+	sentry_duration_send_cnt++;
+
+	PCSendSentryDuration.start_flag = '!';
+	PCSendSentryDuration.data_pack_type = JUDGE_PC_DATA_SENTRY_DURATION;
+	// [DEBUG] 固定测试值
+	PCSendSentryDuration.normal_attack_duration   = 10;
+	PCSendSentryDuration.normal_defend_duration   = 20;
+	PCSendSentryDuration.normal_move_duration     = 30;
+	PCSendSentryDuration.reserved_duration_1      = 0;
+	PCSendSentryDuration.enhanced_attack_duration  = 40;
+	PCSendSentryDuration.enhanced_defend_duration  = 50;
+	PCSendSentryDuration.enhanced_move_duration    = 60;
+	PCSendSentryDuration.reserved_duration_2      = 0;
+	PCSendSentryDuration.reserved = 0;
+	PCSendSentryDuration.crc8 = 0;
+	Append_CRC8_Check_Sum((unsigned char *)&PCSendSentryDuration, PC_SEND_BLOOD_SIZE);
+	memcpy(buff, (void *)&PCSendSentryDuration, PC_SEND_BLOOD_SIZE);
+}
+
 void SendtoPC(uint8_t data_type)
 {
 	if(data_type == USUAL_PC_DATA)
@@ -401,6 +425,10 @@ void SendtoPC(uint8_t data_type)
 	else if(data_type == JUDGE_PC_DATA_ROBOT_COMMAND)
 	{
 		SendtoPCRobotCmd(SendToPC_Buff);
+	}
+	else if(data_type == JUDGE_PC_DATA_SENTRY_DURATION)
+	{
+		SendtoPCSentryDuration(SendToPC_Buff);
 	}
 	CDC_Transmit_FS(SendToPC_Buff,PC_SENDBUF_SIZE);
 }

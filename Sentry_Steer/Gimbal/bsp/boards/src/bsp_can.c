@@ -56,6 +56,30 @@ void can_filter_init(void)
 	can_filter_st.FilterFIFOAssignment = CAN_RX_FIFO1;
 	can_filter_st.SlaveStartFilterBank = 14;
 	HAL_CAN_ConfigFilter(&hcan1, &can_filter_st);
+	// CAN 1 FIFO1 第三个过滤器（接收哨兵姿态时长数据 0x09F）
+	can_filter_st.FilterBank = 3;
+	can_filter_st.FilterActivation = ENABLE;
+	can_filter_st.FilterMode = CAN_FILTERMODE_IDLIST;
+	can_filter_st.FilterScale = CAN_FILTERSCALE_16BIT;
+	can_filter_st.FilterIdHigh = GET_SENTRY_DURATION_CAN_ID << 5;
+	can_filter_st.FilterIdLow = GET_SENTRY_DURATION_CAN_ID << 5;
+	can_filter_st.FilterMaskIdHigh = GET_SENTRY_DURATION_CAN_ID << 5;
+	can_filter_st.FilterMaskIdLow = GET_SENTRY_DURATION_CAN_ID << 5;
+	can_filter_st.FilterFIFOAssignment = CAN_RX_FIFO1;
+	can_filter_st.SlaveStartFilterBank = 14;
+	HAL_CAN_ConfigFilter(&hcan1, &can_filter_st);
+	// CAN 1 FIFO1 第四个过滤器（接收伤害值差数据 0x0A0）
+	can_filter_st.FilterBank = 4;
+	can_filter_st.FilterActivation = ENABLE;
+	can_filter_st.FilterMode = CAN_FILTERMODE_IDLIST;
+	can_filter_st.FilterScale = CAN_FILTERSCALE_16BIT;
+	can_filter_st.FilterIdHigh = GET_DAMAGE_DIFF_CAN_ID << 5;
+	can_filter_st.FilterIdLow = GET_DAMAGE_DIFF_CAN_ID << 5;
+	can_filter_st.FilterMaskIdHigh = GET_DAMAGE_DIFF_CAN_ID << 5;
+	can_filter_st.FilterMaskIdLow = GET_DAMAGE_DIFF_CAN_ID << 5;
+	can_filter_st.FilterFIFOAssignment = CAN_RX_FIFO1;
+	can_filter_st.SlaveStartFilterBank = 14;
+	HAL_CAN_ConfigFilter(&hcan1, &can_filter_st);
 	// CAN 2 FIFO0 接收中断
 	can_filter_st.FilterBank = 15;
 	can_filter_st.FilterActivation = ENABLE;
@@ -259,6 +283,16 @@ void MotorReceive(CAN_HandleTypeDef *hcan, CAN_RxHeaderTypeDef *rx_header, uint8
 	{
 		// 弹量扩展字段接收 (0x0208扩展)
 		memcpy(&bullet_extended_recv, data, sizeof(BulletExtendedRecv_t));
+	}
+	else if (hcan->Instance == CHASSIS_CAN_COMM_CANx && rx_header->StdId == GET_SENTRY_DURATION_CAN_ID)
+	{
+		// 哨兵姿态时长接收 (0x020D扩展, 2026-07-13)
+		memcpy(&sentry_duration, data, sizeof(SentryDuration_t));
+	}
+	else if (hcan->Instance == CHASSIS_CAN_COMM_CANx && rx_header->StdId == GET_DAMAGE_DIFF_CAN_ID)
+	{
+		// 伤害值差接收 (0x0003扩展, 2026-07-13)
+		memcpy(&damage_diff, data, sizeof(DamageDiff_t));
 	}
 	else if (hcan->Instance == CAN2 && rx_header->StdId == ROBOT_COMMAND_CAN_ID)
 	{
