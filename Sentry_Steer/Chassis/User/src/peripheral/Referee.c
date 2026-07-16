@@ -77,6 +77,9 @@ void Referee_StructInit(void)
 	memset(&referee_data.rfid_status, 0, sizeof(referee_data.rfid_status));
 	// memset(&referee_data.Dart_Client_Cmd, 0, sizeof(referee_data.Dart_Client_Cmd));
 	memset(&referee_data.ground_robot_position, 0, sizeof(referee_data.ground_robot_position));
+	memset(&referee_data.Sentry_info, 0, sizeof(referee_data.Sentry_info));
+	memset(&referee_data.Radar_Info, 0, sizeof(referee_data.Radar_Info));
+	memset(&referee_data.Sentry_alert_info, 0, sizeof(referee_data.Sentry_alert_info));
 	// 清零 0x030X 机器人交互数据
 	memset(&referee_data.Student_Interactive_Header_Data, 0, sizeof(referee_data.Student_Interactive_Header_Data));
 	 memset(&referee_data.Robot_Interactive_Data, 0, sizeof(referee_data.Robot_Interactive_Data));

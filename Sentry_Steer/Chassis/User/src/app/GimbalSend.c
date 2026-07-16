@@ -35,6 +35,10 @@ BulletExtended_ForSend_t bullet_extended_send;
 SentryCmd_FromGimbal_t sentry_cmd_from_gimbal;
 // 小地图下发指令发送包 全局实例 (0x0303)
 RobotCommand_ForSend_t robot_command_send;
+// 哨兵姿态时长发送包 全局实例 (0x020D扩展, 20260713协议更新)
+SentryDuration_ForSend_t sentry_duration_send;
+// 伤害值差发送包 全局实例 (0x0003, 20260713协议更新)
+DamageDiff_ForSend_t damage_diff_send;
 // 外部声明：超级电容控制器
 extern NingCapController cap_controller;
 // 雷达消息更新标志位
@@ -172,7 +176,7 @@ void SentryInfoPack(void)
   sentry_info_2_raw |= ((uint16_t)referee_data.Sentry_info.team_17mm_bullet_remaining & 0x7FF) << 1;
   sentry_info_2_raw |= ((uint16_t)referee_data.Sentry_info.sentry_posture & 0x3) << 12;
   sentry_info_2_raw |= ((uint16_t)referee_data.Sentry_info.rune_can_activate & 0x1) << 14;
-  sentry_info_2_raw |= ((uint16_t)referee_data.Sentry_info.sentry_reserved2 & 0x1) << 15;
+  sentry_info_2_raw |= ((uint16_t)referee_data.Sentry_info.sentry_is_enhanced_posture & 0x1) << 15;
 
   sentry_info_send.sentry_info = sentry_info_raw;
   sentry_info_send.sentry_info_2 = sentry_info_2_raw;
@@ -193,6 +197,67 @@ void Can2SendSentryInfo(SentryInfo_ForSend_t *data)
   tx_message.DLC = 0x08;
   tx_message.StdId = SEND_TO_GIMBAL_SENTRY_INFO_CAN_ID;
   memcpy(tx_message.Data, data, sizeof(SentryInfo_ForSend_t));
+  CAN_Transmit(CAN2, &tx_message);
+}
+
+/**
+ * @brief 哨兵姿态时长打包 (0x020D扩展, 20260713协议更新)
+ * @param  无
+ * @retval 无
+ * @note   6种姿态剩余可持续时长，各1字节（秒）
+ */
+void SentryDurationPack(void)
+{
+  sentry_duration_send.normal_attack_duration   = (uint8_t)referee_data.Sentry_info.normal_attack_duration;
+  sentry_duration_send.normal_defend_duration   = (uint8_t)referee_data.Sentry_info.normal_defend_duration;
+  sentry_duration_send.normal_move_duration     = (uint8_t)referee_data.Sentry_info.normal_move_duration;
+  sentry_duration_send.reserved_duration_1      = (uint8_t)referee_data.Sentry_info.reserved_duration_1;
+  sentry_duration_send.enhanced_attack_duration = (uint8_t)referee_data.Sentry_info.enhanced_attack_duration;
+  sentry_duration_send.enhanced_defend_duration = (uint8_t)referee_data.Sentry_info.enhanced_defend_duration;
+  sentry_duration_send.enhanced_move_duration   = (uint8_t)referee_data.Sentry_info.enhanced_move_duration;
+  sentry_duration_send.reserved_duration_2      = (uint8_t)referee_data.Sentry_info.reserved_duration_2;
+}
+
+/**
+ * @brief 哨兵姿态时长发送（CAN2, CAN ID 0x09F）
+ * @param  data: 时长数据指针
+ * @retval 无
+ */
+void Can2SendSentryDuration(SentryDuration_ForSend_t *data)
+{
+  CanTxMsg tx_message;
+  tx_message.IDE = CAN_ID_STD;
+  tx_message.RTR = CAN_RTR_DATA;
+  tx_message.DLC = 0x08;
+  tx_message.StdId = SEND_TO_GIMBAL_SENTRY_DURATION_CAN_ID;
+  memcpy(tx_message.Data, data, sizeof(SentryDuration_ForSend_t));
+  CAN_Transmit(CAN2, &tx_message);
+}
+
+/**
+ * @brief 伤害值差打包 (0x0003, 20260713协议更新)
+ * @param  无
+ * @retval 无
+ */
+void DamageDiffPack(void)
+{
+  damage_diff_send.damage_difference = referee_data.Game_Robot_friend_HP.damage_difference;
+  memset(damage_diff_send.reserve, 0, sizeof(damage_diff_send.reserve));
+}
+
+/**
+ * @brief 伤害值差发送（CAN2, CAN ID 0x0A0）
+ * @param  data: 伤害值差数据指针
+ * @retval 无
+ */
+void Can2SendDamageDiff(DamageDiff_ForSend_t *data)
+{
+  CanTxMsg tx_message;
+  tx_message.IDE = CAN_ID_STD;
+  tx_message.RTR = CAN_RTR_DATA;
+  tx_message.DLC = 0x08;
+  tx_message.StdId = SEND_TO_GIMBAL_DAMAGE_DIFF_CAN_ID;
+  memcpy(tx_message.Data, data, sizeof(DamageDiff_ForSend_t));
   CAN_Transmit(CAN2, &tx_message);
 }
 
@@ -285,7 +350,7 @@ void JudgeDataBloodPack()
   JudgeBloodData_ForSend_Enemy.ID_reserve = 0;
   JudgeBloodData_ForSend_Enemy.ID7 = referee_data.Robot_Interactive_Data.enemy_hp.enemy7_sentry_hp / 10;
   //JudgeBloodData_ForSend_Enemy.ID8 = referee_data.Robot_Interactive_Data.enemy_hp.enemy_base_HP / 100;
-  JudgeBloodData_ForSend_Enemy.ID8 = 0; // 雷达暂时无法获取敌方基地血量，先填0
+  JudgeBloodData_ForSend_Enemy.ID8 = referee_data.Game_Robot_friend_HP.enemy_base_HP / 100; // 0x0003直接下发敌方基地血量(20260713协议更新)
   JudgeBloodData_ForSend_Enemy.reserve = 0;
 }
 
@@ -415,7 +480,7 @@ void JudgeDataPack()
 
   // 根据阵营赋值 己方/敌方前哨站血量
   JudgeData_ForSend1.self_outpost = (uint8_t)(0.04f * (referee_data.Game_Robot_friend_HP.friend_outpost_HP + 24));
-  //JudgeData_ForSend1.Enemy_outpost = (uint8_t)(0.04f * (referee_data.Robot_Interactive_Data.enemy_HP.enemy_outpost_HP + 24));
+  JudgeData_ForSend1.Enemy_outpost = (uint8_t)(0.04f * (referee_data.Game_Robot_friend_HP.enemy_outpost_HP + 24)); // 0x0003直接下发敌方前哨站血量(20260713协议更新)
   // 热量更新标志
   JudgeData_ForSend1.Heat_update = 0x01;
   // 17mm枪口热量
@@ -645,6 +710,14 @@ void JudgeDataCanSend(void)
   {
     SentryInfoPack();
     Can2SendSentryInfo(&sentry_info_send);
+    SentryDurationPack();
+    Can2SendSentryDuration(&sentry_duration_send);
+  }
+  // 10Hz 发送伤害值差 (0x0003, 20260713协议更新)
+  if (send_count % 20 == 7)
+  {
+    DamageDiffPack();
+    Can2SendDamageDiff(&damage_diff_send);
   }
   // 10Hz 发送弹量扩展字段 (TypeID 8需要)
   if (send_count % 20 == 15)

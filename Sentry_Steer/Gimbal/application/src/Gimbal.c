@@ -326,8 +326,14 @@ void limitPitchAngle()
         //    #endif
     }
 
-    gimbal_controller.pitch_max_gyro_angle = cur_gyro_angle + GIMBAL_PITCH_MOTOR_SIGN * (GIMBAL_ANGLE_MAX - cur_motor_angle);
-    gimbal_controller.pitch_min_gyro_angle = cur_gyro_angle + GIMBAL_PITCH_MOTOR_SIGN * (GIMBAL_ANGLE_MIN - cur_motor_angle);
+    // IIR滤波平滑P_Receive，防止限位附近编码器抖动→clamp边界反复跳变→target不连续→FF微分spike→振荡
+    static float motor_angle_filtered = 0;
+    if (motor_angle_filtered == 0) motor_angle_filtered = cur_motor_angle;
+    float iir_alpha = (cur_motor_angle < GIMBAL_ANGLE_MIN_SOFT) ? 0.98f : 0.9f;
+    iir(&motor_angle_filtered, cur_motor_angle, iir_alpha);
+
+    gimbal_controller.pitch_max_gyro_angle = cur_gyro_angle + GIMBAL_PITCH_MOTOR_SIGN * (GIMBAL_ANGLE_MAX - motor_angle_filtered);
+    gimbal_controller.pitch_min_gyro_angle = cur_gyro_angle + GIMBAL_PITCH_MOTOR_SIGN * (GIMBAL_ANGLE_MIN - motor_angle_filtered);
     gimbal_controller.target_pitch_angle = LIMIT_MAX_MIN(gimbal_controller.target_pitch_angle, gimbal_controller.pitch_max_gyro_angle, gimbal_controller.pitch_min_gyro_angle);
 }
 

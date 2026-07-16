@@ -180,10 +180,13 @@ typedef struct // 0x0003 友方机器人血量数据
 	uint16_t friend_2_robot_HP;
 	uint16_t friend_3_robot_HP;
 	uint16_t friend_4_robot_HP;
+	int16_t damage_difference; // 伤害值差：己方血量总和-敌方血量总和
 	//uint16_t friend_5_robot_HP;
 	uint16_t friend_7_robot_HP;
 	uint16_t friend_outpost_HP;
 	uint16_t friend_base_HP;
+	uint16_t enemy_outpost_HP;
+	uint16_t enemy_base_HP;
 } robot_HP_friend_t;
 
 /* 0x010X --------------------------------------------------------------------*/
@@ -347,7 +350,7 @@ typedef struct // 0x20B 地面机器人位置
 	float standard_5_y;
 } ground_robot_position_t;
 
-// 0x020D 哨兵信息 (RoboMaster 2026协议 V1.2.0)
+// 0x020D 哨兵信息 (原RoboMaster 2026协议 V1.2.0，20260713更新为V2.0.0)
 typedef struct
 {
 	// 字节0-3: sentry_info (4字节)
@@ -364,8 +367,18 @@ typedef struct
 	uint16_t team_17mm_bullet_remaining : 11; // bit 1-11: 17mm弹量剩余可兑换数
 	uint16_t sentry_posture : 2;			  // bit 12-13: 哨兵姿态：0-未知/1-进攻/2-防御/3-移动
 	uint16_t rune_can_activate : 1;			  // bit 14: 能量机关可激活：0-否/1-是
-	uint16_t sentry_reserved2 : 1;			  // bit 15: 保留
-} sentry_info_t;
+	uint16_t sentry_is_enhanced_posture : 1;  // bit 15: 当前姿态是否为强化姿态：0-否/1-是（原sentry_reserved2，修正命名匹配语义）
+
+	// 字节6-13: sentry_posture_duration (8字节)
+	uint64_t normal_attack_duration : 8;    // bit 0-7: 哨兵进攻姿态弱化前剩余可持续时长（单位：秒）
+	uint64_t normal_defend_duration : 8;    // bit 8-15: 哨兵防御姿态弱化前剩余可持续时长
+	uint64_t normal_move_duration : 8;      // bit 16-23: 哨兵移动姿态弱化前剩余可持续时长
+	uint64_t reserved_duration_1 : 8;       // bit 24-31: 保留位
+	uint64_t enhanced_attack_duration : 8;  // bit 32-39: 哨兵强化进攻姿态剩余可持续时长
+	uint64_t enhanced_defend_duration : 8;  // bit 40-47: 哨兵强化防御姿态剩余可持续时长
+	uint64_t enhanced_move_duration : 8;    // bit 48-55: 哨兵强化移动姿态剩余可持续时长
+	uint64_t reserved_duration_2 : 8;       // bit 56-63: 保留位
+} __attribute__((packed)) sentry_info_t;
 
 typedef struct
 {

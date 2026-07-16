@@ -143,6 +143,26 @@ typedef struct RobotCommand_ForSend
 	uint16_t cmd_source;             // 指令来源
 } RobotCommand_ForSend_t;
 
+// 哨兵姿态时长发送包 (0x020D扩展, 20260713协议更新)
+typedef struct SentryDuration_ForSend
+{
+	uint8_t normal_attack_duration;    // 哨兵进攻姿态弱化前剩余秒数
+	uint8_t normal_defend_duration;    // 哨兵防御姿态弱化前剩余秒数
+	uint8_t normal_move_duration;      // 哨兵移动姿态弱化前剩余秒数
+	uint8_t reserved_duration_1;       // 保留
+	uint8_t enhanced_attack_duration;  // 哨兵强化进攻姿态剩余秒数
+	uint8_t enhanced_defend_duration;  // 哨兵强化防御姿态剩余秒数
+	uint8_t enhanced_move_duration;    // 哨兵强化移动姿态剩余秒数
+	uint8_t reserved_duration_2;       // 保留
+} SentryDuration_ForSend_t;           // sizeof = 8，恰好一个CAN帧
+
+// 伤害值差发送包 (0x0003, 20260713协议更新)
+typedef struct DamageDiff_ForSend
+{
+	int16_t damage_difference;     // 伤害值差（己方血量总和 - 敌方血量总和）
+	uint8_t reserve[6];            // 填充到8字节
+} DamageDiff_ForSend_t;
+
 
 #pragma pack(pop)
 
@@ -153,14 +173,20 @@ extern SentryInfo_ForSend_t sentry_info_send;
 extern BulletExtended_ForSend_t bullet_extended_send;
 extern SentryCmd_FromGimbal_t sentry_cmd_from_gimbal;  // 接收云台转发的SentryCmd
 extern RobotCommand_ForSend_t robot_command_send;     // 0x0303小地图下发指令
+extern SentryDuration_ForSend_t sentry_duration_send; // 哨兵姿态时长发送包
+extern DamageDiff_ForSend_t damage_diff_send;         // 伤害值差发送包
 
 void GimbalSendPack(void);
 void JudgeDataCanSend(void);
 void ChassisSpeedPack(void);  // 底盘速度数据打包发送
 void ShootDataPack(void);     // 射击数据打包发送 (TypeID 7/8)
 void SentryInfoPack(void);    // 哨兵信息打包发送 (TypeID 7)
+void SentryDurationPack(void); // 哨兵姿态时长打包发送 (0x020D扩展)
 void BulletExtendedPack(void); // 弹量扩展字段打包发送 (TypeID 8)
 void RobotCommandPack(void);   // 小地图下发指令打包 (0x0303)
 void Can2SendRobotCommand(RobotCommand_ForSend_t *data); // CAN2发送小地图指令
+void Can2SendSentryDuration(SentryDuration_ForSend_t *data); // CAN2发送哨兵姿态时长
+void DamageDiffPack(void);              // 伤害值差打包
+void Can2SendDamageDiff(DamageDiff_ForSend_t *data); // CAN2发送伤害值差
 
 #endif // !_GIMBAL_SEND_H

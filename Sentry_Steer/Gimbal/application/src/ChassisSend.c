@@ -50,7 +50,7 @@ void Pack_InfantryMode()
   // through_hole_flag 在 ChassisSolver.c 中设置
 
   if (motor_communication[BIG_YAW_MOTOR].motor_type == DM_MOTOR)
-    chassis_send_pack1.yaw_motor_angle = (int16_t)((gimbal_controller.DM_Big_Yaw_Motor.P_Receive - GIMBAL_BIG_YAW_ZERO_POINT) * 90);
+    chassis_send_pack1.yaw_motor_angle = (int16_t)((gimbal_controller.DM_Big_Yaw_Motor.P_Receive - GIMBAL_BIG_YAW_ZERO_POINT) * 90 * GIMBAL_BIG_YAW_ENC_SIGN);
   else if (motor_communication[BIG_YAW_MOTOR].motor_type == GM6020)
     chassis_send_pack1.yaw_motor_angle = gimbal_controller.big_yaw_recv.angle;
 

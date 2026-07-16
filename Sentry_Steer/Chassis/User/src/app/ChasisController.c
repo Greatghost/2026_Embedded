@@ -122,7 +122,7 @@ float angle_z_err_get(float target_ang, float zeros_angle)
         //     AngErr_right = limit_pi(AngErr_front - GIMBAL_MOTOR_SIGN * 90.0f);
         // }
         if (infantry.yaw_motor_type == YAW_DM_MOTOR) {
-            AngErr_front = limit_pi(zeros_angle / 90.0f - target_ang_speed + current_speed_angle_bias);
+            AngErr_front = limit_pi(zeros_angle / YAW_DM_ANGLE_SCALE - target_ang_speed + current_speed_angle_bias);
             AngErr_back = limit_pi(AngErr_front + 180.0f);
             AngErr_left = limit_pi(AngErr_front + GIMBAL_MOTOR_SIGN * 90.0f);
             AngErr_right = limit_pi(AngErr_front - GIMBAL_MOTOR_SIGN * 90.0f);
@@ -138,7 +138,7 @@ float angle_z_err_get(float target_ang, float zeros_angle)
         }
         else if (infantry.yaw_motor_type == YAW_DM_MOTOR)
         {
-            AngErr_front = limit_pi(zeros_angle / 90.0f - target_ang / 90.0f + angleBias);
+            AngErr_front = limit_pi(zeros_angle / YAW_DM_ANGLE_SCALE - target_ang / YAW_DM_ANGLE_SCALE + angleBias);
             AngErr_back = limit_pi(AngErr_front + 180.0f);
             AngErr_left = limit_pi(AngErr_front + GIMBAL_MOTOR_SIGN * 90.0f);
             AngErr_right = limit_pi(AngErr_front - GIMBAL_MOTOR_SIGN * 90.0f);
@@ -216,11 +216,11 @@ void getDir()
     }
     else if (infantry.yaw_motor_type == YAW_DM_MOTOR)
     {
-        float AngErr_front = limit_pi(GIMBAL_FOLLOW_ZERO / 90.0f - gimbal_receiver_pack1.yaw_motor_angle / 90.0f) * ANGLE_TO_RAD_COEF;
+        float AngErr_front = limit_pi(GIMBAL_FOLLOW_ZERO / YAW_DM_ANGLE_SCALE - gimbal_receiver_pack1.yaw_motor_angle / YAW_DM_ANGLE_SCALE) * ANGLE_TO_RAD_COEF;
         infantry.sin_dir = arm_sin_f32(AngErr_front);
         infantry.cos_dir = arm_cos_f32(AngErr_front);
 			
-				UI_FRONT_ERR = limit_pi((GIMBAL_FOLLOW_ZERO + UI_FRONT_BIAS) / 90.0f - gimbal_receiver_pack1.yaw_motor_angle / 90.0f) * ANGLE_TO_RAD_COEF;
+				UI_FRONT_ERR = limit_pi((GIMBAL_FOLLOW_ZERO + UI_FRONT_BIAS) / YAW_DM_ANGLE_SCALE - gimbal_receiver_pack1.yaw_motor_angle / YAW_DM_ANGLE_SCALE) * ANGLE_TO_RAD_COEF;
 				UI_FRONT_SIN = arm_sin_f32(UI_FRONT_ERR);
 				UI_FRONT_COS = arm_cos_f32(UI_FRONT_ERR);
     }

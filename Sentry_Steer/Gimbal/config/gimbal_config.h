@@ -104,13 +104,14 @@
 
 #define GIMBAL_PITCH_MOTOR_SIGN 1.0f // 云台PITCH电机方向，向上为正
 
-#define GIMBAL_ANGLE_MIN 275.0f // 电机角软限位
-#define GIMBAL_ANGLE_MAX 330.0f
+#define GIMBAL_ANGLE_MIN 266.0f // 电机角硬限位
+#define GIMBAL_ANGLE_MIN_SOFT 271.0f // 缓冲限位: 271°~266°渐进收紧防振荡
+#define GIMBAL_ANGLE_MAX 328.0f
 
 // Pitch PID参数
-#define PITCH_ANGLE_KP      30.0f
+#define PITCH_ANGLE_KP      35.0f
 #define PITCH_ANGLE_KI       5.0f
-#define PITCH_ANGLE_KD       0.0f
+#define PITCH_ANGLE_KD       0.1f
 #define PITCH_ANGLE_MAXOUT   120.0f
 #define PITCH_ANGLE_ILIMIT   5.0f
 
@@ -127,12 +128,12 @@
 
 // Pitch角度前馈 (目标角度速度→速度指令)
 #define PITCH_ANGLE_FF_VEL     0.0f
-#define PITCH_ANGLE_FF_ACC     1.0f
+#define PITCH_ANGLE_FF_ACC     0.05f
 #define PITCH_ANGLE_FF_JERK    0.0f
-#define PITCH_ANGLE_FF_MAXOUT  50.0f
+#define PITCH_ANGLE_FF_MAXOUT  10.0f
 
 // Pitch速度前馈 (c[0]=速度系数, c[1]=加速度系数, c[2]=加加速度系数)
-#define PITCH_SPEED_FF_VEL     7.0f
+#define PITCH_SPEED_FF_VEL     6.0f
 #define PITCH_SPEED_FF_ACC     0.1f
 #define PITCH_SPEED_FF_JERK    0.0f
 #define PITCH_SPEED_FF_MAXOUT  500.0f
@@ -145,7 +146,14 @@
 #define PITCH_GRAVITY_COMP_ENABLE
 
 // 大Yaw零点: 云台朝正前方时DM_Big_Yaw_Motor.P_Receive的值
-#define GIMBAL_BIG_YAW_ZERO_POINT  142.0f
+#define GIMBAL_BIG_YAW_ZERO_POINT  3.0f
+
+// 大Yaw电机编码器方向符号:
+// 换新电机后若编码器计数方向与旧电机相反(同一物理转角旧为+新为-),
+// 会使发给底盘的 yaw_motor_angle 符号翻转, 底盘跟随模式下速度矢量被转反(左右镜像)。
+// 将该宏置 -1.0f 即可只翻转"发给底盘的yaw角", 不影响云台自身的IMU反馈+力矩控制闭环。
+// 若改后出现底盘走位反而更错(说明诊断方向有误), 直接置回 1.0f 即可恢复。
+#define GIMBAL_BIG_YAW_ENC_SIGN   1.0f
 
 #define GIMBAL_PITCH_COMP 4000.0f        // 暂不使用
 #define GIMBAL_PITCH_COMP_COEF 1.0f      // 暂不使用

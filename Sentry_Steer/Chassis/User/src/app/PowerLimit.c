@@ -12,19 +12,16 @@ void PowerLimitInit(PowerLimiter *limitter, int motor_num, MOTOR_TYPE motor_type
     limitter->wheels_scaler.motor_K = M3508_K;
     limitter->wheels_scaler.motor_B = M3508_B;
     limitter->wheels_scaler.motor_P0 = M3508_P0;
-    if(infantry.chassis_type == STEER_WHEEL)
+    if (infantry.chassis_type == STEER_WHEEL)
     {
         limitter->Steer_scaler.motor_num = LIMIT_MAX_MIN(motor_num, 4, 1);
         limitter->Steer_scaler.motor_type = GM6020;
-        limitter->Steer_scaler.power_limit_method = SPEED_ERROR_METHOD;//舵电机采用转速误差分配
+        limitter->Steer_scaler.power_limit_method = SPEED_ERROR_METHOD; // 舵电机采用转速误差分配
         limitter->Steer_scaler.motor_R = GM6020_R;
         limitter->Steer_scaler.motor_K = GM6020_K;
         limitter->Steer_scaler.motor_B = GM6020_B;
-				limitter->Steer_scaler.motor_P0 = M3508_P0;//常数项为同一项
-        
-
+        limitter->Steer_scaler.motor_P0 = M3508_P0; // 常数项为同一项
     }
-
 }
 
 /**
@@ -44,7 +41,7 @@ void TorqueScaler_PowerScaleCal(Torque_Scaler *scaler)
         else if (scaler->power_arrange_state[i] == NEED_ARRANGE)
         {
             // 从结构体获取二次方程系数（单电机的a/b/c）
-            float a = scaler->motor_a[i];  // 注意：此处使用单电机的a，而非全局a
+            float a = scaler->motor_a[i]; // 注意：此处使用单电机的a，而非全局a
             float b = scaler->motor_b[i];
             float c = scaler->motor_c[i] + scaler->motor_P0 - scaler->motor_P[i];
 
@@ -99,7 +96,7 @@ void TorqueScaler_PowerLimit(Torque_Scaler *scaler, float set_power, enum ROBOT_
     for (int i = 0; i < scaler->motor_num; i++)
     {
         // 仅处理在线或未初始化的电机
-        if (offline_states[i] == WHEEL_3508_ON || offline_states[i] == STEER_6020_ON || 
+        if (offline_states[i] == WHEEL_3508_ON || offline_states[i] == STEER_6020_ON ||
             offline_states[i] == NOT_INIT)
         {
             i_2 = scaler->motor_I[i] * scaler->motor_I[i];
@@ -200,22 +197,22 @@ void TorqueScaler_PowerLimit(Torque_Scaler *scaler, float set_power, enum ROBOT_
 
 void PowerLimit(PowerLimiter *limitter, float set_power)
 {
-    if(infantry.chassis_type == STEER_WHEEL)
+    if (infantry.chassis_type == STEER_WHEEL)
     {
-        //优先分配功率给舵轮
-        float max_steer_power_rate = 1.4f;//舵轮功率上限占比 
-        TorqueScaler_PowerLimit(&limitter->Steer_scaler, set_power*max_steer_power_rate,offline_detector.steer_6020_state);
+        // 优先分配功率给舵轮
+        float max_steer_power_rate = 1.4f; // 舵轮功率上限占比
+        TorqueScaler_PowerLimit(&limitter->Steer_scaler, set_power * max_steer_power_rate, offline_detector.steer_6020_state);
         float wheels_power = set_power - limitter->Steer_scaler.predict_send_power;
-        wheels_power = LIMIT_MAX_MIN(wheels_power, set_power, set_power*0.2f);//保证功率的最小占比
-        TorqueScaler_PowerLimit(&limitter->wheels_scaler, wheels_power,offline_detector.wheel_3508_state);
+        wheels_power = LIMIT_MAX_MIN(wheels_power, set_power, set_power * 0.2f); // 保证功率的最小占比
+        TorqueScaler_PowerLimit(&limitter->wheels_scaler, wheels_power, offline_detector.wheel_3508_state);
     }
-    else{
-        TorqueScaler_PowerLimit(&limitter->wheels_scaler, set_power ,offline_detector.wheel_3508_state);
+    else
+    {
+        TorqueScaler_PowerLimit(&limitter->wheels_scaler, set_power, offline_detector.wheel_3508_state);
     }
-
 }
 
 void setINAPower(PowerLimiter *limitter, float ina_power)
 {
-    //limitter->actual_ina260_power = ina_power;
+    // limitter->actual_ina260_power = ina_power;
 }
