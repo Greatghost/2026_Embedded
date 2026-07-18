@@ -19,6 +19,7 @@ byte 0 都是 `0x21` (`'!'`)，byte 1 是 `DownlinkTypeID`；之後的 frame 長
 | `0x02` | `MapPathFrame` | 107B | `0x0307 map_data_t` | `/ly/control/map_path` |
 | `0x03` | `CustomInfoFrame` | 36B | `0x0308 custom_info_t` | `/ly/control/custom_info` |
 | `0x04` | `SentryCoordinateFrame` | 17B | 下位機自身座標使用 | `/ly/bt/sentry_position` |
+| `0x05` | `GimbalTrajectoryFrame` | 26B | 無 | `/ly/control/trajectory` |
 
 下位機必須先讀 byte 1，再按上表讀取剩餘字節；不可再把所有下發資料固定按 17B 解析。
 
@@ -36,6 +37,21 @@ byte 0 都是 `0x21` (`'!'`)，byte 1 是 `DownlinkTypeID`；之後的 frame 長
 
 此包不再攜帶 `SentryCmd`。`/ly/control/angles`、`/ly/control/vel`、
 `/ly/control/firecode` 任一更新，都會更新 shadow 並發一包 `0x00`。
+
+### 3.1 `GimbalTrajectoryFrame`（`0x05`，26B）
+
+| byte offset | 字段 | 類型 | 單位與說明 |
+|---|---|---|---|
+| 0 | `HeadFlag` | `uint8` | 固定 `0x21` |
+| 1 | `TypeID` | `uint8` | 固定 `0x05` |
+| 2-5 | `Yaw` | `float32` | deg, little-endian |
+| 6-9 | `Pitch` | `float32` | deg, little-endian |
+| 10-13 | `YawOmega` | `float32` | deg/s, little-endian |
+| 14-17 | `PitchOmega` | `float32` | deg/s, little-endian |
+| 18-21 | `YawAlpha` | `float32` | deg/s², little-endian |
+| 22-25 | `PitchAlpha` | `float32` | deg/s², little-endian |
+
+`0x05` 與舊 `0x00` 並行發送；軌跡超過 200ms 未更新時，下位機退回舊角度目標並將前饋清零。
 
 ## 4. `SentryCommandFrame`（`0x01`，6B）
 
@@ -112,7 +128,7 @@ CRC8 參數：poly `0x31`、init `0xFF`、非反射。
 
 | 舊布局 | 新布局 |
 |---|---|
-| `0x00` 固定 17B，最後 4B 為 `SentryCmd` | `0x00` 改 13B，只保留速度/角度/FireCode |
+| `0x00` 固定 17B，最後 4B 為 `SentryCmd` | `0x00` 改 13B；MPC 軌跡另用相容擴充 `0x05` |
 | `SentryCmd` 夾在控制包 byte 13-16 | 獨立為 `0x01` 6B frame |
 | `0x01` 是自身座標 | 自身座標改為 `0x04`，內容與 CRC8 規則不變 |
 | 無 `0x0307` / `0x0308` compact frame | 新增 `0x02` 107B 路徑、`0x03` 36B 自訂訊息 |

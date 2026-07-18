@@ -95,12 +95,15 @@ typedef struct GimbalController
 
   // 陀螺仪信息及其解算
   float gyro_pitch_speed;
+  float gyro_pitch_acceleration;
   float gyro_pitch_angle;
   float gyro_last_pitch_angle;
   uint32_t last_cnt;
   float delta_t; // 两帧计算之间的时间差
 
   float target_pitch_angle; // 设定的角度值
+  float target_pitch_speed; // MPC目标角速度, deg/s
+  float target_pitch_acceleration; // MPC目标角加速度, deg/s^2
 
   // Yaw在底盘控制
   // // BIG_YAW
@@ -147,10 +150,13 @@ typedef struct GimbalController
 
   // 陀螺仪信息及其解算
   float gyro_yaw_speed;
+  float gyro_yaw_acceleration;
   float gyro_yaw_angle;
   float gyro_last_yaw_angle;
 
   float target_big_yaw_angle;
+  float target_big_yaw_speed; // MPC目标角速度, deg/s
+  float target_big_yaw_acceleration; // MPC目标角加速度, deg/s^2
   // [SMALL_YAW_REMOVED] 小Yaw目标角度和TD已删除
   // float target_small_yaw_angle;
   // TD_t pos_small_yaw_td;
@@ -195,6 +201,7 @@ void updateGyro(void);
 void limitPitchAngle(void);
 float GimbalPitchComp(void);
 float Gimbal_Pitch_Calculate(float set_point);
+float Gimbal_Pitch_CalculateFeedforward(float set_point, float set_speed, float set_acceleration);
 
 // 云台测试模块
 void GimbalTestInit(GimbalTest_t *test);
@@ -203,6 +210,7 @@ void GimbalTestRunPitchCost(GimbalTest_t *test, float error, float control, floa
 
 // Yaw
 float Gimbal_Big_Yaw_Calculate(float set_point);
+float Gimbal_Big_Yaw_CalculateFeedforward(float set_point, float set_speed, float set_acceleration);
 void Big_Yaw_Bias_Cal(void);
 // [SMALL_YAW_REMOVED] 小Yaw计算函数已删除
 // float Gimbal_Small_Yaw_Calculate(float set_point);

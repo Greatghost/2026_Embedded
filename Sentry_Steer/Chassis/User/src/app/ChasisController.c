@@ -113,7 +113,7 @@ float angle_z_err_get(float target_ang, float zeros_angle)
     #if ROBOT == TIGER
     if(remote_controller.control_mode_action == SPEED_FOLLOW && speed_follow_enable_flag == 1)
     {
-        current_speed_angle_bias = 31.0f;  // SPEED_FOLLOW模式使用31
+        current_speed_angle_bias = -90.0f;  // SPEED_FOLLOW模式使用31
     }
     else
     {

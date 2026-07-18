@@ -117,6 +117,8 @@ static volatile uint32_t pc_control_last_rx_tick;
 static volatile uint8_t pc_control_received;
 static volatile uint32_t pc_control_sequence;
 static PCControlSnapshot_t pc_control_shadow;
+static volatile uint32_t pc_trajectory_last_rx_tick;
+static volatile uint8_t pc_trajectory_received;
 
 PC_StateControl PC_statecontrol;
 
@@ -134,6 +136,7 @@ PCSendDataSentry_t PCSendSentry;
 PCSendDataBulletAndRfid2_t PCSendBulletAndRfid2;
 PCSendDataRobotCmd_t PCSendRobotCmd;
 PCSendDataSentryDuration_t PCSendSentryDuration;
+PCSendDataGimbalDynamics_t PCSendGimbalDynamics;
 
 ext_shoot_data_t last_shoot_data;
 
@@ -156,6 +159,23 @@ static uint8_t crc8_calc(const uint8_t *data, uint8_t len)
 			crc = (crc & 0x80) ? (crc << 1) ^ 0x31 : crc << 1;
 	}
 	return crc;
+}
+
+/* 拒绝NaN/Inf和明显超出机构能力的轨迹量，防止异常串口帧直接进入前馈。 */
+static float PCControlDynamicsSanitize(float value, float abs_limit)
+{
+	if (value != value || value > abs_limit || value < -abs_limit)
+	{
+		return 0.0f;
+	}
+	return value;
+}
+
+static uint8_t PCControlAnglesValid(float yaw, float pitch)
+{
+	return (yaw == yaw && pitch == pitch &&
+		yaw < 1000000.0f && yaw > -1000000.0f &&
+		pitch < 3600.0f && pitch > -3600.0f) ? 1U : 0U;
 }
 
 uint8_t PCControlGetSnapshot(PCControlSnapshot_t *snapshot)
@@ -216,7 +236,7 @@ void PCReceive(const unsigned char *PCbuffer, uint32_t length)
 
 	switch(PCbuffer[1])
 	{
-	case PC_DOWNLINK_CONTROL: // 0x00 — 13B GimbalControlFrame
+	case PC_DOWNLINK_CONTROL: // 0x00 — 13B GimbalControlFrame（兼容旧驱动）
 	{
 		GimbalControlFrame_t frame;
 		uint32_t now;
@@ -226,13 +246,26 @@ void PCReceive(const unsigned char *PCbuffer, uint32_t length)
 			return;
 		}
 		memcpy(&frame, PCbuffer, sizeof(frame));
+		if (PCControlAnglesValid(frame.yaw, frame.pitch) == 0U)
+		{
+			return;
+		}
 		now = HAL_GetTick();
 
 		/* 奇偶序列锁保证控制任务只能取得完整的一帧命令。 */
 		pc_control_sequence++;
 		__DMB();
-		pc_control_shadow.yaw = frame.yaw;
-		pc_control_shadow.pitch = frame.pitch;
+		if (pc_trajectory_received == 0U ||
+			(uint32_t)(now - pc_trajectory_last_rx_tick) > PC_CONTROL_TIMEOUT_MS)
+		{
+			/* 没有新鲜MPC轨迹时，旧角度接口继续工作且前馈安全清零。 */
+			pc_control_shadow.yaw = frame.yaw;
+			pc_control_shadow.pitch = frame.pitch;
+			pc_control_shadow.yaw_omega = 0.0f;
+			pc_control_shadow.pitch_omega = 0.0f;
+			pc_control_shadow.yaw_alpha = 0.0f;
+			pc_control_shadow.pitch_alpha = 0.0f;
+		}
 		pc_control_shadow.nav_speed_x = frame.vel_x / 50.0f;
 		pc_control_shadow.nav_speed_y = frame.vel_y / 50.0f;
 		pc_control_shadow.nav_speed_w = 0.0f;
@@ -255,6 +288,36 @@ void PCReceive(const unsigned char *PCbuffer, uint32_t length)
 		PC_statecontrol.RotateState = pc_control_shadow.rotate_state;
 		pc_control_last_rx_tick = now;
 		pc_control_received = 1U;
+		__DMB();
+		pc_control_sequence++;
+		break;
+	}
+	case PC_DOWNLINK_TRAJECTORY: // 0x05 — 26B GimbalTrajectoryFrame
+	{
+		GimbalTrajectoryFrame_t frame;
+		uint32_t now;
+
+		if (length != sizeof(frame))
+		{
+			return;
+		}
+		memcpy(&frame, PCbuffer, sizeof(frame));
+		if (PCControlAnglesValid(frame.yaw, frame.pitch) == 0U)
+		{
+			return;
+		}
+		now = HAL_GetTick();
+
+		pc_control_sequence++;
+		__DMB();
+		pc_control_shadow.yaw = frame.yaw;
+		pc_control_shadow.pitch = frame.pitch;
+		pc_control_shadow.yaw_omega = PCControlDynamicsSanitize(frame.yaw_omega, 2000.0f);
+		pc_control_shadow.pitch_omega = PCControlDynamicsSanitize(frame.pitch_omega, 2000.0f);
+		pc_control_shadow.yaw_alpha = PCControlDynamicsSanitize(frame.yaw_alpha, 50000.0f);
+		pc_control_shadow.pitch_alpha = PCControlDynamicsSanitize(frame.pitch_alpha, 50000.0f);
+		pc_trajectory_last_rx_tick = now;
+		pc_trajectory_received = 1U;
 		__DMB();
 		pc_control_sequence++;
 		break;
@@ -489,6 +552,46 @@ void SendtoPCSentryDuration(unsigned char* buff)
 	memcpy(buff, (void *)&PCSendSentryDuration, PC_SEND_BLOOD_SIZE);
 }
 
+static int16_t GimbalDynamicsToInt16(float value, float scale)
+{
+	float scaled;
+
+	if (value != value) // NaN
+	{
+		return 0;
+	}
+	scaled = value * scale;
+	if (scaled > 32767.0f)
+	{
+		return 32767;
+	}
+	if (scaled < -32768.0f)
+	{
+		return -32768;
+	}
+	return (int16_t)scaled;
+}
+
+// TypeID 11: 发送云台实际角速度/角加速度
+void SendtoPCGimbalDynamics(unsigned char* buff)
+{
+	PCSendGimbalDynamics.start_flag = '!';
+	PCSendGimbalDynamics.data_pack_type = JUDGE_PC_DATA_GIMBAL_DYNAMICS;
+	PCSendGimbalDynamics.yaw_omega_dps_x10 =
+		GimbalDynamicsToInt16(gimbal_controller.gyro_yaw_speed, 10.0f);
+	PCSendGimbalDynamics.pitch_omega_dps_x10 =
+		GimbalDynamicsToInt16(gimbal_controller.gyro_pitch_speed, 10.0f);
+	PCSendGimbalDynamics.yaw_alpha_dps2 =
+		GimbalDynamicsToInt16(gimbal_controller.gyro_yaw_acceleration, 1.0f);
+	PCSendGimbalDynamics.pitch_alpha_dps2 =
+		GimbalDynamicsToInt16(gimbal_controller.gyro_pitch_acceleration, 1.0f);
+	PCSendGimbalDynamics.sample_tick_ms = HAL_GetTick();
+	PCSendGimbalDynamics.crc8 = 0;
+	Append_CRC8_Check_Sum(
+		(unsigned char *)&PCSendGimbalDynamics, sizeof(PCSendGimbalDynamics));
+	memcpy(buff, (void *)&PCSendGimbalDynamics, sizeof(PCSendGimbalDynamics));
+}
+
 void SendtoPC(uint8_t data_type)
 {
 	if(data_type == USUAL_PC_DATA)
@@ -534,6 +637,10 @@ void SendtoPC(uint8_t data_type)
 	else if(data_type == JUDGE_PC_DATA_SENTRY_DURATION)
 	{
 		SendtoPCSentryDuration(SendToPC_Buff);
+	}
+	else if(data_type == JUDGE_PC_DATA_GIMBAL_DYNAMICS)
+	{
+		SendtoPCGimbalDynamics(SendToPC_Buff);
 	}
 	CDC_Transmit_FS(SendToPC_Buff,PC_SENDBUF_SIZE);
 }
@@ -593,6 +700,9 @@ void PCStreamReceive(const unsigned char *data, uint32_t length)
 				break;
 			case PC_DOWNLINK_COORD:
 				expected_length = sizeof(SentryCoordinateFrame_t);
+				break;
+			case PC_DOWNLINK_TRAJECTORY:
+				expected_length = sizeof(GimbalTrajectoryFrame_t);
 				break;
 			default:
 				frame_length = (byte == '!') ? 1U : 0U;

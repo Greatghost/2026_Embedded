@@ -107,7 +107,8 @@ typedef enum
 	JUDGE_PC_DATA_SENTRY_DATA = 7,      // TypeID 7: 哨兵信息 (0x020D + 0x0207初速度)
 	JUDGE_PC_DATA_BULLET_DATA_AND_RFID2 = 8, // TypeID 8: 弹量数据+RFID扩展
 	JUDGE_PC_DATA_ROBOT_COMMAND = 9,    // TypeID 9: 小地图下发指令 (0x0303)
-	JUDGE_PC_DATA_SENTRY_DURATION = 10 // TypeID 10: 哨兵姿态时长 (CAN 0x09F)
+	JUDGE_PC_DATA_SENTRY_DURATION = 10, // TypeID 10: 哨兵姿态时长 (CAN 0x09F)
+	JUDGE_PC_DATA_GIMBAL_DYNAMICS = 11 // TypeID 11: 云台角速度/角加速度
 }PC_dataType_enum;
 typedef enum{
 	OFFLINE_START = 0,
@@ -126,14 +127,15 @@ typedef struct PC_StateControl
 #pragma pack(push, 1)     //
 // 下行帧 DownlinkTypeID 定义（2026-07-11 新协议：上位机→下位机）
 // [旧协议已移除] PCRecvData_1(18B,含SentryCmd), SentryCoord_t(0x01坐标), PC_TYPEID_CONTROL/COORD
-#define PC_DOWNLINK_CONTROL      0x00  // GimbalControlFrame (13B)
+#define PC_DOWNLINK_CONTROL      0x00  // GimbalControlFrame (13B, legacy compatible)
 #define PC_DOWNLINK_SENTRY_CMD   0x01  // SentryCommandFrame (6B)
 #define PC_DOWNLINK_MAP_PATH     0x02  // MapPathFrame (107B)
 #define PC_DOWNLINK_CUSTOM_INFO  0x03  // CustomInfoFrame (36B)
 #define PC_DOWNLINK_COORD        0x04  // SentryCoordinateFrame (17B)
+#define PC_DOWNLINK_TRAJECTORY   0x05  // GimbalTrajectoryFrame (26B, MPC)
 #define PC_CONTROL_TIMEOUT_MS    200U  // valid 0x00 control-frame timeout
 
-// DownlinkTypeID 0x00: GimbalControlFrame (13B)
+// DownlinkTypeID 0x00: GimbalControlFrame (13B，保持旧协议不变)
 typedef struct {
     uint8_t head;        // 0x21
     uint8_t type_id;     // 0x00
@@ -143,6 +145,18 @@ typedef struct {
     float   pitch;       // GimbalAngles.Pitch, float LE
     uint8_t fire_code;   // FireCode 位域
 } GimbalControlFrame_t;  // sizeof == 13
+
+// DownlinkTypeID 0x05: MPC轨迹原子帧，不承载底盘速度和FireCode。
+typedef struct {
+    uint8_t head;          // 0x21
+    uint8_t type_id;       // 0x05
+    float   yaw;           // Yaw目标角度, deg, float LE
+    float   pitch;         // Pitch目标角度, deg, float LE
+    float   yaw_omega;   // Yaw目标角速度, deg/s, float LE
+    float   pitch_omega; // Pitch目标角速度, deg/s, float LE
+    float   yaw_alpha;   // Yaw目标角加速度, deg/s^2, float LE
+    float   pitch_alpha; // Pitch目标角加速度, deg/s^2, float LE
+} GimbalTrajectoryFrame_t; // sizeof == 26
 
 // DownlinkTypeID 0x01: SentryCommandFrame (6B)
 typedef struct {
@@ -345,6 +359,25 @@ typedef struct PCSendDataSentryDuration
 	uint8_t crc8;
 } PCSendDataSentryDuration_t;  // sizeof == 15 bytes
 
+// TypeID 11: GimbalDynamics - 云台实际角速度/角加速度
+// 保持现有上行帧统一15B。速度分辨率0.1 deg/s，加速度分辨率1 deg/s^2。
+typedef struct PCSendDataGimbalDynamics
+{
+	uint8_t start_flag;
+	uint8_t data_pack_type;       // = JUDGE_PC_DATA_GIMBAL_DYNAMICS
+	int16_t yaw_omega_dps_x10;
+	int16_t pitch_omega_dps_x10;
+	int16_t yaw_alpha_dps2;
+	int16_t pitch_alpha_dps2;
+	uint32_t sample_tick_ms;      // HAL_GetTick()采样时间
+	uint8_t crc8;
+} PCSendDataGimbalDynamics_t;    // sizeof == 15 bytes
+
+/* 协议尺寸是两端的硬约束，结构体布局变化时直接在编译期报错。 */
+typedef char GimbalControlFrameSizeCheck[(sizeof(GimbalControlFrame_t) == 13U) ? 1 : -1];
+typedef char GimbalTrajectoryFrameSizeCheck[(sizeof(GimbalTrajectoryFrame_t) == 26U) ? 1 : -1];
+typedef char GimbalDynamicsFrameSizeCheck[(sizeof(PCSendDataGimbalDynamics_t) == 15U) ? 1 : -1];
+
 #pragma pack(pop) //
 
 
@@ -372,6 +405,10 @@ typedef struct
 {
 	float yaw;
 	float pitch;
+	float yaw_omega;
+	float pitch_omega;
+	float yaw_alpha;
+	float pitch_alpha;
 	float nav_speed_x;
 	float nav_speed_y;
 	float nav_speed_w;

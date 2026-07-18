@@ -10,6 +10,16 @@ BigYawController big_yaw_controller;
 static uint8_t pitch_feedback_was_ready = 0;
 static uint8_t yaw_feedback_was_ready = 0;
 
+static void Gimbal_TD_SyncReference(TD_t *td, float angle, float speed, float acceleration)
+{
+    td->Input = angle;
+    td->x = angle;
+    td->dx = speed;
+    td->ddx = acceleration;
+    td->last_dx = speed;
+    td->last_ddx = acceleration;
+}
+
 static uint8_t Gimbal_IMU_FeedbackReady(void)
 {
     return offline_detector.imu_state[0] == IMU_ON &&
@@ -140,8 +150,8 @@ void GimbalPidInit()
 
     /* TIGER并联PID保守初值：位置P输出和速度P输出直接在力矩端相加。 */
     PID_Init(&gimbal_controller.pitch_angle_pid,
-             120.0f, 0.0f, 0.0f,
-             60.0f, 0.0f, 0.0f,
+             12000.0f, 0.0f, 0.0f,
+             1000.0f, 0.0f, 0.0f,
              0.0f, 0.0f, 0.0f, 0.0f, 1, NONE);
 #if GIMBAL_SYSID == GIMBAL_PITCH_SYSID
     /* 本车Pitch辨识专用PI速度环；积分补偿角度相关负载，微分保持关闭。 */
@@ -188,8 +198,8 @@ void GimbalPidInit()
     // PID_Init(&gimbal_controller.small_yaw_speed_pid, GM6020_MAX_CURRENT, 5000, 0.5, 120.0f, 80.0f, 0, 0, 0, 0.f, 0, 1, Integral_Limit | Trapezoid_Intergral);
 
     PID_Init(&gimbal_controller.big_yaw_angle_pid,
-             180.0f, 0.0f, 0.0f,
-             15.0f, 0.0f, 0.0f,
+             12000.0f, 0.0f, 0.0f,
+             2000.0f, 0.0f, 0.0f,
              0.0f, 0.0f, 0.0f, 0.0f, 1, NONE);
 #if GIMBAL_SYSID == GIMBAL_YAW_SYSID
     /* 本车大惯量 Yaw 辨识速度环：纯 P，限制峰值转矩以避免速度阶跃激发抖动。 */
@@ -218,7 +228,10 @@ void GimbalPidInit()
  * @brief 云台控制
  * @param[in] set_point 角度值设定 度
  */
-float Gimbal_Pitch_Calculate(float set_point)
+static float Gimbal_Pitch_CalculateInternal(float set_point,
+                                             float set_speed,
+                                             float set_acceleration,
+                                             uint8_t use_external_dynamics)
 {
     float pitch_friction_ratio;
 
@@ -277,9 +290,19 @@ float Gimbal_Pitch_Calculate(float set_point)
      * crossing_hole-main 并联PID：位置PID跟踪TD.x，速度PID跟踪TD.dx，
      * 两个PID的输出在力矩端直接相加，不再把位置PID输出作为速度给定。
      */
-    gimbal_controller.set_pitch_angle =
-        TD_Calculate(&gimbal_controller.pos_pitch_td, set_point);
-    gimbal_controller.set_pitch_speed = gimbal_controller.pos_pitch_td.dx;
+    if (use_external_dynamics)
+    {
+        gimbal_controller.set_pitch_angle = set_point;
+        gimbal_controller.set_pitch_speed = set_speed;
+        Gimbal_TD_SyncReference(
+            &gimbal_controller.pos_pitch_td, set_point, set_speed, set_acceleration);
+    }
+    else
+    {
+        gimbal_controller.set_pitch_angle =
+            TD_Calculate(&gimbal_controller.pos_pitch_td, set_point);
+        gimbal_controller.set_pitch_speed = gimbal_controller.pos_pitch_td.dx;
+    }
     PID_Calculate(&gimbal_controller.pitch_angle_pid,
                   gimbal_controller.gyro_pitch_angle,
                   gimbal_controller.set_pitch_angle);
@@ -292,7 +315,8 @@ float Gimbal_Pitch_Calculate(float set_point)
         gimbal_controller.set_pitch_speed / GIMBAL_PITCH_FRICTION_BLEND_DPS,
         1.0f, -1.0f);
     gimbal_controller.pitch_speed_forward.Output =
-        GIMBAL_PITCH_J * gimbal_controller.pos_pitch_td.ddx +
+        GIMBAL_PITCH_J * (use_external_dynamics ?
+            set_acceleration : gimbal_controller.pos_pitch_td.ddx) +
         GIMBAL_PITCH_B * gimbal_controller.set_pitch_speed +
         GIMBAL_PITCH_C * pitch_friction_ratio;
 
@@ -307,6 +331,19 @@ float Gimbal_Pitch_Calculate(float set_point)
 #endif
 
     return gimbal_controller.set_pitch_current;
+}
+
+float Gimbal_Pitch_Calculate(float set_point)
+{
+    return Gimbal_Pitch_CalculateInternal(set_point, 0.0f, 0.0f, 0U);
+}
+
+float Gimbal_Pitch_CalculateFeedforward(float set_point,
+                                        float set_speed,
+                                        float set_acceleration)
+{
+    return Gimbal_Pitch_CalculateInternal(
+        set_point, set_speed, set_acceleration, 1U);
 }
 
 // [SMALL_YAW_REMOVED] 小Yaw计算函数已删除，陀螺仪yaw数据改由大Yaw使用
@@ -368,7 +405,10 @@ void Big_Yaw_Bias_Cal(void)
 }
 
 float big_yaw_angle_after_iir;
-float Gimbal_Big_Yaw_Calculate(float set_point)
+static float Gimbal_Big_Yaw_CalculateInternal(float set_point,
+                                               float set_speed,
+                                               float set_acceleration,
+                                               uint8_t use_external_dynamics)
 {
     float model_feedforward;
 
@@ -426,10 +466,20 @@ float Gimbal_Big_Yaw_Calculate(float set_point)
 
     // BigYawSetpointSet();
 
-    gimbal_controller.set_big_yaw_angle = TD_Calculate(&gimbal_controller.pos_big_yaw_td, set_point);
-    // iir(&big_yaw_angle_after_iir,gimbal_controller.set_big_yaw_angle,0.8f);
-    gimbal_controller.set_big_yaw_speed =
-        gimbal_controller.pos_big_yaw_td.dx;
+    if (use_external_dynamics)
+    {
+        gimbal_controller.set_big_yaw_angle = set_point;
+        gimbal_controller.set_big_yaw_speed = set_speed;
+        Gimbal_TD_SyncReference(
+            &gimbal_controller.pos_big_yaw_td, set_point, set_speed, set_acceleration);
+    }
+    else
+    {
+        gimbal_controller.set_big_yaw_angle =
+            TD_Calculate(&gimbal_controller.pos_big_yaw_td, set_point);
+        gimbal_controller.set_big_yaw_speed =
+            gimbal_controller.pos_big_yaw_td.dx;
+    }
     PID_Calculate(&gimbal_controller.big_yaw_angle_pid,
                   big_yaw_controller.dealed_big_yaw_gyro,
                   gimbal_controller.set_big_yaw_angle);
@@ -437,28 +487,27 @@ float Gimbal_Big_Yaw_Calculate(float set_point)
                   gimbal_controller.gyro_yaw_speed,
                   gimbal_controller.set_big_yaw_speed);
     model_feedforward = Gimbal_Big_Yaw_ModelFeedforward(
-        gimbal_controller.pos_big_yaw_td.dx,
-        gimbal_controller.pos_big_yaw_td.ddx);
+        gimbal_controller.set_big_yaw_speed,
+        use_external_dynamics ? set_acceleration : gimbal_controller.pos_big_yaw_td.ddx);
     gimbal_controller.set_big_yaw_current = GIMBAL_BIG_YAW_MOTOR_SIGN *
         (gimbal_controller.big_yaw_angle_pid.Output +
          gimbal_controller.big_yaw_speed_pid.Output +
          model_feedforward);
 
-    // 大yaw缓启动
-
-    if (fabsf(gimbal_controller.big_yaw_angle_pid.Err) < 5.0f)
+    /*
+     * 大 Yaw 缓启动只管理总输出限幅和使能状态，不修改 PID 参数。
+     * PID 的 Kp/MaxOut 仅由 GimbalPidInit() 设定，避免调参值在运行时被覆盖。
+     */
+    if (big_yaw_controller.gimbal_enable_flag == 0U &&
+        fabsf(gimbal_controller.big_yaw_angle_pid.Err) < 5.0f)
     {
-
-        big_yaw_controller.gimbal_enable_cnt++;
         if (big_yaw_controller.gimbal_enable_cnt < GIMBAL_INIT_WAIT_TIME)
         {
-            gimbal_controller.big_yaw_angle_pid.MaxOut = 160;
+            big_yaw_controller.gimbal_enable_cnt++;
         }
-        else
+        if (big_yaw_controller.gimbal_enable_cnt >= GIMBAL_INIT_WAIT_TIME)
         {
-            big_yaw_controller.gimbal_enable_flag = 1;
-            /* 并联结构中MaxOut是位置PID的直接力矩修正上限。 */
-            gimbal_controller.big_yaw_angle_pid.MaxOut = 180;
+            big_yaw_controller.gimbal_enable_flag = 1U;
         }
     }
     if (big_yaw_controller.gimbal_enable_flag == 0)
@@ -466,6 +515,19 @@ float Gimbal_Big_Yaw_Calculate(float set_point)
         gimbal_controller.set_big_yaw_current = LIMIT_MAX_MIN(gimbal_controller.set_big_yaw_current, 1200.0f, -1200.0f);
     }
     return gimbal_controller.set_big_yaw_current;
+}
+
+float Gimbal_Big_Yaw_Calculate(float set_point)
+{
+    return Gimbal_Big_Yaw_CalculateInternal(set_point, 0.0f, 0.0f, 0U);
+}
+
+float Gimbal_Big_Yaw_CalculateFeedforward(float set_point,
+                                          float set_speed,
+                                          float set_acceleration)
+{
+    return Gimbal_Big_Yaw_CalculateInternal(
+        set_point, set_speed, set_acceleration, 1U);
 }
 
 void GimbalClear(void)
@@ -478,6 +540,8 @@ void GimbalClear(void)
              gimbal_controller.gyro_pitch_angle);
 
     gimbal_controller.target_pitch_angle = gimbal_controller.gyro_pitch_angle;
+    gimbal_controller.target_pitch_speed = 0.0f;
+    gimbal_controller.target_pitch_acceleration = 0.0f;
     gimbal_controller.set_pitch_angle = gimbal_controller.gyro_pitch_angle;
     gimbal_controller.set_pitch_speed = 0;
     gimbal_controller.set_pitch_current = 0;
@@ -528,6 +592,8 @@ void GimbalClear(void)
     // gimbal_controller.set_small_yaw_current = 0;
 
     gimbal_controller.target_big_yaw_angle = big_yaw_controller.dealed_big_yaw_gyro;
+    gimbal_controller.target_big_yaw_speed = 0.0f;
+    gimbal_controller.target_big_yaw_acceleration = 0.0f;
     gimbal_controller.set_big_yaw_angle = big_yaw_controller.dealed_big_yaw_gyro;
     gimbal_controller.set_big_yaw_speed = 0;
     gimbal_controller.set_big_yaw_current = 0;
@@ -618,7 +684,15 @@ void updateGyro()
      * INS.Roll = QEKF_INS.Pitch，对应机体系 X 轴角速度；速度直接读取
      * 原始陀螺仪，避免姿态角差分因任务不同步而长期显示异常值。
      */
+    static uint8_t dynamics_initialized = 0U;
+    float previous_pitch_speed = gimbal_controller.gyro_pitch_speed;
+    float previous_yaw_speed = gimbal_controller.gyro_yaw_speed;
+    float raw_acceleration;
+    uint8_t valid_dt;
+
     gimbal_controller.delta_t = DWT_GetDeltaT(&gimbal_controller.last_cnt);
+    valid_dt = gimbal_controller.delta_t > 0.0001f &&
+               gimbal_controller.delta_t < 0.1f;
     gimbal_controller.gyro_pitch_angle =
         GIMBAL_PITCH_GYRO_SIGN * (INS.Roll - GIMBAL_PITCH_BIAS);
     float speed = GIMBAL_PITCH_GYRO_SIGN *
@@ -631,10 +705,37 @@ void updateGyro()
     // yaw
     // [SMALL_YAW_REMOVED] GIMBAL_SMALL_YAW_GYRO_SIGN原为1.0f，直接使用
     gimbal_controller.gyro_yaw_angle = 1.0f * INS.YawTotalAngle;
-    speed = (gimbal_controller.gyro_yaw_angle - gimbal_controller.gyro_last_yaw_angle) / gimbal_controller.delta_t;
+    if (valid_dt)
+    {
+        speed = (gimbal_controller.gyro_yaw_angle -
+                 gimbal_controller.gyro_last_yaw_angle) /
+                gimbal_controller.delta_t;
+    }
+    else
+    {
+        speed = previous_yaw_speed;
+    }
 
     iir(&gimbal_controller.gyro_yaw_speed, speed, 0.4);
     gimbal_controller.gyro_last_yaw_angle = gimbal_controller.gyro_yaw_angle;
+
+    if (!dynamics_initialized || !valid_dt)
+    {
+        dynamics_initialized = 1U;
+        gimbal_controller.gyro_pitch_acceleration = 0.0f;
+        gimbal_controller.gyro_yaw_acceleration = 0.0f;
+        return;
+    }
+
+    raw_acceleration =
+        (gimbal_controller.gyro_pitch_speed - previous_pitch_speed) /
+        gimbal_controller.delta_t;
+    iir(&gimbal_controller.gyro_pitch_acceleration, raw_acceleration, 0.85f);
+
+    raw_acceleration =
+        (gimbal_controller.gyro_yaw_speed - previous_yaw_speed) /
+        gimbal_controller.delta_t;
+    iir(&gimbal_controller.gyro_yaw_acceleration, raw_acceleration, 0.85f);
 }
 
 /**

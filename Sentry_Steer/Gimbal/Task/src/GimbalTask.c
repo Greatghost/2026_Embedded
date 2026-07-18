@@ -27,6 +27,8 @@ static void Gimbal_Manual_Mode_Enter(void)
     const float current_yaw = big_yaw_controller.dealed_big_yaw_gyro;
 
     gimbal_controller.target_pitch_angle = current_pitch;
+    gimbal_controller.target_pitch_speed = 0.0f;
+    gimbal_controller.target_pitch_acceleration = 0.0f;
     gimbal_controller.set_pitch_angle = current_pitch;
     gimbal_controller.set_pitch_speed = 0.0f;
     gimbal_controller.set_pitch_current = 0.0f;
@@ -38,6 +40,8 @@ static void Gimbal_Manual_Mode_Enter(void)
     Feedforward_Reset(&gimbal_controller.pitch_speed_forward, 0.0f);
 
     gimbal_controller.target_big_yaw_angle = current_yaw;
+    gimbal_controller.target_big_yaw_speed = 0.0f;
+    gimbal_controller.target_big_yaw_acceleration = 0.0f;
     gimbal_controller.set_big_yaw_angle = current_yaw;
     gimbal_controller.set_big_yaw_speed = 0.0f;
     gimbal_controller.set_big_yaw_current = 0.0f;
@@ -88,6 +92,10 @@ static void Gimbal_PC_Target_Update(void)
         {
             gimbal_controller.target_pitch_angle = gimbal_controller.gyro_pitch_angle;
             gimbal_controller.target_big_yaw_angle = big_yaw_controller.dealed_big_yaw_gyro;
+			gimbal_controller.target_pitch_speed = 0.0f;
+			gimbal_controller.target_pitch_acceleration = 0.0f;
+			gimbal_controller.target_big_yaw_speed = 0.0f;
+			gimbal_controller.target_big_yaw_acceleration = 0.0f;
         }
         Gimbal_PC_Target_Disarm();
         return;
@@ -105,6 +113,10 @@ static void Gimbal_PC_Target_Update(void)
     {
         gimbal_controller.target_pitch_angle = gimbal_controller.gyro_pitch_angle;
         gimbal_controller.target_big_yaw_angle = big_yaw_controller.dealed_big_yaw_gyro;
+		gimbal_controller.target_pitch_speed = 0.0f;
+		gimbal_controller.target_pitch_acceleration = 0.0f;
+		gimbal_controller.target_big_yaw_speed = 0.0f;
+		gimbal_controller.target_big_yaw_acceleration = 0.0f;
         pc_gimbal_recovery_active = 1U;
         return;
     }
@@ -113,6 +125,10 @@ static void Gimbal_PC_Target_Update(void)
     {
         gimbal_controller.target_pitch_angle = pc_control.pitch;
         gimbal_controller.target_big_yaw_angle = pc_control.yaw;
+		gimbal_controller.target_pitch_speed = pc_control.pitch_omega;
+		gimbal_controller.target_pitch_acceleration = pc_control.pitch_alpha;
+		gimbal_controller.target_big_yaw_speed = pc_control.yaw_omega;
+		gimbal_controller.target_big_yaw_acceleration = pc_control.yaw_alpha;
         return;
     }
 
@@ -128,6 +144,10 @@ static void Gimbal_PC_Target_Update(void)
         gimbal_controller.target_pitch_angle, pc_control.pitch, pitch_step);
     gimbal_controller.target_big_yaw_angle = Gimbal_PC_Target_Slew(
         gimbal_controller.target_big_yaw_angle, pc_control.yaw, yaw_step);
+	gimbal_controller.target_pitch_speed = 0.0f;
+	gimbal_controller.target_pitch_acceleration = 0.0f;
+	gimbal_controller.target_big_yaw_speed = 0.0f;
+	gimbal_controller.target_big_yaw_acceleration = 0.0f;
 
     if (gimbal_controller.target_pitch_angle == pc_control.pitch &&
         gimbal_controller.target_big_yaw_angle == pc_control.yaw)
@@ -153,25 +173,43 @@ void Gimbal_Powerdown_Cal()
 
 void Gimbal_Autoaim_Cal()
 {
+    float pitch_before_limit;
+
     Gimbal_PC_Target_Update();
 
     // 额外加一层保护
     if (fabsf(gimbal_controller.target_pitch_angle) > 60.0f)
     {
         gimbal_controller.target_pitch_angle = gimbal_controller.gyro_pitch_angle;
+		gimbal_controller.target_pitch_speed = 0.0f;
+		gimbal_controller.target_pitch_acceleration = 0.0f;
     }
     // [SMALL_YAW_REMOVED] target_big_yaw_angle保护 (原target_small_yaw)
     if (fabsf(gimbal_controller.target_big_yaw_angle - 999.0f) < 1e-4)
     {
         gimbal_controller.target_big_yaw_angle = big_yaw_controller.dealed_big_yaw_gyro;
+		gimbal_controller.target_big_yaw_speed = 0.0f;
+		gimbal_controller.target_big_yaw_acceleration = 0.0f;
     }
 
     // pitch限制幅值
+	pitch_before_limit = gimbal_controller.target_pitch_angle;
     limitPitchAngle();
-    motor_communication[PITCH_MOTOR].control = Gimbal_Pitch_Calculate(gimbal_controller.target_pitch_angle);
+	if (gimbal_controller.target_pitch_angle != pitch_before_limit)
+	{
+		gimbal_controller.target_pitch_speed = 0.0f;
+		gimbal_controller.target_pitch_acceleration = 0.0f;
+	}
+    motor_communication[PITCH_MOTOR].control = Gimbal_Pitch_CalculateFeedforward(
+		gimbal_controller.target_pitch_angle,
+		gimbal_controller.target_pitch_speed,
+		gimbal_controller.target_pitch_acceleration);
     // yaw计算
     // [SMALL_YAW_REMOVED] 小Yaw控制已删除，仅大Yaw
-    motor_communication[BIG_YAW_MOTOR].control = Gimbal_Big_Yaw_Calculate(gimbal_controller.target_big_yaw_angle);
+    motor_communication[BIG_YAW_MOTOR].control = Gimbal_Big_Yaw_CalculateFeedforward(
+		gimbal_controller.target_big_yaw_angle,
+		gimbal_controller.target_big_yaw_speed,
+		gimbal_controller.target_big_yaw_acceleration);
     // motor_communication[SMALL_YAW_MOTOR].control = Gimbal_Small_Yaw_Calculate(gimbal_controller.target_small_yaw_angle);
     big_yaw_controller.gimbal_last_mode = 1;
 }
@@ -535,6 +573,12 @@ void PC_Send(uint32_t index)
 
     #endif
     }
+	// TypeID 11 云台动态反馈约90~100Hz；避开定位包和0.5Hz调试包的发送时隙。
+	if (((index % 10 == 7) && (index % 50 != 37) && (index % 1000 != 7)) ||
+		(index % 10 == 9))
+	{
+		SendtoPC(JUDGE_PC_DATA_GIMBAL_DYNAMICS);
+	}
     if (index % 100 == 3) // 5hz
     {
         SendtoPC(JUDGE_PC_DATA_RFID_BUFF);
