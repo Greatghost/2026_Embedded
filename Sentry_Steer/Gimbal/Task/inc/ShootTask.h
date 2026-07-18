@@ -25,6 +25,7 @@ extern Shoot_Cmd_t shoot_cmd;
 extern GimbalController gimbal_controller;
 void ShootTask(void *pvParameters);
 void Shoot_Cal(void);
+void Shoot_FeedbackSafeStop(void);
 
 
 #endif

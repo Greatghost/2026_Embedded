@@ -3,6 +3,15 @@
 Infantry infantry;
 uint8_t speed_follow_enable_flag = 0;
 
+/*
+ * Feedback recovery is deliberately separated from actuator recovery:
+ *   1. all required feedback must stay healthy for CHASSIS_RECOVERY_COUNT;
+ *   2. commands and final motor currents then ramp from 0 to 100%.
+ */
+static float chassis_recovery_scale = 0.0f;
+static void chassis_pid_integral_clear(void);
+static void chassis_control_state_clear(void);
+
 void InfantryInit(Infantry *infantry)
 {
     // 功率控制初始化
@@ -340,23 +349,32 @@ void set_robot_speed(Infantry *infantry)
 // 加速策略
 void wheels_accel(Infantry *infantry)
 {
+    /*
+     * Do not let integral terms accumulate while the final actuator command is
+     * intentionally attenuated by the recovery ramp.
+     */
+    if (chassis_recovery_scale < 1.0f)
+    {
+        chassis_pid_integral_clear();
+    }
+
     // infantry->speed_yaw_max = 10.0f;
     // infantry->target_x_v = TD_Calculate(&infantry->x_v_td, infantry->receive_x_v);
     // infantry->target_y_v = TD_Calculate(&infantry->y_v_td, infantry->receive_y_v);
 
-    infantry->target_x_v = infantry->receive_x_v; //TD控制器有点问题，怎么调参都会导致速度抖动，暂时不使用TD
-    infantry->target_y_v = infantry->receive_y_v;
+    infantry->target_x_v = infantry->receive_x_v * chassis_recovery_scale; //TD控制器有点问题，怎么调参都会导致速度抖动，暂时不使用TD
+    infantry->target_y_v = infantry->receive_y_v * chassis_recovery_scale;
 
 
     if (remote_controller.control_mode_action == NOT_FOLLOW_GIMBAL || remote_controller.control_mode_action == CV_ROTATE) // 检录陀螺要变向
     {
         // infantry->target_yaw_v = TD_Calculate(&infantry->yaw_v_td, 2.0f*infantry->receive_yaw_v);
-        infantry->target_yaw_v = infantry->receive_yaw_v;
+        infantry->target_yaw_v = infantry->receive_yaw_v * chassis_recovery_scale;
     }
     else
     {
         // infantry->target_yaw_v = TD_Calculate(&infantry->yaw_v_td, infantry->speed_yaw_max);
-        infantry->target_yaw_v = infantry->speed_yaw_max;
+        infantry->target_yaw_v = infantry->speed_yaw_max * chassis_recovery_scale;
     }
 }
 
@@ -474,43 +492,182 @@ void main_control(Infantry *infantry)
         break;
     }
 }
-uint32_t online_count;
-uint8_t chassis_control_check(){
+#define CHASSIS_FEEDBACK_TIMEOUT_COUNT 50
+#define CHASSIS_RECOVERY_COUNT         500U
+#define CHASSIS_SOFT_START_COUNT       500U
 
-    //  检查板间通信
-    if (offline_detector.comm_state[0] == COMM_OFF) 
+uint32_t online_count;
+static uint32_t chassis_soft_start_count;
+
+static void chassis_pid_integral_clear(void)
+{
+    infantry.turn_pid.Iout = 0.0f;
+    infantry.turn_pid.ITerm = 0.0f;
+    infantry.turn_pid.Last_ITerm = 0.0f;
+
+    for (int i = 0; i < 4; i++)
     {
-        online_count = 0;
+        infantry.wheels_pid[i].Iout = 0.0f;
+        infantry.wheels_pid[i].ITerm = 0.0f;
+        infantry.wheels_pid[i].Last_ITerm = 0.0f;
+
+        if (infantry.chassis_type == STEER_WHEEL)
+        {
+            infantry.steers_angle_pid[i].Iout = 0.0f;
+            infantry.steers_angle_pid[i].ITerm = 0.0f;
+            infantry.steers_angle_pid[i].Last_ITerm = 0.0f;
+            infantry.steers_speed_pid[i].Iout = 0.0f;
+            infantry.steers_speed_pid[i].ITerm = 0.0f;
+            infantry.steers_speed_pid[i].Last_ITerm = 0.0f;
+        }
+    }
+}
+
+static void chassis_recovery_reset(void)
+{
+    online_count = 0U;
+    chassis_soft_start_count = 0U;
+    chassis_recovery_scale = 0.0f;
+    chassis_control_state_clear();
+}
+
+static void chassis_control_state_clear(void)
+{
+    infantry.set_x_v = 0.0f;
+    infantry.set_y_v = 0.0f;
+    infantry.set_yaw_v = 0.0f;
+    infantry.target_x_v = 0.0f;
+    infantry.target_y_v = 0.0f;
+    infantry.target_yaw_v = 0.0f;
+
+    PID_Clear(&infantry.turn_pid);
+    TD_Clear(&infantry.x_v_td, 0.0f);
+    TD_Clear(&infantry.y_v_td, 0.0f);
+    TD_Clear(&infantry.yaw_v_td, 0.0f);
+
+    for (int i = 0; i < 4; i++)
+    {
+        infantry.wheels_set_v[i] = 0.0f;
+        infantry.excute_info.wheels_set_current[i] = 0.0f;
+        infantry.excute_info.steers_set_current[i] = 0.0f;
+        PID_Clear(&infantry.wheels_pid[i]);
+
+        if (infantry.chassis_type == STEER_WHEEL)
+        {
+            infantry.Steer_Speed_Setpoint[i] = 0.0f;
+            PID_Clear(&infantry.steers_angle_pid[i]);
+            PID_Clear(&infantry.steers_speed_pid[i]);
+            TD_Clear(&infantry.steer_angle_td[i],
+                     infantry.sensors_info.steer_decode[i].angle);
+        }
+    }
+
+    if (infantry.chassis_type == STEER_WHEEL)
+    {
+        Feedforward_Clear(&infantry.Steer_6020_FF);
+    }
+    else if (infantry.chassis_type == MECANUM_WHEEL)
+    {
+        Feedforward_Clear(&infantry.Mecanum_Follow_FF);
+    }
+}
+
+static uint8_t feedback_counter_expired(volatile int16_t *off_time)
+{
+    int16_t feedback_age;
+
+    /* CAN接收中断会把计数清零；在上限处饱和，避免int16_t溢出后误判在线。 */
+    /* 临界区避免任务的读-改-写覆盖CAN中断刚写入的0。 */
+    taskENTER_CRITICAL();
+    feedback_age = *off_time;
+    if (feedback_age <= CHASSIS_FEEDBACK_TIMEOUT_COUNT)
+    {
+        feedback_age++;
+        *off_time = feedback_age;
+    }
+    taskEXIT_CRITICAL();
+
+    return (feedback_age > CHASSIS_FEEDBACK_TIMEOUT_COUNT);
+}
+
+uint8_t chassis_control_check()
+{
+    /* 板间控制帧与电机反馈任一超过约50 ms未更新，立即保持零电流。 */
+    if (feedback_counter_expired(&offline_detector.gimbal_comm_off_time))
+    {
+        chassis_recovery_reset();
         return 0;
     }
-    // 检查电机上电情况,off_time只有电机通信在的时候会清零
-    for(int i=0;i<4;i++)
+
+    for (int i = 0; i < 4; i++)
     {
-        offline_detector.wheel_3508_off_time[i]++;
-        if(offline_detector.wheel_3508_off_time[i] > 50)
+        if (feedback_counter_expired(&offline_detector.wheel_3508_off_time[i]))
         {
-            online_count = 0;
+            chassis_recovery_reset();
             return 0;
         }
-        if(infantry.chassis_type == STEER_WHEEL)
+
+        if (infantry.chassis_type == STEER_WHEEL &&
+            feedback_counter_expired(&offline_detector.steer_6020_off_time[i]))
         {
-            offline_detector.steer_6020_off_time[i]++;
-            if(offline_detector.steer_6020_off_time[i] > 50)
-            {
-                online_count = 0;
-                return 0;
-            }
+            chassis_recovery_reset();
+            return 0;
         }
-        
     }
-    online_count++;
-    // 过检测超过500ms，可以底盘上电跑
-    if(online_count > 500)return 1;
-    else return 0;
+
+    /* 所有反馈连续正常约500 ms后再恢复，避免接触不良时反复启停。 */
+    if (online_count <= CHASSIS_RECOVERY_COUNT)
+    {
+        online_count++;
+    }
+
+    if (online_count <= CHASSIS_RECOVERY_COUNT)
+    {
+        chassis_soft_start_count = 0U;
+        chassis_recovery_scale = 0.0f;
+        chassis_control_state_clear();
+        return 0;
+    }
+
+    /*
+     * The first enabled cycle is still exactly zero.  Subsequent healthy
+     * cycles ramp linearly to full command in approximately 500 ms.
+     */
+    if (chassis_soft_start_count < CHASSIS_SOFT_START_COUNT)
+    {
+        chassis_recovery_scale =
+            (float)chassis_soft_start_count / (float)CHASSIS_SOFT_START_COUNT;
+        chassis_soft_start_count++;
+    }
+    else
+    {
+        chassis_recovery_scale = 1.0f;
+    }
+
+    return 1;
 }
 
 void execute_control(ExcuteTorque *torque)
-{	
+{
+	uint8_t if_can_control = chassis_control_check();
+	if (if_can_control == 0)
+	{
+		for (int i = 0; i < 4; i++)
+		{
+			torque->steers_set_current[i] = 0.0f;
+			torque->wheels_set_current[i] = 0.0f;
+		}
+	}
+	else
+	{
+		/* Final safety ramp applies identically to debug and normal builds. */
+		for (int i = 0; i < 4; i++)
+		{
+			torque->steers_set_current[i] *= chassis_recovery_scale;
+			torque->wheels_set_current[i] *= chassis_recovery_scale;
+		}
+	}
+
 	#if CHASSIS_DEBUG ==1
 	if (infantry.chassis_type == STEER_WHEEL)
     {
@@ -552,13 +709,6 @@ void execute_control(ExcuteTorque *torque)
 	#else
     if (infantry.chassis_type == STEER_WHEEL)
     {
-        // 底盘6020电机掉线处理，如果6020掉了，给对应的3508发0。
-        for (int i = 0; i < 4; i++)
-        {
-            if (offline_detector.steer_6020_state[i] == STEER_6020_OFF)
-                infantry.excute_info.wheels_set_current[i] = 0.0f;
-        }
-        uint8_t if_can_control  = 	chassis_control_check();
         // 舵
         GM6020_SendPack(torque->steers_send_data, GM6020_STD_CUR_ID_1_4, DJI_6020_MOTORS_1 - 0x204, (int16_t)torque->steers_set_current[0], GM6020_CUR_MODE);
         //GM6020_SendPack(0, GM6020_STD_CUR_ID_1_4, DJI_6020_MOTORS_2 - 0x204, (int16_t)torque->steers_set_current[1], GM6020_CUR_MODE);
@@ -598,7 +748,6 @@ void execute_control(ExcuteTorque *torque)
         M3508_SendPack(torque->wheels_send_data, C620_STD_ID_1_4, DJI_3508_MOTORS_2 - 0x200, torque->wheels_set_current[1], SEND_CURRENT);
         M3508_SendPack(torque->wheels_send_data, C620_STD_ID_1_4, DJI_3508_MOTORS_3 - 0x200, torque->wheels_set_current[2], SEND_CURRENT);
         M3508_SendPack(torque->wheels_send_data, C620_STD_ID_1_4, DJI_3508_MOTORS_4 - 0x200, torque->wheels_set_current[3], SEND_CURRENT);
-		uint8_t if_can_control  = 	chassis_control_check();
         if (if_can_control == 0)
 			{
 				M3508_SendPack(torque->wheels_send_data, C620_STD_ID_1_4, DJI_3508_MOTORS_1 - 0x200, 0, SEND_CURRENT);

@@ -200,5 +200,6 @@ void Feedforward_Init(
 
 float Feedforward_Calculate(Feedforward_t *ffc, float ref);
 void Feedforward_Clear(Feedforward_t *ffc);
+void Feedforward_Reset(Feedforward_t *ffc, float ref);
 
 #endif

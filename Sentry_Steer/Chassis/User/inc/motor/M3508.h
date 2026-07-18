@@ -82,6 +82,5 @@ typedef struct M3508_Info
 
 void M3508_Decode(M3508_Recv *M3508_recv, M3508_Info *M3508_decoded, int8_t decode_type, float filte_value);
 void M3508_SendPack(int8_t *can_data, uint32_t std_id, uint8_t motor_id, float control_current, enum SEND_TYPE send_type);
-void M3508_Init(void);
 
 #endif // !_M3508_H

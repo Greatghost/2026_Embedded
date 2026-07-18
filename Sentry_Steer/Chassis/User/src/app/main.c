@@ -88,9 +88,6 @@ void BSP_Init(void)
     BLUE_TOOTH_Configuration(); // 可当VOFA使用
     delay_ms(1);
 
-    M3508_Init();
-    delay_ms(1);
-
 }
 /**
  * @brief 机器人初始化
@@ -109,31 +106,47 @@ void Robot_Init(void)
     setRobotType(); // 设置机器人类型
 }
 
+static uint8_t Required_Motors_Ready(void)
+{
+    for (uint8_t i = 0; i < 4; i++)
+    {
+        if (global_debugger.wheels_comm_debugger[i].recv_msgs_num <= 5)
+        {
+            return FALSE;
+        }
+
+        if (infantry.chassis_type == STEER_WHEEL &&
+            global_debugger.steers_comm_debugger[i].recv_msgs_num <= 5)
+        {
+            return FALSE;
+        }
+    }
+
+    return TRUE;
+}
+
 /**
-* @brief 等待电机上电的检测
+ * @brief 有界等待必需电机反馈；超时后进入运行期掉线保护
  * @param[in] void
  */
 void Is_Motor_On_Check(void)
 {
+	infantry.All_Motor_On = FALSE;
+	infantry.Motor_Init_Time = 0.0f;
+	GetDeltaT(&infantry.Timer); // 仅初始化计时基准，避免把此前启动耗时算进超时
+
 	while(infantry.Motor_Init_Time < 1.0f && infantry.All_Motor_On == FALSE)
 	{
-			if(
-					global_debugger.wheels_comm_debugger[0].recv_msgs_num > 5		&&
-					global_debugger.wheels_comm_debugger[1].recv_msgs_num > 5		&&
-					global_debugger.wheels_comm_debugger[2].recv_msgs_num > 5		&&
-					global_debugger.wheels_comm_debugger[3].recv_msgs_num > 5		
-#if ROBOT == NIU_MO_SON					
-			&&	global_debugger.steers_comm_debugger[0].recv_msgs_num > 5		&&
-					global_debugger.steers_comm_debugger[1].recv_msgs_num > 5		&&
-					global_debugger.steers_comm_debugger[2].recv_msgs_num > 5		&&
-					global_debugger.steers_comm_debugger[3].recv_msgs_num > 5
-#endif
-			)
-				{
-					infantry.All_Motor_On = TRUE;
-				}
+			if (Required_Motors_Ready())
+			{
+				infantry.All_Motor_On = TRUE;
+			}
 				
 			infantry.Motor_Init_Time += GetDeltaT(&infantry.Timer);
 			delay_ms(1);
 	}
+	/*
+	 * 超时后也必须继续启动调度器。运行期 chassis_control_check() 会保持
+	 * 电机零电流，并在所有必需反馈连续恢复 500 ms 后自动重新使能。
+	 */
 }

@@ -1,10 +1,10 @@
 sentry_chassis_test\rls_identification.o: ..\components\algorithm\src\RLS_Identification.c
 sentry_chassis_test\rls_identification.o: ../components/algorithm/inc/RLS_Identification.h
-sentry_chassis_test\rls_identification.o: D:\keil5\ARM\ARMCC\Bin\..\include\string.h
-sentry_chassis_test\rls_identification.o: D:\keil5\ARM\ARMCC\Bin\..\include\stdint.h
-sentry_chassis_test\rls_identification.o: D:\keil5\ARM\ARMCC\Bin\..\include\math.h
-sentry_chassis_test\rls_identification.o: D:\keil5\ARM\ARMCC\Bin\..\include\stdio.h
-sentry_chassis_test\rls_identification.o: D:\keil5\ARM\ARMCC\Bin\..\include\stdlib.h
+sentry_chassis_test\rls_identification.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\string.h
+sentry_chassis_test\rls_identification.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdint.h
+sentry_chassis_test\rls_identification.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\math.h
+sentry_chassis_test\rls_identification.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdio.h
+sentry_chassis_test\rls_identification.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdlib.h
 sentry_chassis_test\rls_identification.o: ../Middlewares/ST/ARM/DSP/Inc/arm_math.h
 sentry_chassis_test\rls_identification.o: ../Drivers/CMSIS/Include/core_cm4.h
 sentry_chassis_test\rls_identification.o: ../Drivers/CMSIS/Include/cmsis_version.h

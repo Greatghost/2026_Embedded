@@ -29,11 +29,19 @@ extern "C" {
 /* WBUS协议定义 */
 #define WBUS_FRAME_LENGTH       25      /* WBUS帧长度 */
 #define WBUS_HEADER             0x0F    /* WBUS帧头 */
+#define WBUS_END_BYTE           0x00    /* 标准WBUS/S.BUS帧尾 */
 #define WBUS_CHANNEL_NUM        16      /* WBUS通道数量 */
 #define WBUS_CHANNEL_MIN        172     /* 通道最小值 */
 #define WBUS_CHANNEL_MAX        1811    /* 通道最大值 */
 #define WBUS_CHANNEL_MID        992     /* 通道中间值 */
 #define WBUS_CHANNEL_RANGE      820     /* 通道半范围 (1811-992 或 992-172) */
+
+/*
+ * WBUS正常帧周期远小于100ms。在线状态只由有效帧刷新，连续超时后进入
+ * 安全态；掉线恢复时先等待若干连续有效帧，避免单个毛刺帧重新使能整车。
+ */
+#define WBUS_TIMEOUT_MS          100u
+#define WBUS_RECOVERY_FRAMES       3u
 
 /* 映射到DJI遥控器的定义 - 与原系统兼容 */
 #define WBUS_CH_VALUE_MIN       ((uint16_t)364)
@@ -86,6 +94,7 @@ typedef struct {
     WBUS_Data_t data;               /* 解码后的数据 */
     uint8_t rx_buffer[WBUS_FRAME_LENGTH * 2];  /* 接收缓冲区 */
     uint8_t is_connected;           /* 连接状态 */
+    uint8_t valid_frame_streak;     /* 掉线恢复时的连续有效帧数 */
     uint32_t last_update_time;      /* 上次更新时间 */
     uint32_t frame_count;           /* 帧计数 */
     uint32_t error_count;           /* 错误计数 */
@@ -96,13 +105,14 @@ extern WBUS_Receiver_t wbus_receiver;
 
 /* 函数声明 */
 void WBUS_Init(void);
-void WBUS_Decode(volatile uint8_t rx_buffer[]);
+uint8_t WBUS_Decode(volatile uint8_t rx_buffer[]);
 uint8_t WBUS_GetSwitchPosition(uint16_t ch_value);
 uint8_t WBUS_GetTwoPositionSwitch(uint16_t ch_value);
 uint8_t WBUS_GetLeftSwitchFromDualSwitches(uint16_t ch5_value, uint16_t ch8_value);
 uint16_t WBUS_MapToDJIChannel(uint16_t wbus_value);
 void WBUS_UpdateRemoteController(void);
 uint8_t WBUS_IsConnected(void);
+void WBUS_CheckTimeout(void);
 void WBUS_ResetData(void);
 
 #ifdef __cplusplus

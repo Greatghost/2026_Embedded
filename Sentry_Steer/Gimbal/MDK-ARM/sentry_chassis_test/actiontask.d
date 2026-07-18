@@ -1,9 +1,9 @@
 sentry_chassis_test\actiontask.o: ..\Task\src\ActionTask.c
 sentry_chassis_test\actiontask.o: ../Task/inc/ActionTask.h
 sentry_chassis_test\actiontask.o: ../Inc/FreeRTOSConfig.h
-sentry_chassis_test\actiontask.o: D:\keil5\ARM\ARMCC\Bin\..\include\stdint.h
+sentry_chassis_test\actiontask.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdint.h
 sentry_chassis_test\actiontask.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/FreeRTOS.h
-sentry_chassis_test\actiontask.o: D:\keil5\ARM\ARMCC\Bin\..\include\stddef.h
+sentry_chassis_test\actiontask.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stddef.h
 sentry_chassis_test\actiontask.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/projdefs.h
 sentry_chassis_test\actiontask.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/portable.h
 sentry_chassis_test\actiontask.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/deprecated_definitions.h
@@ -13,10 +13,10 @@ sentry_chassis_test\actiontask.o: ../Middlewares/Third_Party/FreeRTOS/Source/inc
 sentry_chassis_test\actiontask.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/list.h
 sentry_chassis_test\actiontask.o: ../application/inc/ChassisSolver.h
 sentry_chassis_test\actiontask.o: ../application/inc/remote_control.h
-sentry_chassis_test\actiontask.o: D:\keil5\ARM\ARMCC\Bin\..\include\string.h
-sentry_chassis_test\actiontask.o: D:\keil5\ARM\ARMCC\Bin\..\include\math.h
-sentry_chassis_test\actiontask.o: D:\keil5\ARM\ARMCC\Bin\..\include\stdio.h
-sentry_chassis_test\actiontask.o: D:\keil5\ARM\ARMCC\Bin\..\include\stdlib.h
+sentry_chassis_test\actiontask.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\string.h
+sentry_chassis_test\actiontask.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\math.h
+sentry_chassis_test\actiontask.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdio.h
+sentry_chassis_test\actiontask.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdlib.h
 sentry_chassis_test\actiontask.o: ../components/tools/inc/debug.h
 sentry_chassis_test\actiontask.o: ../components/tools/inc/tools.h
 sentry_chassis_test\actiontask.o: ../bsp/boards/inc/bsp_dwt.h
@@ -103,7 +103,10 @@ sentry_chassis_test\actiontask.o: ../components/motor/inc/DM_Motor.h
 sentry_chassis_test\actiontask.o: ../components/motor/inc/M2006.h
 sentry_chassis_test\actiontask.o: ../components/algorithm/inc/TD.h
 sentry_chassis_test\actiontask.o: ../config/gimbal_config.h
+sentry_chassis_test\actiontask.o: ../application/inc/GimbalSystemIDConfig.h
 sentry_chassis_test\actiontask.o: ../components/algorithm/inc/SignalGenerator.h
+sentry_chassis_test\actiontask.o: ../application/inc/GimbalSystemID.h
+sentry_chassis_test\actiontask.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdbool.h
 sentry_chassis_test\actiontask.o: ../application/inc/pc_serial.h
 sentry_chassis_test\actiontask.o: ../components/algorithm/inc/algorithmOfCRC.h
 sentry_chassis_test\actiontask.o: ../application/inc/ChassisGet.h

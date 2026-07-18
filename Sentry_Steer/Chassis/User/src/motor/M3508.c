@@ -97,21 +97,3 @@ void M3508_SendPack(int8_t *can_data, uint32_t std_id, uint8_t motor_id, float c
         }
     }
 }
-
-void M3508_Init(void)
-{
-    int8_t init_finish = FALSE;
-
-    while (!init_finish)
-    {
-        init_finish = TRUE;
-
-        for (int8_t i = 0; i < 4; i++)
-        {
-            if (global_debugger.wheels_comm_debugger[i].recv_msgs_num < 30)
-            {
-                init_finish = FALSE;
-            }
-        }
-    }
-}

@@ -1,6 +1,8 @@
 sentry_chassis_test\bmi088middleware.o: ..\components\devices\src\BMI088Middleware.c
 sentry_chassis_test\bmi088middleware.o: ../components/devices/inc/BMI088Middleware.h
 sentry_chassis_test\bmi088middleware.o: ../components/tools/inc/struct_typedef.h
+sentry_chassis_test\bmi088middleware.o: ../components/devices/inc/BMI088driver.h
+sentry_chassis_test\bmi088middleware.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdint.h
 sentry_chassis_test\bmi088middleware.o: ../Inc/main.h
 sentry_chassis_test\bmi088middleware.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h
 sentry_chassis_test\bmi088middleware.o: ../Inc/stm32f4xx_hal_conf.h
@@ -9,7 +11,6 @@ sentry_chassis_test\bmi088middleware.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm3
 sentry_chassis_test\bmi088middleware.o: ../Drivers/CMSIS/Device/ST/STM32F4xx/Include/stm32f4xx.h
 sentry_chassis_test\bmi088middleware.o: ../Drivers/CMSIS/Device/ST/STM32F4xx/Include/stm32f407xx.h
 sentry_chassis_test\bmi088middleware.o: ../Drivers/CMSIS/Include/core_cm4.h
-sentry_chassis_test\bmi088middleware.o: D:\keil5\ARM\ARMCC\Bin\..\include\stdint.h
 sentry_chassis_test\bmi088middleware.o: ../Drivers/CMSIS/Include/cmsis_version.h
 sentry_chassis_test\bmi088middleware.o: ../Drivers/CMSIS/Include/cmsis_compiler.h
 sentry_chassis_test\bmi088middleware.o: ../Drivers/CMSIS/Include/cmsis_armcc.h
@@ -17,7 +18,7 @@ sentry_chassis_test\bmi088middleware.o: ../Drivers/CMSIS/Include/mpu_armv7.h
 sentry_chassis_test\bmi088middleware.o: ../Drivers/CMSIS/Device/ST/STM32F4xx/Include/system_stm32f4xx.h
 sentry_chassis_test\bmi088middleware.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h
 sentry_chassis_test\bmi088middleware.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy/stm32_hal_legacy.h
-sentry_chassis_test\bmi088middleware.o: D:\keil5\ARM\ARMCC\Bin\..\include\stddef.h
+sentry_chassis_test\bmi088middleware.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stddef.h
 sentry_chassis_test\bmi088middleware.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_rcc_ex.h
 sentry_chassis_test\bmi088middleware.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_gpio.h
 sentry_chassis_test\bmi088middleware.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_gpio_ex.h
@@ -64,9 +65,9 @@ sentry_chassis_test\bmi088middleware.o: ../Inc/usart.h
 sentry_chassis_test\bmi088middleware.o: ../bsp/usb/inc/usb_device.h
 sentry_chassis_test\bmi088middleware.o: ../Drivers/USB/usbd_def.h
 sentry_chassis_test\bmi088middleware.o: ../bsp/usb/inc/usbd_conf.h
-sentry_chassis_test\bmi088middleware.o: D:\keil5\ARM\ARMCC\Bin\..\include\stdio.h
-sentry_chassis_test\bmi088middleware.o: D:\keil5\ARM\ARMCC\Bin\..\include\stdlib.h
-sentry_chassis_test\bmi088middleware.o: D:\keil5\ARM\ARMCC\Bin\..\include\string.h
+sentry_chassis_test\bmi088middleware.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdio.h
+sentry_chassis_test\bmi088middleware.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdlib.h
+sentry_chassis_test\bmi088middleware.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\string.h
 sentry_chassis_test\bmi088middleware.o: ../Inc/gpio.h
 sentry_chassis_test\bmi088middleware.o: ../bsp/usb/inc/usbd_cdc_if.h
 sentry_chassis_test\bmi088middleware.o: ../Drivers/USB/usbd_cdc.h
@@ -77,7 +78,7 @@ sentry_chassis_test\bmi088middleware.o: ../Drivers/USB/usbd_ctlreq.h
 sentry_chassis_test\bmi088middleware.o: ../bsp/boards/inc/bsp_dwt.h
 sentry_chassis_test\bmi088middleware.o: ../Middlewares/ST/ARM/DSP/Inc/arm_math.h
 sentry_chassis_test\bmi088middleware.o: ../Drivers/CMSIS/Include/core_cm4.h
-sentry_chassis_test\bmi088middleware.o: D:\keil5\ARM\ARMCC\Bin\..\include\math.h
+sentry_chassis_test\bmi088middleware.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\math.h
 sentry_chassis_test\bmi088middleware.o: ../components/devices/inc/BMI088driver.h
 sentry_chassis_test\bmi088middleware.o: ../bsp/boards/inc/bsp_rc.h
 sentry_chassis_test\bmi088middleware.o: ../application/inc/remote_control.h
@@ -87,4 +88,5 @@ sentry_chassis_test\bmi088middleware.o: ../config/can_send_config.h
 sentry_chassis_test\bmi088middleware.o: ../components/motor/inc/Motor_Typdef.h
 sentry_chassis_test\bmi088middleware.o: ../config/robot_config.h
 sentry_chassis_test\bmi088middleware.o: ../config/can_config.h
+sentry_chassis_test\bmi088middleware.o: ../components/devices/inc/BMI088reg.h
 sentry_chassis_test\bmi088middleware.o: ../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS/cmsis_os.h

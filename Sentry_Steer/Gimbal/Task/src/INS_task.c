@@ -19,6 +19,7 @@
 #include "arm_math.h"
 #include "math.h"
 #include "main.h"
+#include "debug.h"
 INS_t INS;
 IMU_Param_t IMU_Param;
 PID_t TempCtrl = {0};
@@ -167,6 +168,7 @@ void INS_task(void const *pvParameters)
 {
 	portTickType xLastWakeTime;
    const portTickType xFrequency = 1; // 1000HZ
+	uint16_t imu_online_check_count = 0;
 	BMI088_Read(&BMI088);
 	float ax=BMI088.Accel[X];
 	float ay=BMI088.Accel[Y];
@@ -181,6 +183,24 @@ void INS_task(void const *pvParameters)
     {
 		xLastWakeTime = xTaskGetTickCount();
 		BMI088_Read(&BMI088);
+
+		/*
+		 * 50Hz读取两颗芯片ID作为真实硬件心跳。只有WHO_AM_I正确才刷新
+		 * 对应计数；SPI断线或单芯片失效会在Offline_task中超时。
+		 */
+		if (++imu_online_check_count >= 20u)
+		{
+			const uint8_t imu_online = BMI088_CheckOnline();
+			imu_online_check_count = 0;
+			if (imu_online & BMI088_ACCEL_ONLINE)
+			{
+				LossUpdate(&global_debugger.imu_debugger[0], 0.03f);
+			}
+			if (imu_online & BMI088_GYRO_ONLINE)
+			{
+				LossUpdate(&global_debugger.imu_debugger[1], 0.03f);
+			}
+		}
 		INS_Task_EKF();
 		/*  延时  */
     vTaskDelayUntil(&xLastWakeTime, xFrequency);

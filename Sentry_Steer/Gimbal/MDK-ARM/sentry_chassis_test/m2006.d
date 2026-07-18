@@ -1,10 +1,10 @@
 sentry_chassis_test\m2006.o: ..\components\motor\src\M2006.c
 sentry_chassis_test\m2006.o: ../components/motor/inc/M2006.h
-sentry_chassis_test\m2006.o: D:\keil5\ARM\ARMCC\Bin\..\include\string.h
-sentry_chassis_test\m2006.o: D:\keil5\ARM\ARMCC\Bin\..\include\stdint.h
-sentry_chassis_test\m2006.o: D:\keil5\ARM\ARMCC\Bin\..\include\math.h
-sentry_chassis_test\m2006.o: D:\keil5\ARM\ARMCC\Bin\..\include\stdio.h
-sentry_chassis_test\m2006.o: D:\keil5\ARM\ARMCC\Bin\..\include\stdlib.h
+sentry_chassis_test\m2006.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\string.h
+sentry_chassis_test\m2006.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdint.h
+sentry_chassis_test\m2006.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\math.h
+sentry_chassis_test\m2006.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdio.h
+sentry_chassis_test\m2006.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdlib.h
 sentry_chassis_test\m2006.o: ../components/tools/inc/ZeroCheck.h
 sentry_chassis_test\m2006.o: ../components/tools/inc/tools.h
 sentry_chassis_test\m2006.o: ../components/algorithm/inc/my_filter.h

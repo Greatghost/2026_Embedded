@@ -35,9 +35,9 @@ typedef struct
 	enum ROBOT_SENSORS_DETECT comm_state[2];
 	enum ROBOT_SENSORS_DETECT wheel_3508_state[4];
 	enum ROBOT_SENSORS_DETECT steer_6020_state[4];
-	int16_t wheel_3508_off_time[4];
-	int16_t steer_6020_off_time[4];
-	int16_t gimbal_comm_off_time;
+	volatile int16_t wheel_3508_off_time[4];
+	volatile int16_t steer_6020_off_time[4];
+	volatile int16_t gimbal_comm_off_time;
 
 	int8_t is_sensor_off;  // 是否有关键传感器掉线
 	int8_t is_motor_error; // 电机报错检测

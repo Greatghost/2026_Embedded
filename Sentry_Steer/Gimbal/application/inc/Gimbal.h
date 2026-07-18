@@ -13,9 +13,11 @@
 #include "bsp_dwt.h"
 
 #include "gimbal_config.h"
+#include "GimbalSystemIDConfig.h"
 #include "ZeroCheck.h"
 #include "my_filter.h"
 #include "SignalGenerator.h"
+#include "GimbalSystemID.h"
 
 /*==============================================================================
  *                          云台测试结构体定义
@@ -75,6 +77,7 @@ typedef struct GimbalController
   PID_t pitch_angle_pid;             // 角度环
   Feedforward_t pitch_speed_forward; // 速度环前馈
   Feedforward_t pitch_angle_forward; // 角度环前馈
+  TD_t pos_pitch_td;                 // 位置TD：x/θ, dx/ω, ddx/α
 
   GM6020_Recv pitch_recv;
   GM6020_Info pitch_info;
@@ -88,7 +91,7 @@ typedef struct GimbalController
   float set_pitch_current;
   float set_pitch_angle;
   float set_pitch_vol;
-  float comp_pitch_current; // 重力补偿
+  float comp_pitch_current; // 独立重力补偿输出
 
   // 陀螺仪信息及其解算
   float gyro_pitch_speed;
@@ -125,6 +128,17 @@ typedef struct GimbalController
   float set_big_yaw_current;
   float set_big_yaw_angle;
   float set_big_yaw_vol;
+
+  /*
+   * 大Yaw模型前馈调试量。ref使用TD生成的目标轨迹，三个分量和output
+   * 均为乘电机方向符号之前的模型坐标值，便于Ozone采样和实车标定。
+   */
+  float big_yaw_ff_ref_speed_dps;
+  float big_yaw_ff_ref_accel_dps2;
+  float big_yaw_ff_inertia;
+  float big_yaw_ff_viscous;
+  float big_yaw_ff_coulomb;
+  float big_yaw_ff_output;
   // [SMALL_YAW_REMOVED] 小Yaw控制量已删除
   // float set_small_yaw_speed;
   // float set_small_yaw_current;
@@ -142,7 +156,6 @@ typedef struct GimbalController
   // TD_t pos_small_yaw_td;
   // TD_t speed_small_yaw_td;
   TD_t pos_big_yaw_td; // 位置跟踪微分器
-  TD_t speed_big_yaw_td;
 
   // pitch 限位计算
   float pitch_max_gyro_angle;

@@ -1,9 +1,9 @@
 sentry_chassis_test\bluetoothtask.o: ..\Task\src\BlueToothTask.c
 sentry_chassis_test\bluetoothtask.o: ../Task/inc/BlueToothTask.h
 sentry_chassis_test\bluetoothtask.o: ../Inc/FreeRTOSConfig.h
-sentry_chassis_test\bluetoothtask.o: D:\keil5\ARM\ARMCC\Bin\..\include\stdint.h
+sentry_chassis_test\bluetoothtask.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdint.h
 sentry_chassis_test\bluetoothtask.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/FreeRTOS.h
-sentry_chassis_test\bluetoothtask.o: D:\keil5\ARM\ARMCC\Bin\..\include\stddef.h
+sentry_chassis_test\bluetoothtask.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stddef.h
 sentry_chassis_test\bluetoothtask.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/projdefs.h
 sentry_chassis_test\bluetoothtask.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/portable.h
 sentry_chassis_test\bluetoothtask.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/deprecated_definitions.h

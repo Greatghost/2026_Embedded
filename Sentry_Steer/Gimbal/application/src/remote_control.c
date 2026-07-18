@@ -20,8 +20,11 @@ void setControlModeAction(enum CONTROL_MODE_ACTION action)
 
 void setGimbalAction(enum GIMBAL_ACTION action)
 {
-    remote_controller.last_gimbal_action = remote_controller.gimbal_action;
-    remote_controller.gimbal_action = action;
+    if (remote_controller.gimbal_action != action)
+    {
+        remote_controller.last_gimbal_action = remote_controller.gimbal_action;
+        remote_controller.gimbal_action = action;
+    }
 }
 
 void setShootAction(enum SHOOT_ACTION action)
@@ -89,7 +92,10 @@ void RemoteReceive(volatile unsigned char rx_buffer[])
 {
 #if USE_WBUS_PROTOCOL
     /* 使用WBUS协议解码 */
-    WBUS_Decode(rx_buffer);
+    if (!WBUS_Decode(rx_buffer))
+    {
+        return;
+    }
     /* WBUS_Decode内部会调用WBUS_UpdateRemoteController更新remote_controller */
 #else
     /* 使用DJI遥控器协议解码 */

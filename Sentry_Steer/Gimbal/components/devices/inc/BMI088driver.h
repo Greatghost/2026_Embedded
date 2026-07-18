@@ -66,6 +66,9 @@
 
 #endif
 
+#define BMI088_ACCEL_ONLINE 0x01u
+#define BMI088_GYRO_ONLINE  0x02u
+
 typedef struct
 {
     float Accel[3];
@@ -110,6 +113,7 @@ extern IMU_Data_t BMI088;
 extern SPI_HandleTypeDef *BMI088_SPI;
 
 extern void BMI088_Read(IMU_Data_t *bmi088);
+extern uint8_t BMI088_CheckOnline(void);
 bool_t bmi088_gyro_self_test(void);
 bool_t bmi088_accel_self_test(void);
 bool_t bmi088_gyro_init(void);

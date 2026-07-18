@@ -262,6 +262,18 @@ float PID_Calculate(PID_t *pid, float measure, float ref)
         // 无关紧要
         f_Proportion_Limit(pid);
     }
+    else
+    {
+        /*
+         * Deadband means that the controller must not drive the actuator.
+         * Keeping Output unchanged here would resend the previous current even
+         * though the current error is already inside the deadband.
+         */
+        pid->Pout = 0.0f;
+        pid->ITerm = 0.0f;
+        pid->Dout = 0.0f;
+        pid->Output = 0.0f;
+    }
 
     pid->Last_Measure = pid->Measure;
     pid->Last_Output = pid->Output;

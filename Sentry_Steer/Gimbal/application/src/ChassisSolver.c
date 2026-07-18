@@ -16,6 +16,30 @@ extern Nav_Cmd_t NAV_cmd;
 extern PC_StateControl PC_statecontrol;
 extern JudgeData_1_t JudgeRecieveData;
 
+static void PCNavigationSafeStop(void)
+{
+    offline_detector.pc_state = PC_OFF;
+
+    NAV_cmd.Nav_Speed_x = 0.0f;
+    NAV_cmd.Nav_Speed_y = 0.0f;
+    NAV_cmd.Nav_Speed_w = 0.0f;
+    PC_statecontrol.CapState = 0U;
+    PC_statecontrol.if_through_hole = 0U;
+    PC_statecontrol.RotateState = 0U;
+    big_yaw_controller.big_yaw_mode = 0U;
+
+    chassis_solver.chassis_speed_x = 0.0f;
+    chassis_solver.chassis_speed_y = 0.0f;
+    chassis_solver.chassis_speed_w = 0.0f;
+    toggle_controller.is_shoot = FALSE;
+
+    setRobotState(CONTROL_MODE);
+    setControlModeAction(NOT_FOLLOW_GIMBAL);
+    setShootAction(SHOOT_POWERDOWN_MODE);
+    setGimbalAction(GIMBAL_ACT_MODE);
+    setSuperPower(POWER_TO_BATTERY);
+}
+
 void changeFricAction()
 {
     if (remote_controller.shoot_action != SHOOT_POWERDOWN_MODE)
@@ -34,6 +58,15 @@ void changeSupplyMode()
 
 void PCStateControl() // 比赛专用
 {
+    PCControlSnapshot_t pc_control;
+
+    if (PCControlGetSnapshot(&pc_control) == 0U)
+    {
+        PCNavigationSafeStop();
+        return;
+    }
+    offline_detector.pc_state = PC_ON;
+
     // 暂时注释比赛开始检查
     // if(JudgeRecieveData.is_game_start ==0)
     // {
@@ -67,7 +100,7 @@ void PCStateControl() // 比赛专用
         }
 
         // 删除过洞模式检查，直接根据 RotateState 设置速度
-        if (PC_statecontrol.RotateState == 0)
+        if (pc_control.rotate_state == 0U)
         {
             setControlModeAction(NOT_FOLLOW_GIMBAL);
             chassis_solver.chassis_speed_w = 0.f;
@@ -75,7 +108,7 @@ void PCStateControl() // 比赛专用
         else
         {
             setControlModeAction(CV_ROTATE);
-            switch (PC_statecontrol.RotateState)
+            switch (pc_control.rotate_state)
             {
             case 1:
                 chassis_solver.chassis_speed_w = 0.5f * MAX_YAW_SPEED;
@@ -93,10 +126,10 @@ void PCStateControl() // 比赛专用
             }
         }
 
-        chassis_solver.chassis_speed_x = NAV_cmd.Nav_Speed_x;
-        chassis_solver.chassis_speed_y = NAV_cmd.Nav_Speed_y;
+        chassis_solver.chassis_speed_x = pc_control.nav_speed_x;
+        chassis_solver.chassis_speed_y = pc_control.nav_speed_y;
 
-        if (PC_statecontrol.CapState == 1)
+        if (pc_control.cap_state == 1U)
         {
             setSuperPower(POWER_TO_SuperPower);
         }
@@ -120,10 +153,19 @@ void DJIKeyMouseUpdate(ChassisSolver *infantry)
 {
     uint8_t R_flag = 0;
     uint8_t Hole_flag = 0;
+    const uint8_t pc_control_online = PCControlIsOnline();
     if (offline_detector.remote_state == REMOTE_OFF)
     {
         setAllModeOff();
         return;
+    }
+
+    if (pc_control_online == 0U &&
+        (remote_controller.gimbal_action == GIMBAL_AUTO_AIM_MODE ||
+         remote_controller.gimbal_action == GIMBAL_SMALL_BUFF_MODE ||
+         remote_controller.gimbal_action == GIMBAL_BIG_BUFF_MODE))
+    {
+        setGimbalAction(GIMBAL_ACT_MODE);
     }
     // 记得设置好接口可以跳转回遥控器模式
     if (remote_controller.dji_remote.rc.s[RIGHT_SW] != Mid)
@@ -300,7 +342,7 @@ void DJIKeyMouseUpdate(ChassisSolver *infantry)
             case KEY_G:
                 break;
             case KEY_Z:
-                if (R_flag) // 小符
+                if (R_flag && pc_control_online != 0U) // 小符
                 {
                     setGimbalAction(GIMBAL_SMALL_BUFF_MODE);
                 }
@@ -311,7 +353,7 @@ void DJIKeyMouseUpdate(ChassisSolver *infantry)
 
                 break;
             case KEY_X:
-                if (R_flag) // 大符
+                if (R_flag && pc_control_online != 0U) // 大符
                 {
                     setGimbalAction(GIMBAL_BIG_BUFF_MODE);
                 }
@@ -446,7 +488,8 @@ void DJIKeyMouseUpdate(ChassisSolver *infantry)
         remote_controller.dji_remote.mouse.last_press_r = press_r;
 
         // 辅瞄
-        if (press_r && remote_controller.gimbal_action == GIMBAL_ACT_MODE)
+        if (press_r && pc_control_online != 0U &&
+            remote_controller.gimbal_action == GIMBAL_ACT_MODE)
         {
             setGimbalAction(GIMBAL_AUTO_AIM_MODE);
         }
@@ -496,8 +539,15 @@ void setAllModeOff()
     setControlModeAction(NOT_CONTROL_MODE);
     setShootAction(SHOOT_POWERDOWN_MODE);
     setGimbalAction(GIMBAL_POWERDOWN);
+    chassis_solver.chassis_speed_x = 0.0f;
+    chassis_solver.chassis_speed_y = 0.0f;
+    chassis_solver.chassis_speed_w = 0.0f;
+    NAV_cmd.Nav_Speed_x = 0.0f;
+    NAV_cmd.Nav_Speed_y = 0.0f;
+    NAV_cmd.Nav_Speed_w = 0.0f;
+    toggle_controller.is_shoot = FALSE;
     // DisableCoverCommand();
-    big_yaw_controller.gimbal_last_mode == 0;
+    big_yaw_controller.gimbal_last_mode = 0;
 }
 
 // 遥控器模式部分保留，其余调整为哨兵专用模式
@@ -524,6 +574,8 @@ int saw_tooth_init_flag = 0, step_init_flag = 0;
 
 void DJIRemoteUpdate(ChassisSolver *infantry)
 {
+    PCControlSnapshot_t pc_control;
+    const uint8_t pc_control_online = PCControlGetSnapshot(&pc_control);
     int leg_len_switch = 0;
     // 判断状态
     switch (remote_controller.dji_remote.rc.s[LEFT_SW])
@@ -549,7 +601,6 @@ void DJIRemoteUpdate(ChassisSolver *infantry)
             // 云台控制 - Yaw
 #if (GIMBAL_TEST_CONFIG != GIMBAL_CONFIG_SMALLYAW_SQUARE && GIMBAL_CONTROL_DISCONNECT == 0)
             gimbal_controller.target_big_yaw_angle /* [SMALL_YAW_REMOVED] 原为target_small_yaw */ -= (remote_controller.dji_remote.rc.ch[LEFT_CH_LR] - CH_MIDDLE) * MAX_SW_YAW_SPEED / CH_RANGE * infantry->delta_t;
-            gimbal_controller.target_big_yaw_angle -= (remote_controller.dji_remote.rc.ch[LEFT_CH_LR] - CH_MIDDLE) * MAX_SW_YAW_SPEED / CH_RANGE * infantry->delta_t;
 #endif
 
             // 云台控制 - Pitch
@@ -589,7 +640,6 @@ void DJIRemoteUpdate(ChassisSolver *infantry)
             // 云台控制 - Yaw
 #if (GIMBAL_TEST_CONFIG != GIMBAL_CONFIG_SMALLYAW_SQUARE && GIMBAL_CONTROL_DISCONNECT == 0)
             gimbal_controller.target_big_yaw_angle /* [SMALL_YAW_REMOVED] 原为target_small_yaw */ -= (remote_controller.dji_remote.rc.ch[LEFT_CH_LR] - CH_MIDDLE) * MAX_SW_YAW_SPEED / CH_RANGE * infantry->delta_t;
-            gimbal_controller.target_big_yaw_angle -= (remote_controller.dji_remote.rc.ch[LEFT_CH_LR] - CH_MIDDLE) * MAX_SW_YAW_SPEED / CH_RANGE * infantry->delta_t;
 #endif
 
             // 云台控制 - Pitch
@@ -626,6 +676,13 @@ void DJIRemoteUpdate(ChassisSolver *infantry)
         // 测导航模式：右拨杆之前在Down位置时触发
         if (remote_controller.dji_remote.rc.Previous_rc_Right_SW == Down)
         {
+            if (pc_control_online == 0U)
+            {
+                PCNavigationSafeStop();
+                break;
+            }
+            offline_detector.pc_state = PC_ON;
+
             setRobotState(CONTROL_MODE);
             setControlModeAction(NOT_FOLLOW_GIMBAL);
             setShootAction(SHOOT_POWERDOWN_MODE);
@@ -634,8 +691,8 @@ void DJIRemoteUpdate(ChassisSolver *infantry)
 
             // 云台保持当前角度不变
             // 底盘执行NUC发来的命令
-            chassis_solver.chassis_speed_x = NAV_cmd.Nav_Speed_x;
-            chassis_solver.chassis_speed_y = NAV_cmd.Nav_Speed_y;
+            chassis_solver.chassis_speed_x = pc_control.nav_speed_x;
+            chassis_solver.chassis_speed_y = pc_control.nav_speed_y;
             chassis_solver.chassis_speed_w = 0.f;
         }
         else
@@ -650,6 +707,13 @@ void DJIRemoteUpdate(ChassisSolver *infantry)
                 break;
             case Up:
                 // 辅瞄测试
+                if (pc_control_online == 0U)
+                {
+                    PCNavigationSafeStop();
+                    break;
+                }
+                offline_detector.pc_state = PC_ON;
+
                 setRobotState(CONTROL_MODE);
                 setControlModeAction(NOT_CONTROL_MODE);
                 setShootAction(SHOOT_AUTO_AIM_MODE);
@@ -661,7 +725,6 @@ void DJIRemoteUpdate(ChassisSolver *infantry)
                 // 云台控制
 #if (GIMBAL_TEST_CONFIG != GIMBAL_CONFIG_SMALLYAW_SQUARE && GIMBAL_CONTROL_DISCONNECT == 0)
                 gimbal_controller.target_big_yaw_angle /* [SMALL_YAW_REMOVED] 原为target_small_yaw */ -= (remote_controller.dji_remote.rc.ch[LEFT_CH_LR] - CH_MIDDLE) * MAX_SW_YAW_SPEED / CH_RANGE * infantry->delta_t;
-                gimbal_controller.target_big_yaw_angle -= (remote_controller.dji_remote.rc.ch[LEFT_CH_LR] - CH_MIDDLE) * MAX_SW_YAW_SPEED / CH_RANGE * infantry->delta_t;
 #endif
 #if (GIMBAL_TEST_CONFIG != GIMBAL_CONFIG_PITCH_SQUARE && GIMBAL_CONTROL_DISCONNECT == 0)
                 gimbal_controller.target_pitch_angle += (remote_controller.dji_remote.rc.ch[LEFT_CH_UD] - CH_MIDDLE) * MAX_SW_PITCH_SPEED / CH_RANGE * infantry->delta_t;
@@ -748,7 +811,6 @@ void DJIRemoteUpdate(ChassisSolver *infantry)
             // 云台控制
 #if (GIMBAL_TEST_CONFIG != GIMBAL_CONFIG_SMALLYAW_SQUARE && GIMBAL_CONTROL_DISCONNECT == 0)
             gimbal_controller.target_big_yaw_angle /* [SMALL_YAW_REMOVED] 原为target_small_yaw */ -= (remote_controller.dji_remote.rc.ch[LEFT_CH_LR] - CH_MIDDLE) * MAX_SW_YAW_SPEED / CH_RANGE * infantry->delta_t;
-            gimbal_controller.target_big_yaw_angle -= (remote_controller.dji_remote.rc.ch[LEFT_CH_LR] - CH_MIDDLE) * MAX_SW_YAW_SPEED / CH_RANGE * infantry->delta_t;
 #endif
 
 #if (GIMBAL_TEST_CONFIG != GIMBAL_CONFIG_PITCH_SQUARE && GIMBAL_CONTROL_DISCONNECT == 0)
@@ -785,7 +847,6 @@ void DJIRemoteUpdate(ChassisSolver *infantry)
             // 云台控制
 #if (GIMBAL_TEST_CONFIG != GIMBAL_CONFIG_SMALLYAW_SQUARE && GIMBAL_CONTROL_DISCONNECT == 0)
             gimbal_controller.target_big_yaw_angle /* [SMALL_YAW_REMOVED] 原为target_small_yaw */ -= (remote_controller.dji_remote.rc.ch[LEFT_CH_LR] - CH_MIDDLE) * MAX_SW_YAW_SPEED / CH_RANGE * infantry->delta_t;
-            gimbal_controller.target_big_yaw_angle -= (remote_controller.dji_remote.rc.ch[LEFT_CH_LR] - CH_MIDDLE) * MAX_SW_YAW_SPEED / CH_RANGE * infantry->delta_t;
 #endif
 
 #if (GIMBAL_TEST_CONFIG != GIMBAL_CONFIG_PITCH_SQUARE && GIMBAL_CONTROL_DISCONNECT == 0)

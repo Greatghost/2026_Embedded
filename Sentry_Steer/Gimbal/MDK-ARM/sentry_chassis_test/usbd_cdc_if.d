@@ -4,13 +4,13 @@ sentry_chassis_test\usbd_cdc_if.o: ../Drivers/USB/usbd_cdc.h
 sentry_chassis_test\usbd_cdc_if.o: ../Drivers/USB/usbd_ioreq.h
 sentry_chassis_test\usbd_cdc_if.o: ../Drivers/USB/usbd_def.h
 sentry_chassis_test\usbd_cdc_if.o: ../bsp/usb/inc/usbd_conf.h
-sentry_chassis_test\usbd_cdc_if.o: D:\keil5\ARM\ARMCC\Bin\..\include\stdio.h
-sentry_chassis_test\usbd_cdc_if.o: D:\keil5\ARM\ARMCC\Bin\..\include\stdlib.h
-sentry_chassis_test\usbd_cdc_if.o: D:\keil5\ARM\ARMCC\Bin\..\include\string.h
+sentry_chassis_test\usbd_cdc_if.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdio.h
+sentry_chassis_test\usbd_cdc_if.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdlib.h
+sentry_chassis_test\usbd_cdc_if.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\string.h
 sentry_chassis_test\usbd_cdc_if.o: ../Drivers/CMSIS/Device/ST/STM32F4xx/Include/stm32f4xx.h
 sentry_chassis_test\usbd_cdc_if.o: ../Drivers/CMSIS/Device/ST/STM32F4xx/Include/stm32f407xx.h
 sentry_chassis_test\usbd_cdc_if.o: ../Drivers/CMSIS/Include/core_cm4.h
-sentry_chassis_test\usbd_cdc_if.o: D:\keil5\ARM\ARMCC\Bin\..\include\stdint.h
+sentry_chassis_test\usbd_cdc_if.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdint.h
 sentry_chassis_test\usbd_cdc_if.o: ../Drivers/CMSIS/Include/cmsis_version.h
 sentry_chassis_test\usbd_cdc_if.o: ../Drivers/CMSIS/Include/cmsis_compiler.h
 sentry_chassis_test\usbd_cdc_if.o: ../Drivers/CMSIS/Include/cmsis_armcc.h
@@ -22,7 +22,7 @@ sentry_chassis_test\usbd_cdc_if.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx
 sentry_chassis_test\usbd_cdc_if.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_def.h
 sentry_chassis_test\usbd_cdc_if.o: ../Drivers/CMSIS/Device/ST/STM32F4xx/Include/stm32f4xx.h
 sentry_chassis_test\usbd_cdc_if.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy/stm32_hal_legacy.h
-sentry_chassis_test\usbd_cdc_if.o: D:\keil5\ARM\ARMCC\Bin\..\include\stddef.h
+sentry_chassis_test\usbd_cdc_if.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stddef.h
 sentry_chassis_test\usbd_cdc_if.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_rcc_ex.h
 sentry_chassis_test\usbd_cdc_if.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_gpio.h
 sentry_chassis_test\usbd_cdc_if.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_gpio_ex.h
@@ -50,7 +50,7 @@ sentry_chassis_test\usbd_cdc_if.o: ../Drivers/USB/usbd_ioreq.h
 sentry_chassis_test\usbd_cdc_if.o: ../Drivers/USB/usbd_ctlreq.h
 sentry_chassis_test\usbd_cdc_if.o: ../application/inc/pc_serial.h
 sentry_chassis_test\usbd_cdc_if.o: ../components/algorithm/inc/algorithmOfCRC.h
-sentry_chassis_test\usbd_cdc_if.o: D:\keil5\ARM\ARMCC\Bin\..\include\math.h
+sentry_chassis_test\usbd_cdc_if.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\math.h
 sentry_chassis_test\usbd_cdc_if.o: ../Task/inc/ins_task.h
 sentry_chassis_test\usbd_cdc_if.o: ../components/devices/inc/BMI088driver.h
 sentry_chassis_test\usbd_cdc_if.o: ../Inc/main.h
@@ -107,7 +107,10 @@ sentry_chassis_test\usbd_cdc_if.o: ../components/motor/inc/DM_Motor.h
 sentry_chassis_test\usbd_cdc_if.o: ../components/motor/inc/M2006.h
 sentry_chassis_test\usbd_cdc_if.o: ../components/algorithm/inc/TD.h
 sentry_chassis_test\usbd_cdc_if.o: ../config/gimbal_config.h
+sentry_chassis_test\usbd_cdc_if.o: ../application/inc/GimbalSystemIDConfig.h
 sentry_chassis_test\usbd_cdc_if.o: ../components/algorithm/inc/SignalGenerator.h
+sentry_chassis_test\usbd_cdc_if.o: ../application/inc/GimbalSystemID.h
+sentry_chassis_test\usbd_cdc_if.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdbool.h
 sentry_chassis_test\usbd_cdc_if.o: ../application/inc/pc_serial.h
 sentry_chassis_test\usbd_cdc_if.o: ../application/inc/ToggleBullet.h
 sentry_chassis_test\usbd_cdc_if.o: ../config/toggle_config.h

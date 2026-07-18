@@ -34,10 +34,10 @@ void Can1SendSentryCmd(uint32_t sentry_cmd);
 
 // 新增: 转发0x0307地图路径 (2026-07-11协议 DownlinkTypeID=0x02)
 // TODO: 多帧CAN分段传输 (105B > 8B DLC)
-void Can1SendMapPath(uint8_t *map_data_105);
+void Can1SendMapPath(const uint8_t *map_data_105);
 
 // 新增: 转发0x0308自定义信息 (2026-07-11协议 DownlinkTypeID=0x03)
 // TODO: 多帧CAN分段传输 (34B > 8B DLC)
-void Can1SendCustomInfo(uint8_t *custom_data_34);
+void Can1SendCustomInfo(const uint8_t *custom_data_34);
 
 #endif

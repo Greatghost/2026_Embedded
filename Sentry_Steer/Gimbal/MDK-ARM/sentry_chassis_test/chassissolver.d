@@ -1,11 +1,11 @@
 sentry_chassis_test\chassissolver.o: ..\application\src\ChassisSolver.c
 sentry_chassis_test\chassissolver.o: ../application/inc/ChassisSolver.h
 sentry_chassis_test\chassissolver.o: ../application/inc/remote_control.h
-sentry_chassis_test\chassissolver.o: D:\keil5\ARM\ARMCC\Bin\..\include\string.h
-sentry_chassis_test\chassissolver.o: D:\keil5\ARM\ARMCC\Bin\..\include\stdint.h
-sentry_chassis_test\chassissolver.o: D:\keil5\ARM\ARMCC\Bin\..\include\math.h
-sentry_chassis_test\chassissolver.o: D:\keil5\ARM\ARMCC\Bin\..\include\stdio.h
-sentry_chassis_test\chassissolver.o: D:\keil5\ARM\ARMCC\Bin\..\include\stdlib.h
+sentry_chassis_test\chassissolver.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\string.h
+sentry_chassis_test\chassissolver.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdint.h
+sentry_chassis_test\chassissolver.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\math.h
+sentry_chassis_test\chassissolver.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdio.h
+sentry_chassis_test\chassissolver.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdlib.h
 sentry_chassis_test\chassissolver.o: ../components/tools/inc/debug.h
 sentry_chassis_test\chassissolver.o: ../components/tools/inc/tools.h
 sentry_chassis_test\chassissolver.o: ../bsp/boards/inc/bsp_dwt.h
@@ -23,7 +23,7 @@ sentry_chassis_test\chassissolver.o: ../Drivers/CMSIS/Include/mpu_armv7.h
 sentry_chassis_test\chassissolver.o: ../Drivers/CMSIS/Device/ST/STM32F4xx/Include/system_stm32f4xx.h
 sentry_chassis_test\chassissolver.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h
 sentry_chassis_test\chassissolver.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy/stm32_hal_legacy.h
-sentry_chassis_test\chassissolver.o: D:\keil5\ARM\ARMCC\Bin\..\include\stddef.h
+sentry_chassis_test\chassissolver.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stddef.h
 sentry_chassis_test\chassissolver.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_rcc_ex.h
 sentry_chassis_test\chassissolver.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_gpio.h
 sentry_chassis_test\chassissolver.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_gpio_ex.h
@@ -102,7 +102,10 @@ sentry_chassis_test\chassissolver.o: ../components/motor/inc/DM_Motor.h
 sentry_chassis_test\chassissolver.o: ../components/motor/inc/M2006.h
 sentry_chassis_test\chassissolver.o: ../components/algorithm/inc/TD.h
 sentry_chassis_test\chassissolver.o: ../config/gimbal_config.h
+sentry_chassis_test\chassissolver.o: ../application/inc/GimbalSystemIDConfig.h
 sentry_chassis_test\chassissolver.o: ../components/algorithm/inc/SignalGenerator.h
+sentry_chassis_test\chassissolver.o: ../application/inc/GimbalSystemID.h
+sentry_chassis_test\chassissolver.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdbool.h
 sentry_chassis_test\chassissolver.o: ../application/inc/pc_serial.h
 sentry_chassis_test\chassissolver.o: ../components/algorithm/inc/algorithmOfCRC.h
 sentry_chassis_test\chassissolver.o: ../application/inc/ChassisGet.h

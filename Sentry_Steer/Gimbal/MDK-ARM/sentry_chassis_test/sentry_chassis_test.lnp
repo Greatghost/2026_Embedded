@@ -1,4 +1,4 @@
---cpu=Cortex-M4.fp.sp
+--cpu=Cortex-M4.fp
 "sentry_chassis_test\startup_stm32f407xx.o"
 "sentry_chassis_test\arm_atan2_f32.o"
 "sentry_chassis_test\main.o"
@@ -65,6 +65,8 @@
 "sentry_chassis_test\chassissolver.o"
 "sentry_chassis_test\frictionwheel.o"
 "sentry_chassis_test\gimbal.o"
+"sentry_chassis_test\gimbalsystemid.o"
+"sentry_chassis_test\gimbalsystemidconfig.o"
 "sentry_chassis_test\pc_serial.o"
 "sentry_chassis_test\remote_control.o"
 "sentry_chassis_test\togglebullet.o"

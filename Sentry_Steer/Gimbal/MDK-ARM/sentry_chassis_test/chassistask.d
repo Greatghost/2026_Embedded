@@ -1,9 +1,9 @@
 sentry_chassis_test\chassistask.o: ..\Task\src\ChassisTask.c
 sentry_chassis_test\chassistask.o: ../Task/inc/ChassisTask.h
 sentry_chassis_test\chassistask.o: ../Inc/FreeRTOSConfig.h
-sentry_chassis_test\chassistask.o: D:\keil5\ARM\ARMCC\Bin\..\include\stdint.h
+sentry_chassis_test\chassistask.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdint.h
 sentry_chassis_test\chassistask.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/FreeRTOS.h
-sentry_chassis_test\chassistask.o: D:\keil5\ARM\ARMCC\Bin\..\include\stddef.h
+sentry_chassis_test\chassistask.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stddef.h
 sentry_chassis_test\chassistask.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/projdefs.h
 sentry_chassis_test\chassistask.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/portable.h
 sentry_chassis_test\chassistask.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/deprecated_definitions.h
@@ -13,10 +13,10 @@ sentry_chassis_test\chassistask.o: ../Middlewares/Third_Party/FreeRTOS/Source/in
 sentry_chassis_test\chassistask.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/list.h
 sentry_chassis_test\chassistask.o: ../application/inc/ChassisSolver.h
 sentry_chassis_test\chassistask.o: ../application/inc/remote_control.h
-sentry_chassis_test\chassistask.o: D:\keil5\ARM\ARMCC\Bin\..\include\string.h
-sentry_chassis_test\chassistask.o: D:\keil5\ARM\ARMCC\Bin\..\include\math.h
-sentry_chassis_test\chassistask.o: D:\keil5\ARM\ARMCC\Bin\..\include\stdio.h
-sentry_chassis_test\chassistask.o: D:\keil5\ARM\ARMCC\Bin\..\include\stdlib.h
+sentry_chassis_test\chassistask.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\string.h
+sentry_chassis_test\chassistask.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\math.h
+sentry_chassis_test\chassistask.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdio.h
+sentry_chassis_test\chassistask.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdlib.h
 sentry_chassis_test\chassistask.o: ../components/tools/inc/debug.h
 sentry_chassis_test\chassistask.o: ../components/tools/inc/tools.h
 sentry_chassis_test\chassistask.o: ../bsp/boards/inc/bsp_dwt.h
@@ -103,7 +103,10 @@ sentry_chassis_test\chassistask.o: ../components/motor/inc/DM_Motor.h
 sentry_chassis_test\chassistask.o: ../components/motor/inc/M2006.h
 sentry_chassis_test\chassistask.o: ../components/algorithm/inc/TD.h
 sentry_chassis_test\chassistask.o: ../config/gimbal_config.h
+sentry_chassis_test\chassistask.o: ../application/inc/GimbalSystemIDConfig.h
 sentry_chassis_test\chassistask.o: ../components/algorithm/inc/SignalGenerator.h
+sentry_chassis_test\chassistask.o: ../application/inc/GimbalSystemID.h
+sentry_chassis_test\chassistask.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdbool.h
 sentry_chassis_test\chassistask.o: ../application/inc/pc_serial.h
 sentry_chassis_test\chassistask.o: ../components/algorithm/inc/algorithmOfCRC.h
 sentry_chassis_test\chassistask.o: ../application/inc/ChassisGet.h

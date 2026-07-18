@@ -1,7 +1,7 @@
 sentry_chassis_test\freertos.o: ../Src/freertos.c
 sentry_chassis_test\freertos.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/FreeRTOS.h
-sentry_chassis_test\freertos.o: D:\keil5\ARM\ARMCC\Bin\..\include\stddef.h
-sentry_chassis_test\freertos.o: D:\keil5\ARM\ARMCC\Bin\..\include\stdint.h
+sentry_chassis_test\freertos.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stddef.h
+sentry_chassis_test\freertos.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdint.h
 sentry_chassis_test\freertos.o: ../Inc/FreeRTOSConfig.h
 sentry_chassis_test\freertos.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/projdefs.h
 sentry_chassis_test\freertos.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/portable.h
@@ -62,9 +62,9 @@ sentry_chassis_test\freertos.o: ../Inc/usart.h
 sentry_chassis_test\freertos.o: ../bsp/usb/inc/usb_device.h
 sentry_chassis_test\freertos.o: ../Drivers/USB/usbd_def.h
 sentry_chassis_test\freertos.o: ../bsp/usb/inc/usbd_conf.h
-sentry_chassis_test\freertos.o: D:\keil5\ARM\ARMCC\Bin\..\include\stdio.h
-sentry_chassis_test\freertos.o: D:\keil5\ARM\ARMCC\Bin\..\include\stdlib.h
-sentry_chassis_test\freertos.o: D:\keil5\ARM\ARMCC\Bin\..\include\string.h
+sentry_chassis_test\freertos.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdio.h
+sentry_chassis_test\freertos.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdlib.h
+sentry_chassis_test\freertos.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\string.h
 sentry_chassis_test\freertos.o: ../Inc/gpio.h
 sentry_chassis_test\freertos.o: ../bsp/usb/inc/usbd_cdc_if.h
 sentry_chassis_test\freertos.o: ../Drivers/USB/usbd_cdc.h
@@ -75,7 +75,7 @@ sentry_chassis_test\freertos.o: ../Drivers/USB/usbd_ctlreq.h
 sentry_chassis_test\freertos.o: ../bsp/boards/inc/bsp_dwt.h
 sentry_chassis_test\freertos.o: ../Middlewares/ST/ARM/DSP/Inc/arm_math.h
 sentry_chassis_test\freertos.o: ../Drivers/CMSIS/Include/core_cm4.h
-sentry_chassis_test\freertos.o: D:\keil5\ARM\ARMCC\Bin\..\include\math.h
+sentry_chassis_test\freertos.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\math.h
 sentry_chassis_test\freertos.o: ../components/devices/inc/BMI088driver.h
 sentry_chassis_test\freertos.o: ../components/tools/inc/struct_typedef.h
 sentry_chassis_test\freertos.o: ../bsp/boards/inc/bsp_rc.h
@@ -104,7 +104,10 @@ sentry_chassis_test\freertos.o: ../components/motor/inc/DM_Motor.h
 sentry_chassis_test\freertos.o: ../components/motor/inc/M2006.h
 sentry_chassis_test\freertos.o: ../components/algorithm/inc/TD.h
 sentry_chassis_test\freertos.o: ../config/gimbal_config.h
+sentry_chassis_test\freertos.o: ../application/inc/GimbalSystemIDConfig.h
 sentry_chassis_test\freertos.o: ../components/algorithm/inc/SignalGenerator.h
+sentry_chassis_test\freertos.o: ../application/inc/GimbalSystemID.h
+sentry_chassis_test\freertos.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdbool.h
 sentry_chassis_test\freertos.o: ../application/inc/pc_serial.h
 sentry_chassis_test\freertos.o: ../components/algorithm/inc/algorithmOfCRC.h
 sentry_chassis_test\freertos.o: ../application/inc/ChassisGet.h

@@ -378,7 +378,7 @@ void Can1SendSentryCmd(uint32_t sentry_cmd)
 
 // 新增: 转发0x0307地图路径给底盘 (2026-07-11协议)
 // TODO: 实现多帧CAN分段传输 (105B payload)
-void Can1SendMapPath(uint8_t *map_data_105)
+void Can1SendMapPath(const uint8_t *map_data_105)
 {
 	(void)map_data_105;
 	// Stub: 待实现多帧传输
@@ -386,7 +386,7 @@ void Can1SendMapPath(uint8_t *map_data_105)
 
 // 新增: 转发0x0308自定义信息给底盘 (2026-07-11协议)
 // TODO: 实现多帧CAN分段传输 (34B payload)
-void Can1SendCustomInfo(uint8_t *custom_data_34)
+void Can1SendCustomInfo(const uint8_t *custom_data_34)
 {
 	(void)custom_data_34;
 	// Stub: 待实现多帧传输

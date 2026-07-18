@@ -460,9 +460,8 @@ void Feedforward_Init(
     if (ref_ddot_ols_order > 2)
         OLS_Init(&ffc->Ref_ddot_OLS, ref_ddot_ols_order);
 
-    DWT_GetDeltaT(&ffc->DWT_CNT);
-
-    ffc->Output = 0;
+    ffc->dt = 0.002f;
+    Feedforward_Reset(ffc, 0.0f);
 }
 
 /**
@@ -497,7 +496,7 @@ float Feedforward_Calculate(Feedforward_t *ffc, float ref)
     // calculate feed-forward controller output
     ffc->Output = ffc->c[0] * ffc->Ref + ffc->c[1] * ffc->Ref_dot + ffc->c[2] * ffc->Ref_ddot;
 
-    LIMIT_MAX_MIN(ffc->Output, ffc->MaxOut, -ffc->MaxOut);
+    ffc->Output = LIMIT_MAX_MIN(ffc->Output, ffc->MaxOut, -ffc->MaxOut);
 
     ffc->Last_Ref = ffc->Ref;
     ffc->Last_Ref_dot = ffc->Ref_dot;
@@ -507,7 +506,39 @@ float Feedforward_Calculate(Feedforward_t *ffc, float ref)
 
 void Feedforward_Clear(Feedforward_t *ffc)
 {
-    ffc->Ref = ffc->Ref_dot = ffc->Ref_ddot = 0;
-    ffc->Output = ffc->Last_Ref = ffc->Last_Ref_dot = 0;
+    Feedforward_Reset(ffc, 0.0f);
+}
+
+void Feedforward_Reset(Feedforward_t *ffc, float ref)
+{
+    float reset_dt;
+
+    if (ffc == NULL)
+    {
+        return;
+    }
+
+    reset_dt = ffc->dt;
+    if (reset_dt != reset_dt || reset_dt <= 0.0f || reset_dt > 0.1f)
+    {
+        reset_dt = 0.002f;
+    }
+
+    ffc->Ref = ref;
+    ffc->Last_Ref = ref;
+    ffc->Ref_dot = 0.0f;
+    ffc->Ref_ddot = 0.0f;
+    ffc->Last_Ref_dot = 0.0f;
+    ffc->Output = 0.0f;
+
+    if (ffc->Ref_dot_OLS_Order > 2U)
+    {
+        OLS_Reset(&ffc->Ref_dot_OLS, reset_dt, ref);
+    }
+    if (ffc->Ref_ddot_OLS_Order > 2U)
+    {
+        OLS_Reset(&ffc->Ref_ddot_OLS, reset_dt, 0.0f);
+    }
+
     DWT_GetDeltaT(&ffc->DWT_CNT);
 }

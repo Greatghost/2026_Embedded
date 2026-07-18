@@ -1,10 +1,10 @@
 sentry_chassis_test\gimbal.o: ..\application\src\Gimbal.c
 sentry_chassis_test\gimbal.o: ../application/inc/Gimbal.h
-sentry_chassis_test\gimbal.o: D:\keil5\ARM\ARMCC\Bin\..\include\math.h
+sentry_chassis_test\gimbal.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\math.h
 sentry_chassis_test\gimbal.o: ../components/algorithm/inc/pid.h
-sentry_chassis_test\gimbal.o: D:\keil5\ARM\ARMCC\Bin\..\include\stdint.h
-sentry_chassis_test\gimbal.o: D:\keil5\ARM\ARMCC\Bin\..\include\string.h
-sentry_chassis_test\gimbal.o: D:\keil5\ARM\ARMCC\Bin\..\include\stdlib.h
+sentry_chassis_test\gimbal.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdint.h
+sentry_chassis_test\gimbal.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\string.h
+sentry_chassis_test\gimbal.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdlib.h
 sentry_chassis_test\gimbal.o: ../components/algorithm/inc/user_lib.h
 sentry_chassis_test\gimbal.o: ../Middlewares/ST/ARM/DSP/Inc/arm_math.h
 sentry_chassis_test\gimbal.o: ../Drivers/CMSIS/Include/core_cm4.h
@@ -24,7 +24,7 @@ sentry_chassis_test\gimbal.o: ../Drivers/CMSIS/Include/mpu_armv7.h
 sentry_chassis_test\gimbal.o: ../Drivers/CMSIS/Device/ST/STM32F4xx/Include/system_stm32f4xx.h
 sentry_chassis_test\gimbal.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h
 sentry_chassis_test\gimbal.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy/stm32_hal_legacy.h
-sentry_chassis_test\gimbal.o: D:\keil5\ARM\ARMCC\Bin\..\include\stddef.h
+sentry_chassis_test\gimbal.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stddef.h
 sentry_chassis_test\gimbal.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_rcc_ex.h
 sentry_chassis_test\gimbal.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_gpio.h
 sentry_chassis_test\gimbal.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_gpio_ex.h
@@ -48,7 +48,7 @@ sentry_chassis_test\gimbal.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_
 sentry_chassis_test\gimbal.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_ll_usb.h
 sentry_chassis_test\gimbal.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_pcd_ex.h
 sentry_chassis_test\gimbal.o: ../components/motor/inc/GM6020.h
-sentry_chassis_test\gimbal.o: D:\keil5\ARM\ARMCC\Bin\..\include\stdio.h
+sentry_chassis_test\gimbal.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdio.h
 sentry_chassis_test\gimbal.o: ../components/tools/inc/ZeroCheck.h
 sentry_chassis_test\gimbal.o: ../components/algorithm/inc/my_filter.h
 sentry_chassis_test\gimbal.o: ../Task/inc/ins_task.h
@@ -100,4 +100,8 @@ sentry_chassis_test\gimbal.o: ../components/motor/inc/DM_Motor.h
 sentry_chassis_test\gimbal.o: ../components/motor/inc/M2006.h
 sentry_chassis_test\gimbal.o: ../components/algorithm/inc/TD.h
 sentry_chassis_test\gimbal.o: ../config/gimbal_config.h
+sentry_chassis_test\gimbal.o: ../application/inc/GimbalSystemIDConfig.h
 sentry_chassis_test\gimbal.o: ../components/algorithm/inc/SignalGenerator.h
+sentry_chassis_test\gimbal.o: ../application/inc/GimbalSystemID.h
+sentry_chassis_test\gimbal.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdbool.h
+sentry_chassis_test\gimbal.o: ../Task/inc/Offline_Task.h

@@ -1,11 +1,11 @@
 sentry_chassis_test\signalgenerator.o: ..\components\algorithm\src\SignalGenerator.c
 sentry_chassis_test\signalgenerator.o: ../components/algorithm/inc/SignalGenerator.h
-sentry_chassis_test\signalgenerator.o: D:\keil5\ARM\ARMCC\Bin\..\include\stdint.h
+sentry_chassis_test\signalgenerator.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdint.h
 sentry_chassis_test\signalgenerator.o: ../components/tools/inc/tools.h
-sentry_chassis_test\signalgenerator.o: D:\keil5\ARM\ARMCC\Bin\..\include\string.h
-sentry_chassis_test\signalgenerator.o: D:\keil5\ARM\ARMCC\Bin\..\include\math.h
-sentry_chassis_test\signalgenerator.o: D:\keil5\ARM\ARMCC\Bin\..\include\stdio.h
-sentry_chassis_test\signalgenerator.o: D:\keil5\ARM\ARMCC\Bin\..\include\stdlib.h
+sentry_chassis_test\signalgenerator.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\string.h
+sentry_chassis_test\signalgenerator.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\math.h
+sentry_chassis_test\signalgenerator.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdio.h
+sentry_chassis_test\signalgenerator.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdlib.h
 sentry_chassis_test\signalgenerator.o: ../Middlewares/ST/ARM/DSP/Inc/arm_math.h
 sentry_chassis_test\signalgenerator.o: ../Drivers/CMSIS/Include/core_cm4.h
 sentry_chassis_test\signalgenerator.o: ../Drivers/CMSIS/Include/cmsis_version.h

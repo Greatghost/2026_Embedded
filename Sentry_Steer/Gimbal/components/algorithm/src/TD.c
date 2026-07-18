@@ -34,7 +34,8 @@ float TD_Calculate(TD_t *td, float input)
     d = td->r * td->h0 * td->h0;
     a0 = td->dx * td->h0;
     y = td->x - td->Input + a0;
-    a1 = Sqrt(d * (d + 8 * abs(y)));
+    /* y为浮点角度误差；使用整数abs会截断|y|<1的近目标信息。 */
+    a1 = Sqrt(d * (d + 8.0f * fabsf(y)));
     a2 = a0 + sign(y) * (a1 - d) / 2;
     a = (a0 + y) * (sign(y + d) - sign(y - d)) / 2 + a2 * (1 - (sign(y + d) - sign(y - d)) / 2);
     fhan = -td->r * a / d * (sign(a + d) - sign(a - d)) / 2 -

@@ -1,10 +1,10 @@
 sentry_chassis_test\gm6020.o: ..\components\motor\src\GM6020.c
 sentry_chassis_test\gm6020.o: ../components/motor/inc/GM6020.h
-sentry_chassis_test\gm6020.o: D:\keil5\ARM\ARMCC\Bin\..\include\string.h
-sentry_chassis_test\gm6020.o: D:\keil5\ARM\ARMCC\Bin\..\include\stdint.h
-sentry_chassis_test\gm6020.o: D:\keil5\ARM\ARMCC\Bin\..\include\math.h
-sentry_chassis_test\gm6020.o: D:\keil5\ARM\ARMCC\Bin\..\include\stdio.h
-sentry_chassis_test\gm6020.o: D:\keil5\ARM\ARMCC\Bin\..\include\stdlib.h
+sentry_chassis_test\gm6020.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\string.h
+sentry_chassis_test\gm6020.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdint.h
+sentry_chassis_test\gm6020.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\math.h
+sentry_chassis_test\gm6020.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdio.h
+sentry_chassis_test\gm6020.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdlib.h
 sentry_chassis_test\gm6020.o: ../components/tools/inc/ZeroCheck.h
 sentry_chassis_test\gm6020.o: ../components/tools/inc/tools.h
 sentry_chassis_test\gm6020.o: ../components/algorithm/inc/my_filter.h

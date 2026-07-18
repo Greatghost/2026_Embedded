@@ -105,6 +105,38 @@ void OLS_Init(Ordinary_Least_Squares_t *OLS, uint16_t order)
 }
 
 /**
+ * @brief Reset OLS history to a constant signal.
+ *
+ * Pre-filling the window avoids interpreting the first sample after a control
+ * mode switch as a large derivative. deltax must be positive; a small safe
+ * default is used if the caller has no valid period yet.
+ */
+void OLS_Reset(Ordinary_Least_Squares_t *OLS, float deltax, float y)
+{
+    if (OLS == NULL || OLS->x == NULL || OLS->y == NULL || OLS->Order == 0)
+    {
+        return;
+    }
+
+    if (deltax != deltax || deltax <= 0.0f || deltax > 1.0f)
+    {
+        deltax = 0.002f;
+    }
+
+    for (uint16_t i = 0; i < OLS->Order; ++i)
+    {
+        OLS->x[i] = ((float)i - (float)(OLS->Order - 1U)) * deltax;
+        OLS->y[i] = y;
+    }
+
+    OLS->Count = OLS->Order;
+    OLS->k = 0.0f;
+    OLS->b = y;
+    OLS->StandardDeviation = 0.0f;
+    memset((void *)OLS->t, 0, sizeof(float) * 4);
+}
+
+/**
  * @brief          最小二乘法拟合
  * @param[in]      最小二乘法结构体
  * @param[in]      信号新样本距上一个样本时间间隔

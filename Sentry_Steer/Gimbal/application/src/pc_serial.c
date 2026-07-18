@@ -28,8 +28,13 @@ void PCSolve(void)
     LossUpdate(&global_debugger.pc_receive_debugger, 0.02);
 }
 
-void PCReceive(unsigned char *PCbuffer)
+void PCReceive(const unsigned char *PCbuffer, uint32_t length)
 {
+    if (length != PC_RECVBUF_SIZE)
+    {
+        return;
+    }
+
     #if ROBOT == GOBLIN
     if (PCbuffer[0] == '!' && PCbuffer[1] == 0 && PCbuffer[8] == 0) //TODO: 判断方式可能错误
     {
@@ -43,7 +48,7 @@ void PCReceive(unsigned char *PCbuffer)
         PCSolve();
     }
     #else
-    if (PCbuffer[0] == '!'  && Verify_CRC16_Check_Sum(PCbuffer, PC_RECVBUF_SIZE))
+    if (PCbuffer[0] == '!'  && Verify_CRC16_Check_Sum((uint8_t *)PCbuffer, PC_RECVBUF_SIZE))
     {
         memcpy(&pc_recv_data, PCbuffer, PC_RECVBUF_SIZE);
         PCSolve();
@@ -108,6 +113,11 @@ Nav_Cmd_t NAV_cmd;
 uint8_t current_posture = 0;
 extern BigYawController big_yaw_controller;
 
+static volatile uint32_t pc_control_last_rx_tick;
+static volatile uint8_t pc_control_received;
+static volatile uint32_t pc_control_sequence;
+static PCControlSnapshot_t pc_control_shadow;
+
 PC_StateControl PC_statecontrol;
 
 extern Shoot_Cmd_t Shoot_Cmd;
@@ -148,31 +158,118 @@ static uint8_t crc8_calc(const uint8_t *data, uint8_t len)
 	return crc;
 }
 
-void PCReceive(unsigned char *PCbuffer)
+uint8_t PCControlGetSnapshot(PCControlSnapshot_t *snapshot)
 {
+	uint32_t sequence_start;
+	uint32_t sequence_end;
+	uint32_t last_rx_tick;
+	uint8_t received;
+
+	if (snapshot == NULL)
+	{
+		return 0U;
+	}
+
+	for (;;)
+	{
+		sequence_start = pc_control_sequence;
+		if ((sequence_start & 1U) != 0U)
+		{
+			continue;
+		}
+
+		__DMB();
+		*snapshot = pc_control_shadow;
+		last_rx_tick = pc_control_last_rx_tick;
+		received = pc_control_received;
+		__DMB();
+		sequence_end = pc_control_sequence;
+
+		if (sequence_start == sequence_end && (sequence_end & 1U) == 0U)
+		{
+			break;
+		}
+	}
+
+	if (received == 0U)
+	{
+		return 0U;
+	}
+
+	return ((uint32_t)(HAL_GetTick() - last_rx_tick) <= PC_CONTROL_TIMEOUT_MS) ? 1U : 0U;
+}
+
+uint8_t PCControlIsOnline(void)
+{
+	PCControlSnapshot_t snapshot;
+	return PCControlGetSnapshot(&snapshot);
+}
+
+void PCReceive(const unsigned char *PCbuffer, uint32_t length)
+{
+	if (PCbuffer == NULL || length < 2U || PCbuffer[0] != '!')
+	{
+		return;
+	}
+	/* 与旧版一致：收到结构完整、帧头正确的PC帧即刷新通信心跳。 */
 	LossUpdate(&global_debugger.pc_receive_debugger, 0.02);
-	if(PCbuffer[0] != '!') return;
 
 	switch(PCbuffer[1])
 	{
 	case PC_DOWNLINK_CONTROL: // 0x00 — 13B GimbalControlFrame
 	{
-		GimbalControlFrame_t *f = (GimbalControlFrame_t *)PCbuffer;
-		pc_yaw = f->yaw;
-		pc_pitch = f->pitch;
-		NAV_cmd.Nav_Speed_x = f->vel_x / 50.0f;
-		NAV_cmd.Nav_Speed_y = f->vel_y / 50.0f;
-		Shoot_Cmd.Shoot_State = f->fire_code & 0x03;
-		PC_statecontrol.CapState = (f->fire_code >> 2) & 0x03;
-		PC_statecontrol.if_through_hole = (f->fire_code >> 4) & 0x01;
-		big_yaw_controller.big_yaw_mode = (f->fire_code >> 5) & 0x01;
-		PC_statecontrol.RotateState = (f->fire_code >> 6) & 0x03;
+		GimbalControlFrame_t frame;
+		uint32_t now;
+
+		if (length != sizeof(frame))
+		{
+			return;
+		}
+		memcpy(&frame, PCbuffer, sizeof(frame));
+		now = HAL_GetTick();
+
+		/* 奇偶序列锁保证控制任务只能取得完整的一帧命令。 */
+		pc_control_sequence++;
+		__DMB();
+		pc_control_shadow.yaw = frame.yaw;
+		pc_control_shadow.pitch = frame.pitch;
+		pc_control_shadow.nav_speed_x = frame.vel_x / 50.0f;
+		pc_control_shadow.nav_speed_y = frame.vel_y / 50.0f;
+		pc_control_shadow.nav_speed_w = 0.0f;
+		pc_control_shadow.shoot_state = frame.fire_code & 0x03U;
+		pc_control_shadow.cap_state = (frame.fire_code >> 2) & 0x03U;
+		pc_control_shadow.through_hole = (frame.fire_code >> 4) & 0x01U;
+		pc_control_shadow.big_yaw_mode = (frame.fire_code >> 5) & 0x01U;
+		pc_control_shadow.rotate_state = (frame.fire_code >> 6) & 0x03U;
+
+		/* 保留旧接口镜像；安全关键消费者改用PCControlGetSnapshot。 */
+		pc_yaw = frame.yaw;
+		pc_pitch = frame.pitch;
+		NAV_cmd.Nav_Speed_x = pc_control_shadow.nav_speed_x;
+		NAV_cmd.Nav_Speed_y = pc_control_shadow.nav_speed_y;
+		NAV_cmd.Nav_Speed_w = 0.0f;
+		Shoot_Cmd.Shoot_State = pc_control_shadow.shoot_state;
+		PC_statecontrol.CapState = pc_control_shadow.cap_state;
+		PC_statecontrol.if_through_hole = pc_control_shadow.through_hole;
+		big_yaw_controller.big_yaw_mode = pc_control_shadow.big_yaw_mode;
+		PC_statecontrol.RotateState = pc_control_shadow.rotate_state;
+		pc_control_last_rx_tick = now;
+		pc_control_received = 1U;
+		__DMB();
+		pc_control_sequence++;
 		break;
 	}
 	case PC_DOWNLINK_SENTRY_CMD: // 0x01 — 6B SentryCommandFrame
 	{
-		SentryCommandFrame_t *f = (SentryCommandFrame_t *)PCbuffer;
-		uint32_t cmd = f->sentry_cmd;
+		SentryCommandFrame_t frame;
+		uint32_t cmd;
+
+		if (length != sizeof(frame))
+		{
+			return;
+		}
+		memcpy(&frame, PCbuffer, sizeof(frame));
+		cmd = frame.sentry_cmd;
 		// 姿态提取 V2.0: bit21-23 (1~6)
 		uint8_t posture_from_cmd = (cmd >> 21) & 0x07;
 		if(posture_from_cmd >= 1 && posture_from_cmd <= 6)
@@ -181,18 +278,26 @@ void PCReceive(unsigned char *PCbuffer)
 		break;
 	}
 	case PC_DOWNLINK_MAP_PATH: // 0x02 — 107B, 转发0x0307
+		if (length != sizeof(MapPathFrame_t)) return;
 		Can1SendMapPath(PCbuffer + 2);
 		break;
 	case PC_DOWNLINK_CUSTOM_INFO: // 0x03 — 36B, 转发0x0308
+		if (length != sizeof(CustomInfoFrame_t)) return;
 		Can1SendCustomInfo(PCbuffer + 2);
 		break;
 	case PC_DOWNLINK_COORD: // 0x04 — 17B SentryCoordinateFrame
 	{
-		SentryCoordinateFrame_t *f = (SentryCoordinateFrame_t *)PCbuffer;
-		if(crc8_calc(PCbuffer, 16) == f->crc8)
+		SentryCoordinateFrame_t frame;
+
+		if (length != sizeof(frame))
 		{
-			sentry_position_x_cm = f->x_cm;
-			sentry_position_y_cm = f->y_cm;
+			return;
+		}
+		memcpy(&frame, PCbuffer, sizeof(frame));
+		if(crc8_calc(PCbuffer, 16) == frame.crc8)
+		{
+			sentry_position_x_cm = frame.x_cm;
+			sentry_position_y_cm = frame.y_cm;
 		}
 		break;
 	}
@@ -433,3 +538,86 @@ void SendtoPC(uint8_t data_type)
 	CDC_Transmit_FS(SendToPC_Buff,PC_SENDBUF_SIZE);
 }
 #endif
+
+void PCStreamReceive(const unsigned char *data, uint32_t length)
+{
+    static unsigned char frame_buffer[PC_RECVBUF_SIZE];
+    static uint32_t frame_length;
+    static uint32_t expected_length;
+	static uint32_t last_byte_tick;
+	const uint32_t now = HAL_GetTick();
+
+	if (data == NULL || length == 0U)
+	{
+		return;
+	}
+
+	/* 半帧长期未补齐时丢弃，避免下一帧被当成旧帧尾部。 */
+	if (frame_length != 0U && (uint32_t)(now - last_byte_tick) > 20U)
+	{
+		frame_length = 0U;
+		expected_length = 0U;
+	}
+	last_byte_tick = now;
+
+	for (uint32_t i = 0U; i < length; i++)
+	{
+		const unsigned char byte = data[i];
+
+		if (frame_length == 0U)
+		{
+			if (byte == '!')
+			{
+				frame_buffer[0] = byte;
+				frame_length = 1U;
+			}
+			continue;
+		}
+
+#if COMMUNICATION_CHOOSE == COMMUNICATION_OF_SENTRY
+		if (frame_length == 1U)
+		{
+			switch (byte)
+			{
+			case PC_DOWNLINK_CONTROL:
+				expected_length = sizeof(GimbalControlFrame_t);
+				break;
+			case PC_DOWNLINK_SENTRY_CMD:
+				expected_length = sizeof(SentryCommandFrame_t);
+				break;
+			case PC_DOWNLINK_MAP_PATH:
+				expected_length = sizeof(MapPathFrame_t);
+				break;
+			case PC_DOWNLINK_CUSTOM_INFO:
+				expected_length = sizeof(CustomInfoFrame_t);
+				break;
+			case PC_DOWNLINK_COORD:
+				expected_length = sizeof(SentryCoordinateFrame_t);
+				break;
+			default:
+				frame_length = (byte == '!') ? 1U : 0U;
+				expected_length = 0U;
+				continue;
+			}
+		}
+#else
+		expected_length = PC_RECVBUF_SIZE;
+#endif
+
+		if (frame_length >= sizeof(frame_buffer) ||
+			expected_length > sizeof(frame_buffer))
+		{
+			frame_length = 0U;
+			expected_length = 0U;
+			continue;
+		}
+
+		frame_buffer[frame_length++] = byte;
+		if (frame_length == expected_length)
+		{
+			PCReceive(frame_buffer, frame_length);
+			frame_length = 0U;
+			expected_length = 0U;
+		}
+	}
+}

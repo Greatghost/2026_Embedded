@@ -2,9 +2,9 @@ sentry_chassis_test\led_flow_task.o: ..\Task\src\led_flow_task.c
 sentry_chassis_test\led_flow_task.o: ../Task/inc/led_flow_task.h
 sentry_chassis_test\led_flow_task.o: ../components/tools/inc/struct_typedef.h
 sentry_chassis_test\led_flow_task.o: ../Inc/FreeRTOSConfig.h
-sentry_chassis_test\led_flow_task.o: D:\keil5\ARM\ARMCC\Bin\..\include\stdint.h
+sentry_chassis_test\led_flow_task.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdint.h
 sentry_chassis_test\led_flow_task.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/FreeRTOS.h
-sentry_chassis_test\led_flow_task.o: D:\keil5\ARM\ARMCC\Bin\..\include\stddef.h
+sentry_chassis_test\led_flow_task.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stddef.h
 sentry_chassis_test\led_flow_task.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/projdefs.h
 sentry_chassis_test\led_flow_task.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/portable.h
 sentry_chassis_test\led_flow_task.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/deprecated_definitions.h
@@ -65,9 +65,9 @@ sentry_chassis_test\led_flow_task.o: ../Inc/usart.h
 sentry_chassis_test\led_flow_task.o: ../bsp/usb/inc/usb_device.h
 sentry_chassis_test\led_flow_task.o: ../Drivers/USB/usbd_def.h
 sentry_chassis_test\led_flow_task.o: ../bsp/usb/inc/usbd_conf.h
-sentry_chassis_test\led_flow_task.o: D:\keil5\ARM\ARMCC\Bin\..\include\stdio.h
-sentry_chassis_test\led_flow_task.o: D:\keil5\ARM\ARMCC\Bin\..\include\stdlib.h
-sentry_chassis_test\led_flow_task.o: D:\keil5\ARM\ARMCC\Bin\..\include\string.h
+sentry_chassis_test\led_flow_task.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdio.h
+sentry_chassis_test\led_flow_task.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdlib.h
+sentry_chassis_test\led_flow_task.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\string.h
 sentry_chassis_test\led_flow_task.o: ../Inc/gpio.h
 sentry_chassis_test\led_flow_task.o: ../bsp/usb/inc/usbd_cdc_if.h
 sentry_chassis_test\led_flow_task.o: ../Drivers/USB/usbd_cdc.h
@@ -78,7 +78,7 @@ sentry_chassis_test\led_flow_task.o: ../Drivers/USB/usbd_ctlreq.h
 sentry_chassis_test\led_flow_task.o: ../bsp/boards/inc/bsp_dwt.h
 sentry_chassis_test\led_flow_task.o: ../Middlewares/ST/ARM/DSP/Inc/arm_math.h
 sentry_chassis_test\led_flow_task.o: ../Drivers/CMSIS/Include/core_cm4.h
-sentry_chassis_test\led_flow_task.o: D:\keil5\ARM\ARMCC\Bin\..\include\math.h
+sentry_chassis_test\led_flow_task.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\math.h
 sentry_chassis_test\led_flow_task.o: ../components/devices/inc/BMI088driver.h
 sentry_chassis_test\led_flow_task.o: ../bsp/boards/inc/bsp_rc.h
 sentry_chassis_test\led_flow_task.o: ../application/inc/remote_control.h

@@ -1,7 +1,7 @@
 sentry_chassis_test\croutine.o: ../Middlewares/Third_Party/FreeRTOS/Source/croutine.c
 sentry_chassis_test\croutine.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/FreeRTOS.h
-sentry_chassis_test\croutine.o: D:\keil5\ARM\ARMCC\Bin\..\include\stddef.h
-sentry_chassis_test\croutine.o: D:\keil5\ARM\ARMCC\Bin\..\include\stdint.h
+sentry_chassis_test\croutine.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stddef.h
+sentry_chassis_test\croutine.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdint.h
 sentry_chassis_test\croutine.o: ../Inc/FreeRTOSConfig.h
 sentry_chassis_test\croutine.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/projdefs.h
 sentry_chassis_test\croutine.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/portable.h

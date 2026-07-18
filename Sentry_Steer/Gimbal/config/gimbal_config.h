@@ -88,13 +88,18 @@
 #define GIMBAL_BIG_YAW_POS_FORWARD_COEF 0.6f // 角度环前馈系数
 #define GIMBAL_BIG_YAW_SPEED_FORWARD_COEF 0.f
 
-// #define GIMBAL_YAW_J 4.15f
-// #define GIMBAL_YAW_B 18.54f
-
-// 摩擦力模型调参
-// #define BORDER_FRICTION_SPEED 6.0f    // 临界计算摩擦力速度，大于此速度将是全摩擦力补偿
-// #define FRICTION_CURRENT_COMP 1500.0f // 辨识所得到的摩擦力电流发送值
-// #define FRICTION_FORWARD_COEF 0.0f    // 前馈补偿系数
+/*
+ * 大Yaw模型前馈（控制量单位为DM驱动的mN*m编码单位）:
+ *   u_ff = gain * (J * alpha_ref + B * omega_ref
+ *                   + C * sat(omega_ref / friction_blend_dps))
+ * 这里的初值只等价替代旧的经验速度/加速度前馈，C保持关闭；换车后必须实测标定。
+ */
+#define GIMBAL_BIG_YAW_MODEL_FF_ENABLE             1
+#define GIMBAL_BIG_YAW_MODEL_FF_J                  0.4f
+#define GIMBAL_BIG_YAW_MODEL_FF_B                  1.0f
+#define GIMBAL_BIG_YAW_MODEL_FF_C                  0.0f
+#define GIMBAL_BIG_YAW_MODEL_FF_FRICTION_BLEND_DPS 6.0f
+#define GIMBAL_BIG_YAW_MODEL_FF_GAIN               1.0f
 
 #elif ROBOT == TIGER
 
@@ -108,41 +113,23 @@
 #define GIMBAL_ANGLE_MIN_SOFT 271.0f // 缓冲限位: 271°~266°渐进收紧防振荡
 #define GIMBAL_ANGLE_MAX 328.0f
 
-// Pitch PID参数
-#define PITCH_ANGLE_KP      35.0f
-#define PITCH_ANGLE_KI       5.0f
-#define PITCH_ANGLE_KD       0.1f
-#define PITCH_ANGLE_MAXOUT   120.0f
-#define PITCH_ANGLE_ILIMIT   5.0f
-
-#define PITCH_SPEED_KP       30.0f
-#define PITCH_SPEED_KI        10.0f
-#define PITCH_SPEED_KD        0.0f
-#define PITCH_SPEED_MAXOUT    16000.0f
-
-// 动态Kp: 小误差时增强保持刚度抗后坐力 (注释此行即禁用)
-//#define USE_PITCH_DYNAMIC_KP
-#define PITCH_ANGLE_KP_HOLD  1.5f    // 角度误差<0.5°时Kp放大倍数
-#define PITCH_SPEED_KP_HOLD   1.5f    // 速度误差<10°/s时Kp放大倍数
-#define PITCH_SPEED_ILIMIT    0.0f
-
-// Pitch角度前馈 (目标角度速度→速度指令)
+// 旧串联角度前馈（并联PID下不参与控制，由pos_pitch_td.dx直接提供速度参考）
 #define PITCH_ANGLE_FF_VEL     0.0f
 #define PITCH_ANGLE_FF_ACC     0.05f
 #define PITCH_ANGLE_FF_JERK    0.0f
 #define PITCH_ANGLE_FF_MAXOUT  10.0f
 
-// Pitch速度前馈 (c[0]=速度系数, c[1]=加速度系数, c[2]=加加速度系数)
-#define PITCH_SPEED_FF_VEL     6.0f
-#define PITCH_SPEED_FF_ACC     0.1f
+// 旧通用速度前馈已由下方辨识得到的Pitch J/B/C物理模型替代。
+#define PITCH_SPEED_FF_VEL     0.0f
+#define PITCH_SPEED_FF_ACC     0.0f
 #define PITCH_SPEED_FF_JERK    0.0f
-#define PITCH_SPEED_FF_MAXOUT  500.0f
+#define PITCH_SPEED_FF_MAXOUT  0.0f
 
 // DM电机内环阻尼 (Kp=0: 纯MIT力矩控制)
 #define PITCH_DM_KP          0.0f
 #define PITCH_DM_KD          5.0f
 
-// 重力补偿 (注释此行即禁用)
+// 使用原车Pitch多项式重力补偿
 #define PITCH_GRAVITY_COMP_ENABLE
 
 // 大Yaw零点: 云台朝正前方时DM_Big_Yaw_Motor.P_Receive的值
@@ -175,16 +162,42 @@
 #define GIMBAL_BIG_YAW_POS_FORWARD_COEF 0.6f // 角度环前馈系数
 #define GIMBAL_BIG_YAW_SPEED_FORWARD_COEF 0.f
 
-// #define GIMBAL_YAW_J 4.15f
-// #define GIMBAL_YAW_B 18.54f
+/*
+ * 大Yaw模型前馈（控制量单位为DM驱动的mN*m编码单位）:
+ *   u_ff = gain * (J * alpha_ref + B * omega_ref
+ *                   + C * sat(omega_ref / friction_blend_dps))
+ * J/B/C取本车三次Yaw自动辨识结果的平均值。
+ */
+#define GIMBAL_BIG_YAW_MODEL_FF_ENABLE             1
+#define GIMBAL_BIG_YAW_MODEL_FF_J                  1.346f
+#define GIMBAL_BIG_YAW_MODEL_FF_B                  0.0f
+#define GIMBAL_BIG_YAW_MODEL_FF_C                  325.5f
+#define GIMBAL_BIG_YAW_MODEL_FF_FRICTION_BLEND_DPS 6.0f
+#define GIMBAL_BIG_YAW_MODEL_FF_GAIN               1.0f
 
-// 摩擦力模型调参
-// #define BORDER_FRICTION_SPEED 6.0f    // 临界计算摩擦力速度，大于此速度将是全摩擦力补偿
-// #define FRICTION_CURRENT_COMP 1500.0f // 辨识所得到的摩擦力电流发送值
-// #define FRICTION_FORWARD_COEF 0.0f    // 前馈补偿系数
 
 
+#endif
 
+/*
+ * crossing_hole-main GimbalSystemID 模块使用的模型初值接口。
+ * Yaw 直接复用已接入的大 Yaw J/B/C；Pitch 当前正常控制使用多项式重力补偿，
+ * 因此首次必须从 STEP_ALL（GRAVITY -> BC -> J）开始，或先分步得到并回填这些值。
+ */
+#define GIMBAL_YAW_J       GIMBAL_BIG_YAW_MODEL_FF_J
+#define GIMBAL_YAW_B       GIMBAL_BIG_YAW_MODEL_FF_B
+#define GIMBAL_YAW_C       GIMBAL_BIG_YAW_MODEL_FF_C
+
+#define GIMBAL_PITCH_SIN   1933.07568f
+#define GIMBAL_PITCH_COS    336.884491f
+#define GIMBAL_PITCH_B        1.11311018f
+#define GIMBAL_PITCH_C      442.845795f
+#define GIMBAL_PITCH_J     0.0f
+#define GIMBAL_PITCH_FRICTION_BLEND_DPS 6.0f
+
+#if (GIMBAL_BIG_YAW_MODEL_FF_ENABLE != 0) && \
+    (GIMBAL_BIG_YAW_MODEL_FF_ENABLE != 1)
+#error "GIMBAL_BIG_YAW_MODEL_FF_ENABLE must be 0 or 1"
 #endif
 
 #endif

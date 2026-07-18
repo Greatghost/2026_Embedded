@@ -3,9 +3,138 @@
 uint8_t motor_send_data[2][SEND_ID_NUMS][8];
 uint8_t is_has_motor_data[2][SEND_ID_NUMS];
 
-SI_t SI_obeject;
 SawToothWave saw_tooth_wave;
 extern BigYawController big_yaw_controller;
+
+#define PC_GIMBAL_RECOVERY_PITCH_RATE_DPS 100.0f
+#define PC_GIMBAL_RECOVERY_YAW_RATE_DPS   180.0f
+#define PC_GIMBAL_RECOVERY_DEFAULT_DT       0.002f
+#define PC_GIMBAL_RECOVERY_MAX_DT           0.020f
+
+static uint8_t pc_gimbal_target_armed = 0U;
+static uint8_t pc_gimbal_recovery_active = 1U;
+
+/**
+ * @brief 手动模式接管云台时执行无扰切换
+ *
+ * 上位机模式会持续覆盖 target_pitch_angle/target_big_yaw_angle。切回手动
+ * 模式时，必须先用当前反馈角重新建立目标，并清除控制器中属于上一个目标
+ * 的历史状态，否则手动模式会继续追赶最后一帧上位机目标。
+ */
+static void Gimbal_Manual_Mode_Enter(void)
+{
+    const float current_pitch = gimbal_controller.gyro_pitch_angle;
+    const float current_yaw = big_yaw_controller.dealed_big_yaw_gyro;
+
+    gimbal_controller.target_pitch_angle = current_pitch;
+    gimbal_controller.set_pitch_angle = current_pitch;
+    gimbal_controller.set_pitch_speed = 0.0f;
+    gimbal_controller.set_pitch_current = 0.0f;
+
+    PID_Clear(&gimbal_controller.pitch_angle_pid);
+    PID_Clear(&gimbal_controller.pitch_speed_pid);
+    PID_Clear(&gimbal_controller.pitch_current_pid);
+    Feedforward_Reset(&gimbal_controller.pitch_angle_forward, current_pitch);
+    Feedforward_Reset(&gimbal_controller.pitch_speed_forward, 0.0f);
+
+    gimbal_controller.target_big_yaw_angle = current_yaw;
+    gimbal_controller.set_big_yaw_angle = current_yaw;
+    gimbal_controller.set_big_yaw_speed = 0.0f;
+    gimbal_controller.set_big_yaw_current = 0.0f;
+
+    PID_Clear(&gimbal_controller.big_yaw_angle_pid);
+    PID_Clear(&gimbal_controller.big_yaw_speed_pid);
+    Feedforward_Reset(&gimbal_controller.big_yaw_angle_forward, current_yaw);
+    Feedforward_Reset(&gimbal_controller.big_yaw_speed_forward, 0.0f);
+    TD_Clear(&gimbal_controller.pos_big_yaw_td, current_yaw);
+}
+
+static float Gimbal_PC_Target_Slew(float current, float target, float max_step)
+{
+    const float error = target - current;
+
+    if (error > max_step)
+    {
+        return current + max_step;
+    }
+    if (error < -max_step)
+    {
+        return current - max_step;
+    }
+    return target;
+}
+
+static void Gimbal_PC_Target_Disarm(void)
+{
+    pc_gimbal_target_armed = 0U;
+    pc_gimbal_recovery_active = 1U;
+}
+
+/* PC目标只从同一帧快照更新；离线时立即无扰同步到当前反馈。 */
+static void Gimbal_PC_Target_Update(void)
+{
+    PCControlSnapshot_t pc_control;
+    float recovery_dt;
+    float pitch_step;
+    float yaw_step;
+
+    if (PCControlGetSnapshot(&pc_control) == 0U)
+    {
+        if (pc_gimbal_target_armed != 0U)
+        {
+            Gimbal_Manual_Mode_Enter();
+        }
+        else
+        {
+            gimbal_controller.target_pitch_angle = gimbal_controller.gyro_pitch_angle;
+            gimbal_controller.target_big_yaw_angle = big_yaw_controller.dealed_big_yaw_gyro;
+        }
+        Gimbal_PC_Target_Disarm();
+        return;
+    }
+
+    if (pc_gimbal_target_armed == 0U)
+    {
+        Gimbal_Manual_Mode_Enter();
+        pc_gimbal_target_armed = 1U;
+        pc_gimbal_recovery_active = 1U;
+    }
+
+    if (fabsf(gimbal_controller.gyro_pitch_angle - pc_control.pitch) > 60.0f ||
+        fabsf(big_yaw_controller.dealed_big_yaw_gyro - pc_control.yaw) > 70.0f)
+    {
+        gimbal_controller.target_pitch_angle = gimbal_controller.gyro_pitch_angle;
+        gimbal_controller.target_big_yaw_angle = big_yaw_controller.dealed_big_yaw_gyro;
+        pc_gimbal_recovery_active = 1U;
+        return;
+    }
+
+    if (pc_gimbal_recovery_active == 0U)
+    {
+        gimbal_controller.target_pitch_angle = pc_control.pitch;
+        gimbal_controller.target_big_yaw_angle = pc_control.yaw;
+        return;
+    }
+
+    recovery_dt = gimbal_controller.delta_t;
+    if (!(recovery_dt > 0.0f && recovery_dt <= PC_GIMBAL_RECOVERY_MAX_DT))
+    {
+        recovery_dt = PC_GIMBAL_RECOVERY_DEFAULT_DT;
+    }
+    pitch_step = PC_GIMBAL_RECOVERY_PITCH_RATE_DPS * recovery_dt;
+    yaw_step = PC_GIMBAL_RECOVERY_YAW_RATE_DPS * recovery_dt;
+
+    gimbal_controller.target_pitch_angle = Gimbal_PC_Target_Slew(
+        gimbal_controller.target_pitch_angle, pc_control.pitch, pitch_step);
+    gimbal_controller.target_big_yaw_angle = Gimbal_PC_Target_Slew(
+        gimbal_controller.target_big_yaw_angle, pc_control.yaw, yaw_step);
+
+    if (gimbal_controller.target_pitch_angle == pc_control.pitch &&
+        gimbal_controller.target_big_yaw_angle == pc_control.yaw)
+    {
+        pc_gimbal_recovery_active = 0U;
+    }
+}
 
 void Gimbal_Powerdown_Cal()
 {
@@ -24,19 +153,7 @@ void Gimbal_Powerdown_Cal()
 
 void Gimbal_Autoaim_Cal()
 {
-    // [旧协议] PCRecvData_1 pc_recv_data_temp = pc_recv_data_1; // 2026-07-12 协议迁移，不再需要
-    // 设置目标角度
-    // [SMALL_YAW_REMOVED] target_small_yaw_angle → target_big_yaw_angle
-    //if (fabsf(gimbal_controller.target_pitch_angle - pc_pitch) < 60.0f && fabsf(gimbal_controller.target_big_yaw_angle - pc_yaw) < 70.0f)
-    if (fabsf(gimbal_controller.target_pitch_angle - pc_pitch) < 60.0f)
-    {
-        if (offline_detector.pc_state == PC_ON)
-        {
-            gimbal_controller.target_pitch_angle = pc_pitch;
-            // [SMALL_YAW_REMOVED] PCyaw直接作为大Yaw输入
-            gimbal_controller.target_big_yaw_angle = pc_yaw;
-        }
-    }
+    Gimbal_PC_Target_Update();
 
     // 额外加一层保护
     if (fabsf(gimbal_controller.target_pitch_angle) > 60.0f)
@@ -61,18 +178,7 @@ void Gimbal_Autoaim_Cal()
 
 void Gimbal_Small_Buff_Cal()
 {
-    // [旧协议] PCRecvData_1 pc_recv_data_temp = pc_recv_data_1; // 2026-07-12 协议迁移，不再需要
-    // 设置目标角度
-    // [SMALL_YAW_REMOVED] target_small_yaw_angle → target_big_yaw_angle
-    if (fabsf(gimbal_controller.target_pitch_angle - pc_pitch) < 60.0f && fabsf(gimbal_controller.target_big_yaw_angle - pc_yaw) < 70.0f)
-    {
-        if (offline_detector.pc_state == PC_ON)
-        {
-            gimbal_controller.target_pitch_angle = pc_pitch;
-            // [SMALL_YAW_REMOVED] PCyaw直接作为大Yaw输入
-            gimbal_controller.target_big_yaw_angle = pc_yaw;
-        }
-    }
+    Gimbal_PC_Target_Update();
 
     // 额外加一层保护
     if (fabsf(gimbal_controller.target_pitch_angle) > 60.0f)
@@ -96,35 +202,8 @@ void Gimbal_Small_Buff_Cal()
 
 void Gimbal_Big_Buff_Cal()
 {
-    // 	PCRecvData pc_recv_data_temp = pc_recv_data;
-    // // 设置目标角度
-    // if (pc_recv_data_temp.enemy_id != 0 && fabsf(gimbal_controller.target_pitch_angle - pc_recv_data_temp.pitch) < 60.0f && fabsf(gimbal_controller.target_small_yaw_angle - pc_recv_data_temp.yaw) < 70.0f)
-    // {
-    //     gimbal_controller.target_pitch_angle = pc_recv_data_temp.pitch;
-    //     gimbal_controller.target_small_yaw_angle = pc_recv_data_temp.yaw;
-    // }
-
-    // // 额外加一层保护
-    // if (fabsf(gimbal_controller.target_pitch_angle) > 60.0f)
-    // {
-    //     gimbal_controller.target_pitch_angle = gimbal_controller.gyro_pitch_angle;
-    // }
-    // if (fabsf(gimbal_controller.target_small_yaw_angle - 999.0f) < 1e-4)
-    // {
-    //     gimbal_controller.target_small_yaw_angle = gimbal_controller.gyro_yaw_angle;
-    // }
-
-    // // pitch限制幅值
-    // limitPitchAngle();
-    // motor_communication[PITCH_MOTOR].control = Gimbal_Pitch_Calculate(gimbal_controller.target_pitch_angle);
-
-    // // yaw计算
-    // motor_communication[SMALL_YAW_MOTOR].control = Gimbal_Small_Yaw_Calculate(gimbal_controller.target_small_yaw_angle);
-    // motor_communication[BIG_YAW_MOTOR].control = Gimbal_Big_Yaw_Calculate(gimbal_controller.target_big_yaw_angle);
-}
-
-void Gimbal_SI_Cal()
-{
+    /* 大符与小符共用PC角度闭环，只在上行mode_want中区分模式。 */
+    Gimbal_Small_Buff_Cal();
 }
 
 void Gimbal_Act_Cal()
@@ -476,6 +555,8 @@ void GimbalTask(void *pvParameters)
 {
     portTickType xLastWakeTime;
     const portTickType xFrequency = 2; // 500HZ
+    enum GIMBAL_ACTION previous_gimbal_action = GIMBAL_POWERDOWN;
+    uint8_t shoot_feedback_was_ready = 0U;
 
     FrictionWheel_Init();
     GimbalPidInit();
@@ -483,11 +564,11 @@ void GimbalTask(void *pvParameters)
     DM_Motor_Init(&gimbal_controller.DM_Big_Yaw_Motor, 3.141593f, 20, 45);
     DM_Motor_Init(&gimbal_controller.DM_Pitch_Motor, 3.141593f, 10, 30);
 
+    /* crossing_hole-main 自动 G/B/C/J 系统辨识模块。 */
+    GimbalSystemID_Init(&gimbal_controller);
+
     /* 云台测试模块初始化 */
     GimbalTestInit(&gimbal_controller.gimbal_test);
-
-    /* 系统辨识以及测试 */
-    SIInit(&SI_obeject, 10, 160.0f);
     // SawToothInit(&saw_tooth_wave, 10, 1, 200, 0);
 
     vTaskDelay(2000);
@@ -505,7 +586,33 @@ void GimbalTask(void *pvParameters)
         Big_Yaw_Bias_Cal();
         Schmitt_PID_changer();
 
-        switch (remote_controller.gimbal_action)
+#if GIMBAL_SYSID
+        /* 与 crossing_hole-main 相同：传感器更新后、控制模式计算前推进状态机。 */
+        if (!gimbal_sysid.yaw.sysid_done || !gimbal_sysid.pitch.sysid_done)
+        {
+            GimbalSystemID_Run();
+        }
+#endif
+
+        /* 使用快照保证本控制周期内模式一致，并在手动模式进入沿执行无扰接管。 */
+        const enum GIMBAL_ACTION current_gimbal_action = remote_controller.gimbal_action;
+        const uint8_t current_action_uses_pc_target =
+            current_gimbal_action == GIMBAL_AUTO_AIM_MODE ||
+            current_gimbal_action == GIMBAL_SMALL_BUFF_MODE ||
+            current_gimbal_action == GIMBAL_BIG_BUFF_MODE;
+        if (current_action_uses_pc_target == 0U)
+        {
+            /* 即使掉线状态先被底盘任务切成手动，下一次PC接管仍从反馈限速恢复。 */
+            Gimbal_PC_Target_Disarm();
+        }
+        if (current_gimbal_action == GIMBAL_ACT_MODE &&
+            previous_gimbal_action != GIMBAL_ACT_MODE)
+        {
+            Gimbal_Manual_Mode_Enter();
+        }
+        previous_gimbal_action = current_gimbal_action;
+
+        switch (current_gimbal_action)
         {
         case GIMBAL_POWERDOWN: // 掉电模式
             Gimbal_Powerdown_Cal();
@@ -522,9 +629,6 @@ void GimbalTask(void *pvParameters)
         case GIMBAL_BIG_BUFF_MODE:
             Gimbal_Big_Buff_Cal();
             break;
-        case GIMBAL_SI_MODE:
-            Gimbal_SI_Cal();
-            break;
         case GIMBAL_TEST_MODE:
             Gimbal_Test_Cal();
             break;
@@ -533,7 +637,42 @@ void GimbalTask(void *pvParameters)
             break;
         }
 
-        Shoot_Cal();
+        /*
+         * 所有模式（含SI/Test旁路）最终都经过反馈有效性闸门，防止旧反馈
+         * 仍被打包成非零力矩。各轴独立掉线时只切断对应轴；IMU掉线切断两轴。
+         */
+        const uint8_t imu_feedback_ready =
+            offline_detector.imu_state[0] == IMU_ON &&
+            offline_detector.imu_state[1] == IMU_ON;
+        if (!imu_feedback_ready ||
+            offline_detector.pitch_motor_state != PITCH_MOTOR_ON)
+        {
+            motor_communication[PITCH_MOTOR].control = 0.0f;
+        }
+        if (!imu_feedback_ready ||
+            offline_detector.yaw_motor_state != YAW_MOTOR_ON)
+        {
+            motor_communication[BIG_YAW_MOTOR].control = 0.0f;
+        }
+
+        /*
+         * 射击机构也必须消费掉线状态。任一反馈不稳定时整套射击输出切零；
+         * 恢复后的首周期只同步控制器，下一周期才重新进入射击状态机。
+         */
+        const uint8_t shoot_feedback_ready =
+            offline_detector.friction_motor_state[LEFT_FRICTION_WHEEL] == FRICTION_WHEEL_MOTOR_ON &&
+            offline_detector.friction_motor_state[RIGHT_FRICTION_WHEEL] == FRICTION_WHEEL_MOTOR_ON &&
+            offline_detector.toggle_motor_state == TOGGLE_MOTOR_ON;
+
+        if (!shoot_feedback_ready || !shoot_feedback_was_ready)
+        {
+            Shoot_FeedbackSafeStop();
+        }
+        else
+        {
+            Shoot_Cal();
+        }
+        shoot_feedback_was_ready = shoot_feedback_ready;
 
 #if ROBOT == NIUNIU || ROBOT == QI_TIAN_DA_SHENG
         // 弹舱盖控制函数

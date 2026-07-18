@@ -54,6 +54,7 @@ void Deadzone(float *x, float deadzone);
 float sign(float value);
 
 void OLS_Init(Ordinary_Least_Squares_t *OLS, uint16_t order);
+void OLS_Reset(Ordinary_Least_Squares_t *OLS, float deltax, float y);
 void OLS_Update(Ordinary_Least_Squares_t *OLS, float deltax, float y);
 float OLS_Derivative(Ordinary_Least_Squares_t *OLS, float deltax, float y);
 float OLS_Smooth(Ordinary_Least_Squares_t *OLS, float deltax, float y);

@@ -84,7 +84,7 @@ typedef struct PCSendDataRobotCmd
 extern unsigned char PCbuffer[PC_RECVBUF_SIZE];
 extern unsigned char SendToPC_Buff[PC_SENDBUF_SIZE];
 
-void PCReceive(unsigned char *PCbuffer);
+void PCReceive(const unsigned char *PCbuffer, uint32_t length);
 void SendtoPC(void);
 
 extern PCRecvData pc_recv_data;
@@ -131,6 +131,7 @@ typedef struct PC_StateControl
 #define PC_DOWNLINK_MAP_PATH     0x02  // MapPathFrame (107B)
 #define PC_DOWNLINK_CUSTOM_INFO  0x03  // CustomInfoFrame (36B)
 #define PC_DOWNLINK_COORD        0x04  // SentryCoordinateFrame (17B)
+#define PC_CONTROL_TIMEOUT_MS    200U  // valid 0x00 control-frame timeout
 
 // DownlinkTypeID 0x00: GimbalControlFrame (13B)
 typedef struct {
@@ -366,6 +367,21 @@ typedef struct{
 	short Nav_State;//单位改为m/s
 }Nav_Cmd_t;
 
+/* 一帧PC控制命令的原子快照，控制任务不得逐项读取ISR正在发布的全局量。 */
+typedef struct
+{
+	float yaw;
+	float pitch;
+	float nav_speed_x;
+	float nav_speed_y;
+	float nav_speed_w;
+	uint8_t shoot_state;
+	uint8_t cap_state;
+	uint8_t through_hole;
+	uint8_t big_yaw_mode;
+	uint8_t rotate_state;
+} PCControlSnapshot_t;
+
 
 extern ARMOR_STATE_ENUM armor_state;
 extern float pc_pitch,pc_yaw;
@@ -375,12 +391,17 @@ extern uint8_t current_posture;  // 当前姿态状态: 1=进攻, 2=防御, 3=�
 // 0x0207 shadow缓存，用于TypeID 7/8同步
 extern ext_shoot_data_t last_shoot_data;  // 上一次射击数据缓存
 
-void PCReceive(unsigned char *PCbuffer);
+void PCReceive(const unsigned char *PCbuffer, uint32_t length);
+uint8_t PCControlIsOnline(void);
+uint8_t PCControlGetSnapshot(PCControlSnapshot_t *snapshot);
 void SendtoPC(uint8_t data_type);
 void NAVReceive(uint8_t Buf[]);
 void SendtoNAV(void);
 
 extern PCSendDataRobotCmd_t PCSendRobotCmd;  // TypeID 9 uplink  // TypeID 9
 #endif
+
+/* USB CDC是字节流；该入口负责拆包、粘包和跨64B端点重组。 */
+void PCStreamReceive(const unsigned char *data, uint32_t length);
 
 #endif // !_PC_SERIAL_H

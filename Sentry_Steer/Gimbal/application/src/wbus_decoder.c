@@ -26,6 +26,62 @@ WBUS_Receiver_t wbus_receiver;
 extern RemoteController remote_controller;
 
 /**
+  * @brief  将遥控输入和整车状态切到确定的安全值
+  * @note   与连接状态分开处理，恢复等待期间不能反复清零连续有效帧计数。
+  */
+static void WBUS_ApplySafeState(void)
+{
+    for (int i = 0; i < 4; i++) {
+        remote_controller.dji_remote.rc.ch[i] = CH_MIDDLE;
+    }
+
+    remote_controller.dji_remote.rc.s[LEFT_SW] = Down;
+    remote_controller.dji_remote.rc.s[RIGHT_SW] = Down;
+    remote_controller.dji_remote.rc.Previous_rc_Right_SW = Down;
+    remote_controller.dji_remote.rc.poke = 0;
+    remote_controller.dji_remote.mouse.x = 0;
+    remote_controller.dji_remote.mouse.y = 0;
+    remote_controller.dji_remote.mouse.z = 0;
+    remote_controller.dji_remote.mouse.press_l = 0;
+    remote_controller.dji_remote.mouse.press_r = 0;
+    remote_controller.dji_remote.keyValue = 0;
+
+    setRobotState(OFFLINE_MODE);
+    setGimbalAction(GIMBAL_POWERDOWN);
+    setShootAction(SHOOT_POWERDOWN_MODE);
+}
+
+static void WBUS_Disconnect(void)
+{
+    wbus_receiver.is_connected = 0;
+    wbus_receiver.valid_frame_streak = 0;
+    WBUS_ApplySafeState();
+}
+
+/**
+  * @brief  校验本项目实际使用的WBUS通道
+  * @note   必须在原始WBUS域校验。映射后的合法最小值为364，不能再用
+  *         “小于400”猜测掉线，否则摇杆打满负方向会被误判。
+  */
+static uint8_t WBUS_UsedChannelsAreValid(const WBUS_Data_t *data)
+{
+    static const uint8_t used_channels[] = {
+        WBUS_CH1, WBUS_CH2, WBUS_CH3, WBUS_CH4,
+        WBUS_CH5, WBUS_CH7, WBUS_CH8
+    };
+
+    for (uint32_t i = 0;
+         i < sizeof(used_channels) / sizeof(used_channels[0]);
+         i++) {
+        const uint16_t value = data->ch[used_channels[i]];
+        if (value < WBUS_CHANNEL_MIN || value > WBUS_CHANNEL_MAX) {
+            return 0;
+        }
+    }
+    return 1;
+}
+
+/**
   * @brief  WBUS解码器初始化
   * @retval None
   */
@@ -39,6 +95,8 @@ void WBUS_Init(void)
     }
     
     wbus_receiver.is_connected = 0;
+    wbus_receiver.valid_frame_streak = 0;
+    wbus_receiver.last_update_time = 0;
     wbus_receiver.frame_count = 0;
     wbus_receiver.error_count = 0;
 }
@@ -57,45 +115,93 @@ void WBUS_Init(void)
   *         Byte[23] = Flags
   *         Byte[24] = End byte (0x00)
   */
-void WBUS_Decode(volatile uint8_t rx_buffer[])
+uint8_t WBUS_Decode(volatile uint8_t rx_buffer[])
 {
-    /* 检查帧头 */
-    if (rx_buffer[0] != WBUS_HEADER) {
+    WBUS_Data_t decoded = {0};
+
+    /* 帧头、帧尾都必须匹配，避免DMA错位后碰巧解出合法通道。 */
+    if (rx_buffer[0] != WBUS_HEADER ||
+        rx_buffer[WBUS_FRAME_LENGTH - 1U] != WBUS_END_BYTE) {
         wbus_receiver.error_count++;
-        return;
+        if (!wbus_receiver.is_connected) {
+            wbus_receiver.valid_frame_streak = 0;
+        }
+        return 0;
     }
     
     /* 解码16个11位通道 (大疆SBUS/WBUS格式) */
     /* 通道1-16从字节1-22解码 */
-    wbus_receiver.data.ch[0]  = ((rx_buffer[1]      | rx_buffer[2]  << 8) & 0x07FF);
-    wbus_receiver.data.ch[1]  = ((rx_buffer[2] >> 3 | rx_buffer[3]  << 5) & 0x07FF);
-    wbus_receiver.data.ch[2]  = ((rx_buffer[3] >> 6 | rx_buffer[4]  << 2 | rx_buffer[5] << 10) & 0x07FF);
-    wbus_receiver.data.ch[3]  = ((rx_buffer[5] >> 1 | rx_buffer[6]  << 7) & 0x07FF);
-    wbus_receiver.data.ch[4]  = ((rx_buffer[6] >> 4 | rx_buffer[7]  << 4) & 0x07FF);
-    wbus_receiver.data.ch[5]  = ((rx_buffer[7] >> 7 | rx_buffer[8]  << 1 | rx_buffer[9] << 9) & 0x07FF);
-    wbus_receiver.data.ch[6]  = ((rx_buffer[9] >> 2 | rx_buffer[10] << 6) & 0x07FF);
-    wbus_receiver.data.ch[7]  = ((rx_buffer[10] >> 5 | rx_buffer[11] << 3) & 0x07FF);
-    wbus_receiver.data.ch[8]  = ((rx_buffer[12]      | rx_buffer[13] << 8) & 0x07FF);
-    wbus_receiver.data.ch[9]  = ((rx_buffer[13] >> 3 | rx_buffer[14] << 5) & 0x07FF);
-    wbus_receiver.data.ch[10] = ((rx_buffer[14] >> 6 | rx_buffer[15] << 2 | rx_buffer[16] << 10) & 0x07FF);
-    wbus_receiver.data.ch[11] = ((rx_buffer[16] >> 1 | rx_buffer[17] << 7) & 0x07FF);
-    wbus_receiver.data.ch[12] = ((rx_buffer[17] >> 4 | rx_buffer[18] << 4) & 0x07FF);
-    wbus_receiver.data.ch[13] = ((rx_buffer[18] >> 7 | rx_buffer[19] << 1 | rx_buffer[20] << 9) & 0x07FF);
-    wbus_receiver.data.ch[14] = ((rx_buffer[20] >> 2 | rx_buffer[21] << 6) & 0x07FF);
-    wbus_receiver.data.ch[15] = ((rx_buffer[21] >> 5 | rx_buffer[22] << 3) & 0x07FF);
+    decoded.ch[0]  = ((rx_buffer[1]      | rx_buffer[2]  << 8) & 0x07FF);
+    decoded.ch[1]  = ((rx_buffer[2] >> 3 | rx_buffer[3]  << 5) & 0x07FF);
+    decoded.ch[2]  = ((rx_buffer[3] >> 6 | rx_buffer[4]  << 2 | rx_buffer[5] << 10) & 0x07FF);
+    decoded.ch[3]  = ((rx_buffer[5] >> 1 | rx_buffer[6]  << 7) & 0x07FF);
+    decoded.ch[4]  = ((rx_buffer[6] >> 4 | rx_buffer[7]  << 4) & 0x07FF);
+    decoded.ch[5]  = ((rx_buffer[7] >> 7 | rx_buffer[8]  << 1 | rx_buffer[9] << 9) & 0x07FF);
+    decoded.ch[6]  = ((rx_buffer[9] >> 2 | rx_buffer[10] << 6) & 0x07FF);
+    decoded.ch[7]  = ((rx_buffer[10] >> 5 | rx_buffer[11] << 3) & 0x07FF);
+    decoded.ch[8]  = ((rx_buffer[12]      | rx_buffer[13] << 8) & 0x07FF);
+    decoded.ch[9]  = ((rx_buffer[13] >> 3 | rx_buffer[14] << 5) & 0x07FF);
+    decoded.ch[10] = ((rx_buffer[14] >> 6 | rx_buffer[15] << 2 | rx_buffer[16] << 10) & 0x07FF);
+    decoded.ch[11] = ((rx_buffer[16] >> 1 | rx_buffer[17] << 7) & 0x07FF);
+    decoded.ch[12] = ((rx_buffer[17] >> 4 | rx_buffer[18] << 4) & 0x07FF);
+    decoded.ch[13] = ((rx_buffer[18] >> 7 | rx_buffer[19] << 1 | rx_buffer[20] << 9) & 0x07FF);
+    decoded.ch[14] = ((rx_buffer[20] >> 2 | rx_buffer[21] << 6) & 0x07FF);
+    decoded.ch[15] = ((rx_buffer[21] >> 5 | rx_buffer[22] << 3) & 0x07FF);
     
     /* 解码标志位 */
-    wbus_receiver.data.ch17 = (rx_buffer[23] & WBUS_FLAG_CH17) ? 1 : 0;
-    wbus_receiver.data.ch18 = (rx_buffer[23] & WBUS_FLAG_CH18) ? 1 : 0;
-    wbus_receiver.data.frame_lost = (rx_buffer[23] & WBUS_FLAG_FRAME_LOST) ? 1 : 0;
-    wbus_receiver.data.failsafe = (rx_buffer[23] & WBUS_FLAG_FAILSAFE) ? 1 : 0;
+    decoded.ch17 = (rx_buffer[23] & WBUS_FLAG_CH17) ? 1 : 0;
+    decoded.ch18 = (rx_buffer[23] & WBUS_FLAG_CH18) ? 1 : 0;
+    decoded.frame_lost = (rx_buffer[23] & WBUS_FLAG_FRAME_LOST) ? 1 : 0;
+    decoded.failsafe = (rx_buffer[23] & WBUS_FLAG_FAILSAFE) ? 1 : 0;
+
+    /* 接收机明确置failsafe时立即下电，即使其通道同时被填成0。 */
+    if (decoded.failsafe) {
+        wbus_receiver.data = decoded;
+        wbus_receiver.error_count++;
+        WBUS_Disconnect();
+        return 0;
+    }
+
+    /*
+     * frame_lost表示本帧通道可能是接收机保持的旧值。它不能刷新有效
+     * 心跳；连续丢帧会由WBUS_CheckTimeout在100ms后进入安全态。
+     */
+    if (decoded.frame_lost) {
+        wbus_receiver.error_count++;
+        if (!wbus_receiver.is_connected) {
+            wbus_receiver.valid_frame_streak = 0;
+        }
+        return 0;
+    }
+
+    if (!WBUS_UsedChannelsAreValid(&decoded)) {
+        wbus_receiver.error_count++;
+        if (!wbus_receiver.is_connected) {
+            wbus_receiver.valid_frame_streak = 0;
+        }
+        return 0;
+    }
+
+    wbus_receiver.data = decoded;
     
     /* 更新状态 */
     wbus_receiver.frame_count++;
-    wbus_receiver.is_connected = !wbus_receiver.data.failsafe;
+    wbus_receiver.last_update_time = HAL_GetTick();
+    if (wbus_receiver.valid_frame_streak < WBUS_RECOVERY_FRAMES) {
+        wbus_receiver.valid_frame_streak++;
+    }
+
+    if (wbus_receiver.valid_frame_streak < WBUS_RECOVERY_FRAMES) {
+        wbus_receiver.is_connected = 0;
+        WBUS_ApplySafeState();
+        return 1;
+    }
+
+    wbus_receiver.is_connected = 1;
     
     /* 更新remote_controller结构体,保持与DJI遥控器兼容 */
     WBUS_UpdateRemoteController();
+    return 1;
 }
 
 /**
@@ -224,27 +330,6 @@ void WBUS_UpdateRemoteController(void)
     remote_controller.dji_remote.rc.wbus_ch5_pos = WBUS_GetTwoPositionSwitch(wbus_receiver.data.ch[WBUS_CH5]);
     remote_controller.dji_remote.rc.wbus_ch8_pos = WBUS_GetTwoPositionSwitch(wbus_receiver.data.ch[WBUS_CH8]);
 
-    /* 遥控器离线检测：当任意通道值小于400时判定为离线 */
-    uint8_t remote_offline = 0;
-    for (int i = 0; i < 4; i++) {
-        if (remote_controller.dji_remote.rc.ch[i] < 400) {
-            remote_offline = 1;
-            break;
-        }
-    }
-
-    if (remote_offline) {
-        /* 遥控器离线安全处理：将摇杆设为中位，拨杆向下 */
-        for (int i = 0; i < 4; i++) {
-            remote_controller.dji_remote.rc.ch[i] = CH_MIDDLE;
-        }
-        remote_controller.dji_remote.rc.s[LEFT_SW] = Down;
-        remote_controller.dji_remote.rc.s[RIGHT_SW] = Down;
-        setRobotState(OFFLINE_MODE);
-        setGimbalAction(GIMBAL_POWERDOWN);
-        setShootAction(SHOOT_POWERDOWN_MODE);
-    }
-
     /* 可选: 映射其他WBUS通道到扩展功能 */
     /* remote_controller.dji_remote.rc.ch[4] = ... */
 }
@@ -255,7 +340,24 @@ void WBUS_UpdateRemoteController(void)
   */
 uint8_t WBUS_IsConnected(void)
 {
-    return wbus_receiver.is_connected && !wbus_receiver.data.failsafe;
+    if (!wbus_receiver.is_connected || wbus_receiver.data.failsafe ||
+        wbus_receiver.last_update_time == 0) {
+        return 0;
+    }
+
+    return (uint32_t)(HAL_GetTick() - wbus_receiver.last_update_time) <= WBUS_TIMEOUT_MS;
+}
+
+/**
+  * @brief  周期检查真正的“无帧掉线”
+  * @note   应由任务周期调用；uint32_t减法天然兼容HAL tick回绕。
+  */
+void WBUS_CheckTimeout(void)
+{
+    if (wbus_receiver.last_update_time == 0 ||
+        (uint32_t)(HAL_GetTick() - wbus_receiver.last_update_time) > WBUS_TIMEOUT_MS) {
+        WBUS_Disconnect();
+    }
 }
 
 /**
@@ -269,14 +371,6 @@ void WBUS_ResetData(void)
         wbus_receiver.data.ch[i] = WBUS_CHANNEL_MID;
     }
     
-    /* 重置拨杆为中间位置 */
-    remote_controller.dji_remote.rc.s[RIGHT_SW] = WBUS_SW_MID;
-    remote_controller.dji_remote.rc.s[LEFT_SW] = WBUS_SW_MID;
-    
-    /* 重置摇杆为中间值 */
-    for (int i = 0; i < 4; i++) {
-        remote_controller.dji_remote.rc.ch[i] = WBUS_CH_VALUE_OFFSET;
-    }
-    
-    wbus_receiver.is_connected = 0;
+    wbus_receiver.last_update_time = 0;
+    WBUS_Disconnect();
 }
