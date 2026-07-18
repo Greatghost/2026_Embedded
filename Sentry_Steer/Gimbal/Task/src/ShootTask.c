@@ -283,6 +283,25 @@ void Shoot_Test_Cal()
     motor_communication[TOGGLE_MOTOR].control = Toggle_Calculate(TOGGLE_SPEED, 150.0f);
 }
 
+/*
+ * 自瞄控制帧无效时只禁止拨弹，不停止摩擦轮预转。这样比赛/辅瞄档不依赖
+ * PC控制帧心跳即可保持发射准备，同时不会消费旧的开火沿。
+ */
+static void Shoot_AutoaimFrictionStandby_Cal(void)
+{
+    setFrictionSpeed(chassis_pack_get_1.bullet_level);
+    FrictionWheel_Set(-friction_wheels.set_speed_l, +friction_wheels.set_speed_r);
+    motor_communication[LEFT_FRICTION_WHEEL_MOTOR].control = friction_wheels.send_to_motor_current[LEFT_FRICTION_WHEEL];
+    motor_communication[RIGHT_FRICTION_WHEEL_MOTOR].control = friction_wheels.send_to_motor_current[RIGHT_FRICTION_WHEEL];
+
+    motor_communication[TOGGLE_MOTOR].control = Toggle_Calculate(TOGGLE_STOP, 0.0f);
+    toggle_controller.toggle_state = TOGGLE_NORMAL;
+    toggle_controller.reverse_counter = 0;
+    toggle_controller.error_counter = 0;
+    toggle_controller.is_shoot = 0;
+    remote_controller.single_shoot_flag = FALSE;
+}
+
 void Shoot_Autoaim_Cal()
 {
     PCControlSnapshot_t pc_control;
@@ -295,7 +314,7 @@ void Shoot_Autoaim_Cal()
         last_AA_firecode = 0U;
         aa_fire_req_lvl = 0U;
         AA_Shootable = 0U;
-        Shoot_Powerdown_Cal();
+        Shoot_AutoaimFrictionStandby_Cal();
         return;
     }
 
@@ -306,7 +325,7 @@ void Shoot_Autoaim_Cal()
         last_AA_firecode = current_AA_firecode;
         aa_fire_req_lvl = 0U;
         AA_Shootable = 0U;
-        Shoot_Powerdown_Cal();
+        Shoot_AutoaimFrictionStandby_Cal();
         return;
     }
 

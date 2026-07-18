@@ -40,6 +40,16 @@ static void PCNavigationSafeStop(void)
     setSuperPower(POWER_TO_BATTERY);
 }
 
+/*
+ * 比赛/辅瞄档的PC数据失效时，底盘、云台和拨盘仍保持安全停止，但摩擦轮
+ * 继续预转。具体的无数据拨盘锁止由Shoot_Autoaim_Cal()负责。
+ */
+static void PCAutoAimSafeStop(void)
+{
+    PCNavigationSafeStop();
+    setShootAction(SHOOT_AUTO_AIM_MODE);
+}
+
 void changeFricAction()
 {
     if (remote_controller.shoot_action != SHOOT_POWERDOWN_MODE)
@@ -62,7 +72,7 @@ void PCStateControl() // 比赛专用
 
     if (PCControlGetSnapshot(&pc_control) == 0U)
     {
-        PCNavigationSafeStop();
+        PCAutoAimSafeStop();
         return;
     }
     offline_detector.pc_state = PC_ON;
@@ -709,7 +719,7 @@ void DJIRemoteUpdate(ChassisSolver *infantry)
                 // 辅瞄测试
                 if (pc_control_online == 0U)
                 {
-                    PCNavigationSafeStop();
+                    PCAutoAimSafeStop();
                     break;
                 }
                 offline_detector.pc_state = PC_ON;
