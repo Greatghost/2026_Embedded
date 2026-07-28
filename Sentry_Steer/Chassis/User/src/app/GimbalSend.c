@@ -9,6 +9,8 @@
 // 云台发送相关头文件
 #include "GimbalSend.h"
 #include "ChasisController.h" // 引入步兵机器人结构体
+#include "can_send.h"
+#include "Referee.h"
 
 // 云台发送数据包1 全局实例
 GimbalSendPack_1 gimbal_pack_send_1;
@@ -39,6 +41,12 @@ RobotCommand_ForSend_t robot_command_send;
 SentryDuration_ForSend_t sentry_duration_send;
 // 伤害值差发送包 全局实例 (0x0003, 20260713协议更新)
 DamageDiff_ForSend_t damage_diff_send;
+// 电机掉线状态发送包 全局实例 (CAN 0x0A1, 2026-07-19新增)
+MotorOffline_ForSend_t motor_offline_send;
+// UWB角度+舵角发送包 全局实例 (CAN 0x0A2, 2026-07-21新增)
+UwbSteer_ForSend_t uwb_steer_send;
+// 前哨站HP发送包 全局实例 (CAN 0x0A3, 2026-07-21新增)
+OutpostHP_ForSend_t outpost_hp_send;
 // 外部声明：超级电容控制器
 extern NingCapController cap_controller;
 // 雷达消息更新标志位
@@ -77,7 +85,9 @@ void GimbalSendPack()
   // 机器人阵营判断 <10为红方 否则蓝方
   gimbal_pack_send_1.robot_color = referee_data.Game_Robot_State.robot_id < 10 ? 1 : 0;
   // 超电容电压 换算后赋值
-  gimbal_pack_send_1.half_CapVol = (uint8_t)cap_controller.cap_vol / 2.0f; // referee_data.Game_Robot_State.shooter_id1_17mm_speed_limit <= 15 ? 0 : (referee_data.Game_Robot_State.shooter_id1_17mm_speed_limit <= 22 ? 1 : 2);
+  // [FIX] 原为 (uint8_t)cap_vol / 2.0f，cast 优先级高于 /，cap_vol 先被截断为 uint8_t 再除以 2
+  //       当 cap_vol > 255 时 uint8_t 溢出回绕导致结果错误。改为先除后截断。
+  gimbal_pack_send_1.half_CapVol = (uint8_t)(cap_controller.cap_vol / 2.0f); // referee_data.Game_Robot_State.shooter_id1_17mm_speed_limit <= 15 ? 0 : (referee_data.Game_Robot_State.shooter_id1_17mm_speed_limit <= 22 ? 1 : 2);
   // BUFF状态 默认0
   gimbal_pack_send_1.buff_state = 0; // referee_data.Buff_Musk.power_rune_buff & 0x0F;
 
@@ -117,7 +127,7 @@ void Can2SendChassisSpeed(void)
   // 数据拷贝到CAN发送帧
   memcpy(tx_message.Data, &chassis_speed_pack_send, sizeof(ChassisSpeedPack_t));
   // CAN发送
-  CAN_Transmit(CAN2, &tx_message);
+  CanSend(CAN2, (int8_t *)tx_message.Data, tx_message.StdId, tx_message.DLC);
 }
 
 /**
@@ -131,6 +141,7 @@ void ShootDataPack(void)
   shoot_data_send.shooter_id = referee_data.Shoot_Data.shooter_id;
   shoot_data_send.bullet_freq = referee_data.Shoot_Data.bullet_freq;
   shoot_data_send.bullet_speed = referee_data.Shoot_Data.bullet_speed;
+  shoot_data_send.reserve = 0;
 }
 
 /**
@@ -146,7 +157,7 @@ void Can2SendShootData(ShootData_ForSend_t *data)
   tx_message.DLC = 0x08;
   tx_message.StdId = SEND_TO_GIMBAL_SHOOT_DATA_CAN_ID;
   memcpy(tx_message.Data, data, sizeof(ShootData_ForSend_t));
-  CAN_Transmit(CAN2, &tx_message);
+  CanSend(CAN2, (int8_t *)tx_message.Data, tx_message.StdId, tx_message.DLC);
 }
 
 /**
@@ -197,7 +208,7 @@ void Can2SendSentryInfo(SentryInfo_ForSend_t *data)
   tx_message.DLC = 0x08;
   tx_message.StdId = SEND_TO_GIMBAL_SENTRY_INFO_CAN_ID;
   memcpy(tx_message.Data, data, sizeof(SentryInfo_ForSend_t));
-  CAN_Transmit(CAN2, &tx_message);
+  CanSend(CAN2, (int8_t *)tx_message.Data, tx_message.StdId, tx_message.DLC);
 }
 
 /**
@@ -231,7 +242,7 @@ void Can2SendSentryDuration(SentryDuration_ForSend_t *data)
   tx_message.DLC = 0x08;
   tx_message.StdId = SEND_TO_GIMBAL_SENTRY_DURATION_CAN_ID;
   memcpy(tx_message.Data, data, sizeof(SentryDuration_ForSend_t));
-  CAN_Transmit(CAN2, &tx_message);
+  CanSend(CAN2, (int8_t *)tx_message.Data, tx_message.StdId, tx_message.DLC);
 }
 
 /**
@@ -258,7 +269,83 @@ void Can2SendDamageDiff(DamageDiff_ForSend_t *data)
   tx_message.DLC = 0x08;
   tx_message.StdId = SEND_TO_GIMBAL_DAMAGE_DIFF_CAN_ID;
   memcpy(tx_message.Data, data, sizeof(DamageDiff_ForSend_t));
-  CAN_Transmit(CAN2, &tx_message);
+  CanSend(CAN2, (int8_t *)tx_message.Data, tx_message.StdId, tx_message.DLC);
+}
+
+/**
+ * @brief 电机掉线状态发送（CAN2, CAN ID 0x0A1, 2026-07-19新增）
+ * @param  data: 电机掉线状态数据指针
+ * @retval 无
+ * @note   位图 bit=1 表示掉线
+ *         bit0-3 : 轮电机1-4
+ *         bit4-7 : 舵电机1-4
+ */
+void Can2SendMotorOffline(MotorOffline_ForSend_t *data)
+{
+  CanTxMsg tx_message;
+  tx_message.IDE = CAN_ID_STD;
+  tx_message.RTR = CAN_RTR_DATA;
+  tx_message.DLC = 0x08;
+  tx_message.StdId = SEND_TO_GIMBAL_MOTOR_OFFLINE_CAN_ID;
+  memcpy(tx_message.Data, data, sizeof(MotorOffline_ForSend_t));
+  CanSend(CAN2, (int8_t *)tx_message.Data, tx_message.StdId, tx_message.DLC);
+}
+
+/**
+ * @brief UWB角度+舵角打包 (CAN 0x0A2, 2026-07-21新增)
+ * @note  uwb_angle_yaw 取裁判系统0x0203 Game_Robot_Pos.angle (float度, 0~360)
+ *        转为 uint16 直接取整; 舵角取 steer_decode[0].angle×10
+ */
+void UwbSteerPack(void)
+{
+  // 从裁判系统 0x0203 读取机器人 yaw 角度 (float, 度), 取整到 uint16
+  float yaw_deg = referee_data.Game_Robot_Pos.angle;
+  if (yaw_deg < 0.0f) yaw_deg = 0.0f;
+  if (yaw_deg > 65535.0f) yaw_deg = 65535.0f;
+  uwb_steer_send.uwb_angle_yaw = (uint16_t)yaw_deg;
+  uwb_steer_send.steer_angle_x10 = (int16_t)(infantry.sensors_info.steer_decode[0].angle * 10.0f);
+  memset(uwb_steer_send.reserve, 0, sizeof(uwb_steer_send.reserve));
+}
+
+/**
+ * @brief UWB角度+舵角发送（CAN2, CAN ID 0x0A2, 2026-07-21新增）
+ * @param  data: UWB+舵角数据指针
+ * @retval 无
+ */
+void Can2SendUwbSteer(UwbSteer_ForSend_t *data)
+{
+  CanTxMsg tx_message;
+  tx_message.IDE = CAN_ID_STD;
+  tx_message.RTR = CAN_RTR_DATA;
+  tx_message.DLC = 0x08;
+  tx_message.StdId = SEND_TO_GIMBAL_UWB_STEER_CAN_ID;
+  memcpy(tx_message.Data, data, sizeof(UwbSteer_ForSend_t));
+  CanSend(CAN2, (int8_t *)tx_message.Data, tx_message.StdId, tx_message.DLC);
+}
+
+/**
+ * @brief 前哨站HP打包 (CAN 0x0A3, 2026-07-21新增)
+ * @note  直接取裁判系统0x0003原始uint16 HP值, 不做6bit压缩
+ */
+void OutpostHPPack(void)
+{
+  outpost_hp_send.ally_outpost_HP  = referee_data.Game_Robot_friend_HP.friend_outpost_HP;
+  outpost_hp_send.enemy_outpost_HP = referee_data.Game_Robot_friend_HP.enemy_outpost_HP;
+  memset(outpost_hp_send.reserve, 0, sizeof(outpost_hp_send.reserve));
+}
+
+/**
+ * @brief 前哨站HP发送（CAN2, CAN ID 0x0A3, 2026-07-21新增）
+ */
+void Can2SendOutpostHP(OutpostHP_ForSend_t *data)
+{
+  CanTxMsg tx_message;
+  tx_message.IDE = CAN_ID_STD;
+  tx_message.RTR = CAN_RTR_DATA;
+  tx_message.DLC = 0x08;
+  tx_message.StdId = SEND_TO_GIMBAL_OUTPOST_HP_CAN_ID;
+  memcpy(tx_message.Data, data, sizeof(OutpostHP_ForSend_t));
+  CanSend(CAN2, (int8_t *)tx_message.Data, tx_message.StdId, tx_message.DLC);
 }
 
 /**
@@ -288,7 +375,7 @@ void Can2SendBulletExtended(BulletExtended_ForSend_t *data)
   tx_message.DLC = 0x08;
   tx_message.StdId = SEND_TO_GIMBAL_BULLET_EXTENDED_CAN_ID;
   memcpy(tx_message.Data, data, sizeof(BulletExtended_ForSend_t));
-  CAN_Transmit(CAN2, &tx_message);
+  CanSend(CAN2, (int8_t *)tx_message.Data, tx_message.StdId, tx_message.DLC);
 }
 
 /**
@@ -321,7 +408,7 @@ void Can2SendRobotCommand(RobotCommand_ForSend_t *data)
   tx_message.DLC = 0x08;
   tx_message.StdId = SEND_TO_GIMBAL_ROBOT_COMMAND_CAN_ID;
   memcpy(tx_message.Data, data, sizeof(RobotCommand_ForSend_t));
-  CAN_Transmit(CAN2, &tx_message);
+  CanSend(CAN2, (int8_t *)tx_message.Data, tx_message.StdId, tx_message.DLC);
 }
 
 /**
@@ -369,8 +456,11 @@ void JudgeDataRFIDandBuffPack()
   JudgeData_Buff.data_type = 0x0;
   // 回血BUFF
   JudgeData_Buff.recovery_buff = referee_data.Buff_Musk.recovery_buff;
-  // 冷却BUFF
-  JudgeData_Buff.cooling_buff = referee_data.Buff_Musk.cooling_buff;
+  /* 0x0204 的 cooling_buff 在 V2.0.0 中为 uint16_t；现有底盘→云台
+   * 8B CAN 兼容包只留了 1B，因此显式饱和，避免静默回绕。 */
+  JudgeData_Buff.cooling_buff =
+      (referee_data.Buff_Musk.cooling_buff > 255U) ?
+      255U : (uint8_t)referee_data.Buff_Musk.cooling_buff;
   // 防御BUFF
   JudgeData_Buff.defence_buff = referee_data.Buff_Musk.defence_buff;
   // 易伤BUFF
@@ -410,10 +500,9 @@ void JudgeDataPositionPack()
   JudgeData_position.Friend[4].ID_Y_100 = (int16_t)(referee_data.ground_robot_position.standard_4_y * 100);
   JudgeData_position.Friend[4].reserve = 0;
   // 友方5号步兵位置 类型5
-  JudgeData_position.Friend[5].position_type = 5;
-  JudgeData_position.Friend[5].ID_X_100 = (int16_t)(referee_data.ground_robot_position.standard_5_x * 100);
-  JudgeData_position.Friend[5].ID_Y_100 = (int16_t)(referee_data.ground_robot_position.standard_5_y * 100);
-  JudgeData_position.Friend[5].reserve = 0;
+  // JudgeData_position.Friend[5].position_type = 5;
+  // 0x020B 的最后两个 float 在 V2.0.0 中为保留字段，不再表示 5 号步兵位置。
+  // JudgeData_position.Friend[5].reserve = 0;
   // 友方哨兵机器人位置 类型7
   JudgeData_position.Friend[7].position_type = 7;
   JudgeData_position.Friend[7].ID_X_100 = (int16_t)(referee_data.Game_Robot_Pos.x * 100);
@@ -484,11 +573,11 @@ void JudgeDataPack()
   // 热量更新标志
   JudgeData_ForSend1.Heat_update = 0x01;
   // 17mm枪口热量
-  JudgeData_ForSend1.shooter1_heat = referee_data.Power_Heat_Data.shooter_id1_17mm_cooling_heat;
+  JudgeData_ForSend1.shooter1_heat = referee_data.Power_Heat_Data.shooter_17mm_barrel_heat;
   // 17mm弹丸剩余数量
   JudgeData_ForSend1.bullet_remaining_num_17mm = referee_data.Bullet_Remaining.bullet_remaining_num_17mm;
-  // 哨兵姿态 1=进攻 2=防御 3=移动 0=未知
-  JudgeData_ForSend1.sentry_posture = referee_data.Sentry_info.sentry_posture;
+  // [REMOVED] sentry_posture 已移至 TypeID 7/10 独立通道 (CAN 0x09C/0x09F), 不再通过 JudgeData_ForSend1 传输
+  JudgeData_ForSend1.reserve_1bit = 0;
   // 比赛进行状态 0x04=比赛中
   If_Game_Start = (referee_data.Game_Status.game_progress == 0x04) ? 1 : 0;
   JudgeData_ForSend1.is_game_start = If_Game_Start;
@@ -500,7 +589,7 @@ void JudgeDataPack()
   // 自身坐标Y 放大100倍
   JudgeData_ForSend2.y = (uint16_t)(referee_data.Game_Robot_Pos.y * 100);
   // 自身Yaw角 放大10倍
-  JudgeData_ForSend2.yaw_10 = (int16_t)(referee_data.Game_Robot_Pos.yaw * 10);
+  JudgeData_ForSend2.yaw_10 = (int16_t)(referee_data.Game_Robot_Pos.angle * 10);
   // 自身剩余血量
   JudgeData_ForSend2.Self_blood = referee_data.Game_Robot_State.remain_HP;
 
@@ -525,7 +614,7 @@ void Can2Send1(JudgeData_ForSend1_t *Judge2Send)
 
   memcpy(tx_message.Data, Judge2Send, sizeof(JudgeData_ForSend1_t));
 
-  CAN_Transmit(CAN2, &tx_message);
+  CanSend(CAN2, (int8_t *)tx_message.Data, tx_message.StdId, tx_message.DLC);
 }
 
 /**
@@ -543,7 +632,7 @@ void Can2Send2(JudgeData_ForSend2_t *Judge2Send)
 
   memcpy(tx_message.Data, Judge2Send, sizeof(JudgeData_ForSend2_t));
 
-  CAN_Transmit(CAN2, &tx_message);
+  CanSend(CAN2, (int8_t *)tx_message.Data, tx_message.StdId, tx_message.DLC);
 }
 
 /**
@@ -560,7 +649,7 @@ void Can2Send3_blood1(JudgeBloodData_ForSend1_t *Blood2Send1)
   tx_message.DLC = 0x08;
   tx_message.StdId = SEND_TO_GIMBAL_BLOOD_DATA_CAN_ID1;
   memcpy(tx_message.Data, Blood2Send1, sizeof(JudgeBloodData_ForSend1_t));
-  CAN_Transmit(CAN2, &tx_message);
+  CanSend(CAN2, (int8_t *)tx_message.Data, tx_message.StdId, tx_message.DLC);
 }
 
 /**
@@ -576,7 +665,7 @@ void Can2Send4_RFID(JudgeData_RFID_t *judgeData_RFID)
   tx_message.DLC = 0x08;
   tx_message.StdId = SEND_TO_GIMBAL_RFID_AND_BUFF_DATA_CAN_ID;
   memcpy(tx_message.Data, judgeData_RFID, sizeof(JudgeData_RFID_t));
-  CAN_Transmit(CAN2, &tx_message);
+  CanSend(CAN2, (int8_t *)tx_message.Data, tx_message.StdId, tx_message.DLC);
 }
 
 /**
@@ -592,7 +681,7 @@ void Can2Send4_Buff(JudgeData_Buff_t *judgeData_buff)
   tx_message.DLC = 0x08;
   tx_message.StdId = SEND_TO_GIMBAL_RFID_AND_BUFF_DATA_CAN_ID;
   memcpy(tx_message.Data, judgeData_buff, sizeof(JudgeData_Buff_t));
-  CAN_Transmit(CAN2, &tx_message);
+  CanSend(CAN2, (int8_t *)tx_message.Data, tx_message.StdId, tx_message.DLC);
 }
 
 // 位置数据轮询发送计数器
@@ -607,41 +696,30 @@ uint16_t poscount = 0;
 void Can2Send5()
 {
   CanTxMsg tx_message;
+  static const uint8_t position_index[5] = {1U, 2U, 3U, 4U, 7U};
+  uint8_t slot = (uint8_t)(poscount % 10U);
+  uint8_t robot_index = position_index[slot % 5U];
+
   tx_message.IDE = CAN_ID_STD;
   tx_message.RTR = CAN_RTR_DATA;
   tx_message.DLC = 0x08;
   tx_message.StdId = SEND_TO_GIMBAL_POSITION_DATA_CAN_ID;
 
-  // 轮询发送友方机器人位置
-  if (poscount % 14 == 0)
-    memcpy(tx_message.Data, &JudgeData_position.Friend[1], sizeof(Each_Robot_position_t));
-  if (poscount % 14 == 1)
-    memcpy(tx_message.Data, &JudgeData_position.Friend[2], sizeof(Each_Robot_position_t));
-  if (poscount % 14 == 2)
-    memcpy(tx_message.Data, &JudgeData_position.Friend[3], sizeof(Each_Robot_position_t));
-  if (poscount % 14 == 3)
-    memcpy(tx_message.Data, &JudgeData_position.Friend[4], sizeof(Each_Robot_position_t));
-  if (poscount % 14 == 4)
-    memcpy(tx_message.Data, &JudgeData_position.Friend[5], sizeof(Each_Robot_position_t));
-  if (poscount % 14 == 5)
-    memcpy(tx_message.Data, &JudgeData_position.Friend[7], sizeof(Each_Robot_position_t));
-  if (poscount % 14 == 6)
-    memcpy(tx_message.Data, &JudgeData_position.Friend[8], sizeof(Each_Robot_position_t));
-  // 轮询发送敌方机器人位置
-  if (poscount % 14 == 7)
-    memcpy(tx_message.Data, &JudgeData_position.Enemy[1], sizeof(Each_Robot_position_t));
-  if (poscount % 14 == 8)
-    memcpy(tx_message.Data, &JudgeData_position.Enemy[2], sizeof(Each_Robot_position_t));
-  if (poscount % 14 == 9)
-    memcpy(tx_message.Data, &JudgeData_position.Enemy[3], sizeof(Each_Robot_position_t));
-  if (poscount % 14 == 10)
-    memcpy(tx_message.Data, &JudgeData_position.Enemy[4], sizeof(Each_Robot_position_t));
-  if (poscount % 14 == 11)
-    memcpy(tx_message.Data, &JudgeData_position.Enemy[5], sizeof(Each_Robot_position_t));
-  if (poscount % 14 == 12)
-    memcpy(tx_message.Data, &JudgeData_position.Enemy[7], sizeof(Each_Robot_position_t));
-  if (poscount % 14 == 13)
-    memcpy(tx_message.Data, &JudgeData_position.Enemy[8], sizeof(Each_Robot_position_t));
+  /* Only IDs 1,2,3,4,7 exist in the position uplink.  The old 14-slot
+   * schedule contained four empty slots and transmitted uninitialized stack
+   * bytes from those slots.  Keep every transmitted frame fully initialized. */
+  if (slot < 5U)
+  {
+    memcpy(tx_message.Data,
+           &JudgeData_position.Friend[robot_index],
+           sizeof(Each_Robot_position_t));
+  }
+  else
+  {
+    memcpy(tx_message.Data,
+           &JudgeData_position.Enemy[robot_index],
+           sizeof(Each_Robot_position_t));
+  }
 
   // 计数器自增
   poscount++;
@@ -650,7 +728,7 @@ void Can2Send5()
     poscount = 0;
 
   // CAN发送
-  CAN_Transmit(CAN2, &tx_message);
+  CanSend(CAN2, (int8_t *)tx_message.Data, tx_message.StdId, tx_message.DLC);
 }
 
 // 发送调度计数器 5ms自增1
@@ -710,8 +788,11 @@ void JudgeDataCanSend(void)
   {
     SentryInfoPack();
     Can2SendSentryInfo(&sentry_info_send);
-    SentryDurationPack();
-    Can2SendSentryDuration(&sentry_duration_send);
+    if (Referee_IsSentryInfoFresh())
+    {
+      SentryDurationPack();
+      Can2SendSentryDuration(&sentry_duration_send);
+    }
   }
   // 10Hz 发送伤害值差 (0x0003, 20260713协议更新)
   if (send_count % 20 == 7)

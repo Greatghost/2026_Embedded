@@ -52,8 +52,15 @@
 #define ROBOT_COMMAND_CAN_ID 0x09E              // 接收小地图下发指令(0x0303)
 #define GET_SENTRY_DURATION_CAN_ID 0x09F          // 接收哨兵姿态时长数据(0x020D扩展)
 #define GET_DAMAGE_DIFF_CAN_ID 0x0A0            // 接收伤害值差数据(0x0003扩展)
+#define GET_MOTOR_OFFLINE_CAN_ID 0x0A1          // 接收电机掉线状态(2026-07-19新增)
+#define GET_UWB_STEER_CAN_ID 0x0A2                // 接收UWB角度+舵角当前角(2026-07-21新增)
+#define GET_OUTPOST_HP_CAN_ID 0x0A3              // 接收前哨站HP原始值(2026-07-21新增)
 // 新增: 发送SentryCmd给底盘
 #define SEND_TO_CHASSIS_SENTRY_CMD_CAN_ID 0x15A  // 发送SentryCmd给底盘
+// 新增: 转发0x0307 map_data 给底盘 (2026-07-18 协议, 多帧分段传输)
+#define SEND_TO_CHASSIS_MAP_PATH_CAN_ID 0x152  // 105B 分 15 帧, byte0=segment_index
+// 新增: 转发0x0308 custom_info 给底盘 (2026-07-11 协议, 多帧分段传输)
+#define SEND_TO_CHASSIS_CUSTOM_INFO_CAN_ID 0x153  // 34B 分 5 帧, byte0=segment_index
 #define CHASSIS_CAN_COMM_CAN_Handlerx hcan1
 #define CHASSIS_CAN_COMM_CANx CAN1
 
@@ -78,15 +85,15 @@
 // FIFO 0 接收ID
 #define CAN2_FIFO0_ID0 GET_FROM_BIG_YAW_CAN_ID
 #define CAN2_FIFO0_ID1 PITCH_MOTOR_CAN_ID
-#define CAN2_FIFO0_ID2 0x000  // [SMALL_YAW_REMOVED] 原为 SMALL_YAW_MOTOR_CAN_ID
-#define CAN2_FIFO0_ID3 ROBOT_COMMAND_CAN_ID
+// [FIX] 原 0x000 占位会接受总线上的杂散 ID 0x000 帧, 改为重复已 listed ID 避免误收
+#define CAN2_FIFO0_ID2 GET_FROM_BIG_YAW_CAN_ID  // 重复 ID0 (原为 SMALL_YAW_MOTOR_CAN_ID, 已删除)
+#define CAN2_FIFO0_ID3 PITCH_MOTOR_CAN_ID       // 重复 ID1 (原误配 ROBOT_COMMAND_CAN_ID, 0x09E 物理进入 CAN1)
 
 // FIFO 1 接收ID
 #define CAN2_FIFO1_ID0 0x003
 #define CAN2_FIFO1_ID1 LEFT_FRICTION_WHEEL_CAN_ID
 #define CAN2_FIFO1_ID2 RIGHT_FRICTION_WHEEL_CAN_ID
-#define CAN2_FIFO1_ID3 0x000
-
+#define CAN2_FIFO1_ID3 LEFT_FRICTION_WHEEL_CAN_ID  // [FIX] 原 0x000 改为重复 ID1
 
 #elif ROBOT == TIGER
 
@@ -129,8 +136,15 @@
 #define ROBOT_COMMAND_CAN_ID 0x09E              // 接收小地图下发指令(0x0303)
 #define GET_SENTRY_DURATION_CAN_ID 0x09F          // 接收哨兵姿态时长数据(0x020D扩展)
 #define GET_DAMAGE_DIFF_CAN_ID 0x0A0            // 接收伤害值差数据(0x0003扩展)
+#define GET_MOTOR_OFFLINE_CAN_ID 0x0A1          // 接收电机掉线状态(2026-07-19新增)
+#define GET_UWB_STEER_CAN_ID 0x0A2                // 接收UWB角度+舵角当前角(2026-07-21新增)
+#define GET_OUTPOST_HP_CAN_ID 0x0A3              // 接收前哨站HP原始值(2026-07-21新增)
 // 新增: 发送SentryCmd给底盘
 #define SEND_TO_CHASSIS_SENTRY_CMD_CAN_ID 0x15A  // 发送SentryCmd给底盘
+// 新增: 转发0x0307 map_data 给底盘 (2026-07-18 协议, 多帧分段传输)
+#define SEND_TO_CHASSIS_MAP_PATH_CAN_ID 0x152  // 105B 分 15 帧, byte0=segment_index
+// 新增: 转发0x0308 custom_info 给底盘 (2026-07-11 协议, 多帧分段传输)
+#define SEND_TO_CHASSIS_CUSTOM_INFO_CAN_ID 0x153  // 34B 分 5 帧, byte0=segment_index
 #define CHASSIS_CAN_COMM_CAN_Handlerx hcan1
 #define CHASSIS_CAN_COMM_CANx CAN1
 
@@ -155,14 +169,15 @@
 // FIFO 0 接收ID
 #define CAN2_FIFO0_ID0 GET_FROM_BIG_YAW_CAN_ID
 #define CAN2_FIFO0_ID1 PITCH_MOTOR_CAN_ID
-#define CAN2_FIFO0_ID2 0x000  // [SMALL_YAW_REMOVED] 原为 SMALL_YAW_MOTOR_CAN_ID
-#define CAN2_FIFO0_ID3 ROBOT_COMMAND_CAN_ID
+// [FIX] 原 0x000 占位会接受总线上的杂散 ID 0x000 帧, 改为重复已 listed ID 避免误收
+#define CAN2_FIFO0_ID2 GET_FROM_BIG_YAW_CAN_ID  // 重复 ID0 (原为 SMALL_YAW_MOTOR_CAN_ID, 已删除)
+#define CAN2_FIFO0_ID3 PITCH_MOTOR_CAN_ID       // 重复 ID1 (原误配 ROBOT_COMMAND_CAN_ID, 0x09E 物理进入 CAN1)
 
 // FIFO 1 接收ID
 #define CAN2_FIFO1_ID0 0x003
 #define CAN2_FIFO1_ID1 LEFT_FRICTION_WHEEL_CAN_ID
 #define CAN2_FIFO1_ID2 RIGHT_FRICTION_WHEEL_CAN_ID
-#define CAN2_FIFO1_ID3 0x000
+#define CAN2_FIFO1_ID3 LEFT_FRICTION_WHEEL_CAN_ID  // [FIX] 原 0x000 改为重复 ID1
 
 #endif
 

@@ -12,6 +12,7 @@
 
 #include "bsp_can.h"
 #include "can.h"
+#include "pc_serial.h"
 
 
 

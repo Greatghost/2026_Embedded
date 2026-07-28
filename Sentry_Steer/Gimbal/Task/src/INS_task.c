@@ -76,7 +76,14 @@ void INS_Task_EKF(void)
 		delay_time++;
 		return;
 	}
-	buzzer_off();
+	else if (delay_time == 500)
+	{
+		/* IMU 预热结束,只执行一次 buzzer_off 并恢复 PSC=9 (buzzer_on 改成了 10)
+		 * 之后不再操作 TIM4,避免覆盖 BuzzerAlarmTask 设置的 CCR3 */
+		buzzer_off();
+		__HAL_TIM_SET_PRESCALER(&htim4, 9);
+		delay_time++;
+	}
     // ins update
     if ((count % 1) == 0)
     {

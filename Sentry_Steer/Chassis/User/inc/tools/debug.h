@@ -113,13 +113,19 @@ typedef struct Motor_SendReceive_Debugger
 
 typedef struct Referee_Debugger
 {
-    uint16_t err_msgs_num;        // CRC校验失败计数
+    uint16_t err_msgs_num;        // CRC、帧长度或DMA覆盖等错误计数
     uint16_t recv_msgs_num;       // 总接收计数
+    uint32_t crc8_error_count;    // 帧头CRC8错误
+    uint32_t crc16_error_count;   // 整帧CRC16错误
+    uint32_t length_error_count;  // data_length或子内容长度错误
+    uint32_t dma_overrun_count;   // DMA环形缓冲覆盖未解析数据
 
     // 裁判系统各CMD_ID接收计数
     uint16_t cmd_0x0001_num;      // 比赛状态
+    uint16_t cmd_0x0002_num;      // 比赛结果
     uint16_t cmd_0x0003_num;      // 友方血量
     uint16_t cmd_0x0101_num;      // 场地事件
+    uint16_t cmd_0x0104_num;      // 裁判警告
     uint16_t cmd_0x0105_num;      // 飞镖时间
     uint16_t cmd_0x0201_num;      // 机器人状态(裁判系统)
     uint16_t cmd_0x0202_num;      // 功率热量
@@ -129,8 +135,11 @@ typedef struct Referee_Debugger
     uint16_t cmd_0x0207_num;      // 射击数据
     uint16_t cmd_0x0208_num;      // 弹丸剩余
     uint16_t cmd_0x0209_num;      // RFID状态
+    uint16_t cmd_0x020A_num;      // 飞镖选手端指令
     uint16_t cmd_0x020B_num;      // 地面机器人位置
+    uint16_t cmd_0x020C_num;      // 雷达标记进度
     uint16_t cmd_0x020D_num;      // 哨兵信息
+    uint16_t cmd_0x020E_num;      // 雷达信息
     uint16_t cmd_0x0301_num;      // 机器人交互数据
     uint16_t cmd_0x0303_num;      // 机器人控制指令
 

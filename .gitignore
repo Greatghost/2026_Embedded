@@ -25,6 +25,9 @@ Objects/
 Listings/
 DebugConfig/
 RTE/
+.venv/
+__pycache__/
+*.py[cod]
 
 # Archives
 *.zip
@@ -41,3 +44,11 @@ Thumbs.db
 *.tmp
 *.temp
 *~
+
+# AI
+.agents/
+.codex/
+.workbuddy/
+
+# Local custom-client settings
+custom_client_path_viewer/config.json

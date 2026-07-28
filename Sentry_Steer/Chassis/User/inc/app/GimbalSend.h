@@ -30,11 +30,11 @@ typedef struct{
 	uint8_t Enemy_outpost : 6; //敌方哨兵是否无敌
 	uint8_t Robot_Red_Blue : 1; //1 -> red ; 0 -> blue
 	uint8_t self_outpost : 6;
-	uint8_t sentry_posture : 2;  // 哨兵姿态(来自裁判系统0x020D): 1=进攻, 2=防御, 3=移动, 0=未知
+	uint8_t reserve_1bit : 1;  // 保留位, 填充到2字节
 	uint16_t shooter1_heat;
 	uint16_t bullet_remaining_num_17mm; //0x208
 	uint16_t stage_remain_time; //0x0001
-} JudgeData_ForSend1_t;
+} JudgeData_ForSend1_t;  // sizeof == 8 bytes (位域15bits+1bit填充=2字节 + 3×uint16=6字节)
 
 
 typedef struct{
@@ -106,6 +106,7 @@ typedef struct ShootData_ForSend
 	uint8_t  shooter_id;        // 发射机构ID：1-1号17mm/2-2号17mm/3-1号42mm
 	uint8_t  bullet_freq;       // 发射频率（发/秒）
 	float    bullet_speed;      // 弹丸初速度（m/s）
+	uint8_t  reserve;            // 填充到8字节
 } ShootData_ForSend_t;
 
 // 哨兵信息发送包 (0x020D), 用于云台TypeID 7
@@ -163,6 +164,34 @@ typedef struct DamageDiff_ForSend
 	uint8_t reserve[6];            // 填充到8字节
 } DamageDiff_ForSend_t;
 
+// 电机掉线状态发送包 (CAN 0x0A1, 2026-07-19新增)
+// 位图：bit=1 表示电机掉线
+//   bit0-3 : 轮电机1-4 (DJI_3508_MOTORS_1..4)
+//   bit4-7 : 舵电机1-4 (DJI_6020_MOTORS_1..4)
+typedef struct MotorOffline_ForSend
+{
+	uint8_t motor_offline_bitmap;
+	uint8_t reserve[7];            // 填充到8字节
+} MotorOffline_ForSend_t;
+
+// UWB角度+舵角发送包 (CAN 0x0A2, 2026-07-21新增)
+// 用于云台 TypeID 6 上行帧对齐上位机 ChassisData 结构体
+typedef struct UwbSteer_ForSend
+{
+	uint16_t uwb_angle_yaw;       // UWB偏航角 (来自裁判系统0x0203 Game_Robot_Pos.angle, 取整uint16)
+	int16_t  steer_angle_x10;    // 舵角当前角×10 (单位0.1°), 取 steer_decode[0].angle
+	uint8_t  reserve[4];          // 填充到8字节
+} UwbSteer_ForSend_t;
+
+// 前哨站HP发送包 (CAN 0x0A3, 2026-07-21新增)
+// 直接发送裁判系统0x0003原始uint16 HP值, 不做6bit压缩, 保证高精度
+typedef struct OutpostHP_ForSend
+{
+	uint16_t ally_outpost_HP;    // 己方前哨站血量 (原始uint16, 来自 referee_data.Game_Robot_friend_HP.friend_outpost_HP)
+	uint16_t enemy_outpost_HP;   // 敌方前哨站血量 (原始uint16, 来自 referee_data.Game_Robot_friend_HP.enemy_outpost_HP)
+	uint8_t  reserve[4];         // 填充到8字节
+} OutpostHP_ForSend_t;
+
 
 #pragma pack(pop)
 
@@ -175,6 +204,9 @@ extern SentryCmd_FromGimbal_t sentry_cmd_from_gimbal;  // 接收云台转发的S
 extern RobotCommand_ForSend_t robot_command_send;     // 0x0303小地图下发指令
 extern SentryDuration_ForSend_t sentry_duration_send; // 哨兵姿态时长发送包
 extern DamageDiff_ForSend_t damage_diff_send;         // 伤害值差发送包
+extern MotorOffline_ForSend_t motor_offline_send;     // 电机掉线状态发送包
+extern UwbSteer_ForSend_t uwb_steer_send;             // UWB角度+舵角发送包 (CAN 0x0A2)
+extern OutpostHP_ForSend_t outpost_hp_send;           // 前哨站HP发送包 (CAN 0x0A3)
 
 void GimbalSendPack(void);
 void JudgeDataCanSend(void);
@@ -188,5 +220,10 @@ void Can2SendRobotCommand(RobotCommand_ForSend_t *data); // CAN2发送小地图�
 void Can2SendSentryDuration(SentryDuration_ForSend_t *data); // CAN2发送哨兵姿态时长
 void DamageDiffPack(void);              // 伤害值差打包
 void Can2SendDamageDiff(DamageDiff_ForSend_t *data); // CAN2发送伤害值差
+void Can2SendMotorOffline(MotorOffline_ForSend_t *data); // CAN2发送电机掉线状态
+void UwbSteerPack(void);                                   // UWB角度+舵角打包 (CAN 0x0A2)
+void Can2SendUwbSteer(UwbSteer_ForSend_t *data);           // CAN2发送UWB+舵角
+void OutpostHPPack(void);                                 // 前哨站HP打包 (CAN 0x0A3)
+void Can2SendOutpostHP(OutpostHP_ForSend_t *data);         // CAN2发送前哨站HP
 
 #endif // !_GIMBAL_SEND_H

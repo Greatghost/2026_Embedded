@@ -165,12 +165,64 @@ typedef struct {
     uint32_t sentry_cmd;  // RM2026 V2.0 0x0120 命令字, uint32 LE
 } SentryCommandFrame_t;   // sizeof == 6
 
-// DownlinkTypeID 0x02: MapPathFrame (107B) — 0x0307 map_data_t 原样转发
+// DownlinkTypeID 0x02: MapPathFragment (64B) — 2026-07-18 协议变更
+// 上位机因 USB FS 单包 64B 限制，将原 107B MapPathFrame 拆成两个固定 64B 物理帧。
+// 云台板接收两段后重组为 105B map_data_t payload，再通过 CAN 多帧分段转发到底盘。
+// 详见 map_path_fragment_reassembly.md
 typedef struct {
-    uint8_t head;               // 0x21
-    uint8_t type_id;            // 0x02
-    uint8_t map_data[105];      // 0x0307 payload: Intention + StartPos + DeltaX[49] + DeltaY[49] + SenderId
-} MapPathFrame_t;               // sizeof == 107
+    uint8_t  head;              // 0x21
+    uint8_t  type_id;           // 0x02
+    uint8_t  sequence;          // 两段必须相同
+    uint8_t  fragment_index;    // 0 = 首段, 1 = 尾段
+    uint8_t  fragment_count;    // 固定 2
+    uint8_t  payload_length;    // index 0 = 56; index 1 = 49
+    uint8_t  payload[56];       // 有效负载; index 1 的最后 7B 必须忽略
+    uint16_t crc16;             // little-endian uint16_t, 校验 byte 0-61
+} MapPathFragment_t;             // sizeof == 64
+
+// 0x0307 map_data_t 重组后的 105B payload 布局：
+//   byte 0      : intention (uint8, 仅 1/2/3 有效)
+//   byte 1-2    : start_position_x (uint16 LE, dm)
+//   byte 3-4    : start_position_y (uint16 LE, dm)
+//   byte 5-53   : delta_x[49] (int8, dm)
+//   byte 54-102 : delta_y[49] (int8, dm)
+//   byte 103-104: sender_id (uint16 LE)
+#define MAP_PATH_PAYLOAD_SIZE    105U
+#define MAP_PATH_FRAGMENT_COUNT  2U
+#define MAP_PATH_FRAGMENT0_LEN   56U   // index 0 有效负载长度
+#define MAP_PATH_FRAGMENT1_LEN   49U   // index 1 有效负载长度
+#define MAP_PATH_TIMEOUT_MS      100U  // 重组超时, 从首段开始计时
+
+/*
+ * 云台端MapPath USB接收诊断计数器，可直接加入Keil Watch。
+ * 所有计数器仅做自增，不在USB接收上下文中打印，避免影响分片时序。
+ */
+typedef struct {
+    volatile uint32_t fragment0_valid_count;    // 通过格式和CRC校验的首段数量
+    volatile uint32_t fragment1_valid_count;    // 通过格式和CRC校验的尾段数量
+    volatile uint32_t invalid_frame_count;      // 固定字段、长度或CRC错误
+    volatile uint32_t timeout_count;            // 首尾两段间隔超过100ms
+    volatile uint32_t order_drop_count;         // 无首段、sequence不一致或重复尾段
+    volatile uint32_t invalid_payload_count;    // 重组后intention不是1/2/3
+    volatile uint32_t reassembly_success_count; // 成功得到完整105B payload
+    volatile uint8_t last_sequence;             // 最近一个有效分片的sequence
+    volatile uint8_t last_fragment_index;       // 最近一个有效分片的index
+} MapPathRxDebug_t;
+
+extern MapPathRxDebug_t g_map_path_rx_debug;
+
+// 0x02 分片重组状态机
+typedef struct {
+    uint8_t  active;            // 是否有 pending 路径
+    uint8_t  sequence;          // 当前 pending 的 sequence
+    uint8_t  has_fragment[2];   // [0]=首段已收, [1]=尾段已收
+    uint8_t  payload[MAP_PATH_PAYLOAD_SIZE];  // 重组 buffer (105B)
+    uint32_t started_ms;        // 首段到达时间
+} map_path_pending_t;
+
+// 处理一个完整的 64B 0x02 fragment frame
+// 重组成功时返回 1 并把 105B payload 写入 out_payload; 否则返回 0
+uint8_t MapPath_OnFragment(const uint8_t *frame_64, uint32_t now_ms, uint8_t *out_payload_105);
 
 // DownlinkTypeID 0x03: CustomInfoFrame (36B) — 0x0308 custom_info_t 原样转发
 typedef struct {
@@ -292,14 +344,12 @@ typedef struct PCSendDataExtended
 {
 	uint8_t start_flag;
 	uint8_t data_pack_type;  // = JUDGE_PC_DATA_EXTENDED = 6
-
-	int16_t damage_difference; // 伤害值差 (己方−敌方HP总和, CAN 0x0A0)
-	uint8_t sentry_posture;  // 姿态回读已移至TypeID 7, 此处置0
-	uint8_t reserve_8;
-	uint32_t gimbal_vel_data1;  // 小YAW偏差角度 + 底盘w速度: byte0+byte1=小YAW偏差角度*10(int16)单位0.1度, byte2+byte3=底盘角速度*100(int16)单位0.01rad/s
-	uint32_t gimbal_vel_data2;  // 底盘速度数据: byte0+byte1=底盘x速度(int16), 单位0.01 m/s; byte2+byte3=底盘y速度(int16), 单位0.01 m/s (通过舵电机角度与轮电机速度反解)
-
-	uint8_t crc8;
+	// 2026-07-21变更: 对齐上位机 ChassisData 结构体
+	uint16_t uwb_angle_yaw;      // UWB偏航角 (来自底盘 CAN 0x0A2)
+	int16_t  damage_difference;  // 伤害值差 (己方−敌方HP总和, CAN 0x0A0)
+	uint32_t chassis_packed1;    // low16: 舵角当前角×10(int16, 单位0.1°), high16: 底盘角速度×100(int16, 单位0.01rad/s)
+	uint32_t chassis_packed2;    // low16: 底盘x速度×100(int16, 单位0.01m/s), high16: 底盘y速度×100(int16, 单位0.01m/s)
+	uint8_t  crc8;
 }PCSendDataExtended_t;
 
 // TypeID 7: SentryData - 哨兵信息 (0x020D + 0x0207初速度)
@@ -342,21 +392,25 @@ typedef struct PCSendDataRobotCmd
 	uint8_t crc8;
 } PCSendDataRobotCmd_t;  // sizeof == 15 bytes
 
-// TypeID 10: SentryDuration - 哨兵姿态时长 (0x020D扩展, CAN 0x09F)
+// TypeID 10: SentryDuration - 哨兵姿态时长 + 前哨站HP (0x020D扩展 + 0x0A3前哨HP)
+// 2026-07-21变更: 保持总长15B(含CRC8), 仅把原 byte 10-13 的 reserved 4字节改成前哨站HP
+//   byte 10-11: ally_outpost_HP  (uint16, 原始值, 来自底盘CAN 0x0A3, 不走6bit压缩)
+//   byte 12-13: enemy_outpost_HP (uint16, 原始值, 来自底盘CAN 0x0A3, 不走6bit压缩)
 typedef struct PCSendDataSentryDuration
 {
-	uint8_t start_flag;           // '!'
-	uint8_t data_pack_type;       // = JUDGE_PC_DATA_SENTRY_DURATION = 10
-	uint8_t normal_attack_duration;
-	uint8_t normal_defend_duration;
-	uint8_t normal_move_duration;
-	uint8_t reserved_duration_1;
-	uint8_t enhanced_attack_duration;
-	uint8_t enhanced_defend_duration;
-	uint8_t enhanced_move_duration;
-	uint8_t reserved_duration_2;
-	uint32_t reserved;            // 填充至12字节payload
-	uint8_t crc8;
+	uint8_t start_flag;                  // byte 0:  '!'
+	uint8_t data_pack_type;              // byte 1:  = 10
+	uint8_t normal_attack_duration;      // byte 2:  普通进攻姿态剩余秒数
+	uint8_t normal_defend_duration;     // byte 3:  普通防御姿态剩余秒数
+	uint8_t normal_move_duration;        // byte 4:  普通移动姿态剩余秒数
+	uint8_t reserved_duration_1;         // byte 5:  保留
+	uint8_t enhanced_attack_duration;     // byte 6:  强化进攻姿态剩余秒数
+	uint8_t enhanced_defend_duration;    // byte 7:  强化防御姿态剩余秒数
+	uint8_t enhanced_move_duration;      // byte 8:  强化移动姿态剩余秒数
+	uint8_t reserved_duration_2;         // byte 9:  保留
+	uint16_t ally_outpost_HP;            // byte 10-11: 己方前哨站血量 (原始uint16, 来自CAN 0x0A3)
+	uint16_t enemy_outpost_HP;           // byte 12-13: 敌方前哨站血量 (原始uint16, 来自CAN 0x0A3)
+	uint8_t  crc8;                        // byte 14: CRC8 校验
 } PCSendDataSentryDuration_t;  // sizeof == 15 bytes
 
 // TypeID 11: GimbalDynamics - 云台实际角速度/角加速度
@@ -377,12 +431,15 @@ typedef struct PCSendDataGimbalDynamics
 typedef char GimbalControlFrameSizeCheck[(sizeof(GimbalControlFrame_t) == 13U) ? 1 : -1];
 typedef char GimbalTrajectoryFrameSizeCheck[(sizeof(GimbalTrajectoryFrame_t) == 26U) ? 1 : -1];
 typedef char GimbalDynamicsFrameSizeCheck[(sizeof(PCSendDataGimbalDynamics_t) == 15U) ? 1 : -1];
+typedef char MapPathFragmentSizeCheck[(sizeof(MapPathFragment_t) == 64U) ? 1 : -1];
+typedef char SentryDurationSizeCheck[(sizeof(PCSendDataSentryDuration_t) == 15U) ? 1 : -1];
+typedef char ExtendedSizeCheck[(sizeof(PCSendDataExtended_t) == 15U) ? 1 : -1];
+typedef char RFIDAndBuffSizeCheck[(sizeof(PCSendDataRFIDAndBuff_t) == 15U) ? 1 : -1];
 
 #pragma pack(pop) //
 
-
 #define PC_SENDBUF_SIZE sizeof(PCSendData)
-#define PC_RECVBUF_SIZE sizeof(MapPathFrame_t)  // 107B, 取最大下行帧
+#define PC_RECVBUF_SIZE sizeof(MapPathFragment_t)  // 64B, 0x02 分片帧为最大下行帧
 #define PC_SEND_BLOOD_SIZE sizeof(PCSendDataBlood_1)
 
 extern unsigned char PCbuffer[PC_RECVBUF_SIZE];
@@ -414,8 +471,8 @@ typedef struct
 	float nav_speed_w;
 	uint8_t shoot_state;
 	uint8_t cap_state;
-	uint8_t through_hole;
-	uint8_t big_yaw_mode;
+	uint8_t follow_mode;   // [FIX] 原 through_hole, 实为 FireCode.bit4 FollowMode (1=启用跟随, 0=禁用)
+	uint8_t aim_mode;      // [FIX] 原 big_yaw_mode,  实为 FireCode.bit5 AimMode   (1=启用辅瞄, 0=禁用)
 	uint8_t rotate_state;
 } PCControlSnapshot_t;
 
@@ -440,5 +497,7 @@ extern PCSendDataRobotCmd_t PCSendRobotCmd;  // TypeID 9 uplink  // TypeID 9
 
 /* USB CDC是字节流；该入口负责拆包、粘包和跨64B端点重组。 */
 void PCStreamReceive(const unsigned char *data, uint32_t length);
+uint8_t PCStreamEnqueueFromISR(const unsigned char *data, uint32_t length);
+void PCStreamProcessPending(void);
 
 #endif // !_PC_SERIAL_H

@@ -60,8 +60,8 @@ typedef struct ChassisSendPack1
 
   // 第二个uint8_t位域: 8位 = 1字节
   uint8_t through_hole_flag : 1;
-  uint8_t sentry_posture : 2;    // 哨兵姿态: 1=进攻, 2=防御, 3=移动, 0=未知
-  uint8_t reserved_bits : 5;     // 共8位
+  uint8_t sentry_posture : 3;    // 哨兵姿态: 1=进攻, 2=防御, 3=移动, 4=强化进攻, 5=强化防御, 6=强化移动, 0=未知
+  uint8_t reserved_bits : 4;     // 共8位
 
   // yaw_motor_angle: 2字节
   int16_t yaw_motor_angle;       // 云台yaw轴电机角度

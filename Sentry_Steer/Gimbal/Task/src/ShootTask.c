@@ -199,10 +199,20 @@ void Shoot_Pos_Cal() // 位置模式
     static int Shoot_IntervalTime = 25; // 2ms进行一次，自增至20次需要40ms，即25hz弹频
     // static int Shoot_IntervalTime =500;
 
+    // 弹频分档 (GimbalTask 500Hz = 2ms 一次, Shoot_IntervalTime 为计数上限):
+    //   SHOOT_AUTO_AIM_MODE              = 25  -> 50ms  -> 约 20Hz (常规辅瞄)
+    //   SHOOT_UNSTOPPABLE_AUTO_AIM_MODE  = 25  -> 50ms  -> 约 20Hz (强化进攻, 与 UNSTOPPABLE 对齐)
+    //   其他                            = 50  -> 100ms -> 约 10Hz (手动)
     if (remote_controller.shoot_action == SHOOT_AUTO_AIM_MODE)
+        Shoot_IntervalTime = 25;
+    else if (remote_controller.shoot_action == SHOOT_UNSTOPPABLE_AUTO_AIM_MODE)
         Shoot_IntervalTime = 25;
     else
         Shoot_IntervalTime = 50;
+
+    // [FIX] 每周期清零 Shoot_State_send, 仅在实际拨弹时更新为 current_AA_firecode
+    // 防止非辅瞄模式或未开火时残留旧值导致上位机误判仍在开火
+    Shoot_Cmd.Shoot_State_send = 0;
     // 摩擦轮
     setFrictionSpeed(chassis_pack_get_1.bullet_level);
     FrictionWheel_Set(-friction_wheels.set_speed_l, +friction_wheels.set_speed_r);
@@ -230,7 +240,9 @@ void Shoot_Pos_Cal() // 位置模式
 
         if (shoot_pos_delay_num > Shoot_IntervalTime)
         {
-            if (toggle_controller.is_shoot && (remote_controller.shoot_action == SHOOT_FIRE_MODE || remote_controller.shoot_action == SHOOT_AUTO_AIM_MODE))
+            if (toggle_controller.is_shoot && (remote_controller.shoot_action == SHOOT_FIRE_MODE ||
+                                               remote_controller.shoot_action == SHOOT_AUTO_AIM_MODE ||
+                                               remote_controller.shoot_action == SHOOT_UNSTOPPABLE_AUTO_AIM_MODE))
             {
                 ToggleAddGrid(&toggle_controller.set_pos, 1);
                 shoot_pos_delay_num = 0;
@@ -364,25 +376,71 @@ void Shoot_Supply_Cal()
 
 void Shoot_Unstoppable_Cal()
 {
-    // 摩擦轮
+    // 弹频换算: 原 TOGGLE_SPEED 连续转动 900°/s ÷ ONE_GRID_ANGLE(45°/发) = 20Hz
+    // GimbalTask 500Hz (2ms/次), 20Hz 周期 50ms → UNSTOPPABLE_SHOOT_INTERVAL = 25 个周期
+    // 保持当前弹频不变, 仅把拨盘从连续转动改为位置环单发(一格一格)转动
+    static int unstoppable_delay_num = 0;
+    const int UNSTOPPABLE_SHOOT_INTERVAL = 25;
+
+    // 摩擦轮: 高弹频下摩擦轮受子弹持续摩擦导致掉速, 提升目标转速以维持实际弹速。
+    // setFrictionSpeed() 设置基础目标 (-BULLET_17MM_23MS_SPEED_L/R), 此处叠加补偿量。
     setFrictionSpeed(chassis_pack_get_1.bullet_level);
+    //friction_wheels.set_speed_l -= UNSTOPPABLE_FRICTION_BOOST;
+    //friction_wheels.set_speed_r -= UNSTOPPABLE_FRICTION_BOOST;
     FrictionWheel_Set(-friction_wheels.set_speed_l, +friction_wheels.set_speed_r);
     motor_communication[LEFT_FRICTION_WHEEL_MOTOR].control = friction_wheels.send_to_motor_current[LEFT_FRICTION_WHEEL];
     motor_communication[RIGHT_FRICTION_WHEEL_MOTOR].control = friction_wheels.send_to_motor_current[RIGHT_FRICTION_WHEEL];
 
-    // 拨盘: 速度模式连续转动, 900°/s ≈ 20Hz弹频 (45°/格 × 20Hz)
-    toggle_controller.shoot_freq_speed = 900.0f;
+    // 拨盘: 位置环单发模式, 由 is_shoot 触发, 每格间隔 UNSTOPPABLE_SHOOT_INTERVAL 个周期
+    unstoppable_delay_num++;
     autoReverse();
-    motor_communication[TOGGLE_MOTOR].control = Toggle_Calculate(TOGGLE_SPEED, SIGN_ROTATE * toggle_controller.shoot_freq_speed);
+
+    switch (toggle_controller.toggle_state)
+    {
+    case TOGGLE_NORMAL: // 正常状态下
+        if (unstoppable_delay_num > UNSTOPPABLE_SHOOT_INTERVAL)
+        {
+            if (toggle_controller.is_shoot)
+            {
+                ToggleAddGrid(&toggle_controller.set_pos, 1);
+                unstoppable_delay_num = 0;
+            }
+        }
+        motor_communication[TOGGLE_MOTOR].control = Toggle_Calculate(TOGGLE_POS, toggle_controller.set_pos);
+        break;
+    case TOGGLE_REVERSE: // 反拨
+        motor_communication[TOGGLE_MOTOR].control = Toggle_Calculate(TOGGLE_SPEED, SIGN_ROTATE * 300.0f * (-1.0f));
+        break;
+    default: // 错误卸力
+        motor_communication[TOGGLE_MOTOR].control = Toggle_Calculate(TOGGLE_STOP, 0.0f);
+        break;
+    }
 }
 
 void Shoot_Cal(void)
 {
-    if (remote_controller.shoot_action != SHOOT_AUTO_AIM_MODE)
+    // 辅瞄类模式 (含 UNSTOPPABLE_AUTO_AIM) 共享 pc_shoot_was_online / aa_fire_req_lvl / AA_Shootable 上下文,
+    // 切到非辅瞄模式时清零, 防止旧开火沿在下次切回辅瞄时被消费。
+    if (remote_controller.shoot_action != SHOOT_AUTO_AIM_MODE &&
+        remote_controller.shoot_action != SHOOT_UNSTOPPABLE_AUTO_AIM_MODE)
     {
         pc_shoot_was_online = 0U;
         aa_fire_req_lvl = 0U;
         AA_Shootable = 0U;
+    }
+
+    // 摩擦轮 Kp 动态调整: 两个 UNSTOPPABLE 模式下弹频较快, 摩擦轮负载扰动更大,
+    // Kp 提升至默认值的 1.1 倍 (2.2 -> 2.42) 以加快转速恢复; 其他模式恢复默认值。
+    // 每周期设置, 避免模式切换时残留。
+    {
+        const float FRICTION_KP_DEFAULT = 2.2f;
+        const float FRICTION_KP_UNSTOPPABLE = 2.42f; // 2.2f * 1.1f
+        float kp_target = (remote_controller.shoot_action == SHOOT_UNSTOPPABLE_MODE ||
+                           remote_controller.shoot_action == SHOOT_UNSTOPPABLE_AUTO_AIM_MODE)
+                              ? FRICTION_KP_UNSTOPPABLE
+                              : FRICTION_KP_DEFAULT;
+        friction_wheels.PidFrictionSpeed[LEFT_FRICTION_WHEEL].Kp = kp_target;
+        friction_wheels.PidFrictionSpeed[RIGHT_FRICTION_WHEEL].Kp = kp_target;
     }
 
     switch (remote_controller.shoot_action)
@@ -407,6 +465,11 @@ void Shoot_Cal(void)
         break;
     case SHOOT_UNSTOPPABLE_MODE: // UNSTOPPABLE模式
         Shoot_Unstoppable_Cal();
+        break;
+    case SHOOT_UNSTOPPABLE_AUTO_AIM_MODE: // 强化进攻姿态下的高速辅瞄射击
+        // 复用 Shoot_Autoaim_Cal 的全部辅瞄判定逻辑 (FireCode 沿/AA_Shootable/掉线安全停),
+        // 仅在 Shoot_Pos_Cal() 内部按本模式取更高弹频。
+        Shoot_Autoaim_Cal();
         break;
     default:
         Shoot_Powerdown_Cal();

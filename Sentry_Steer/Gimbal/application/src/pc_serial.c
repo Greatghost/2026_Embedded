@@ -14,6 +14,106 @@
 #include "bsp_can.h"  // 新增: 引用Can1SendSentryCmd
 
 #include "SignalGenerator.h"
+#include "usbd_cdc_if.h"   // 用于 TxState 检查, 避免上行帧发送冲突
+
+extern USBD_HandleTypeDef hUsbDeviceFS;
+
+#define PC_RX_RING_SIZE 512U
+#define PC_RX_PROCESS_CHUNK_SIZE 64U
+
+static uint8_t pc_rx_ring[PC_RX_RING_SIZE];
+static volatile uint16_t pc_rx_ring_head;
+static volatile uint16_t pc_rx_ring_tail;
+static volatile uint8_t pc_rx_ring_overflow;
+
+/*
+ * USB OUT completes in interrupt context. Copy the complete USB packet into
+ * an SPSC ring and leave framing, validation and CAN forwarding to a task.
+ */
+uint8_t PCStreamEnqueueFromISR(const unsigned char *data, uint32_t length)
+{
+	uint16_t head;
+	uint16_t tail;
+	uint16_t used;
+	uint16_t free_bytes;
+	uint32_t i;
+
+	if (data == NULL || length == 0U || length >= PC_RX_RING_SIZE)
+	{
+		return 0U;
+	}
+
+	head = pc_rx_ring_head;
+	tail = pc_rx_ring_tail;
+	used = (head >= tail)
+		? (uint16_t)(head - tail)
+		: (uint16_t)(PC_RX_RING_SIZE - tail + head);
+	free_bytes = (uint16_t)(PC_RX_RING_SIZE - 1U - used);
+	if (length > free_bytes)
+	{
+		/* Drop the whole USB packet. Never enqueue a partial application
+		 * frame; the task resets its framing state after overflow. */
+		pc_rx_ring_overflow = 1U;
+		return 0U;
+	}
+
+	for (i = 0U; i < length; i++)
+	{
+		pc_rx_ring[head] = data[i];
+		head++;
+		if (head == PC_RX_RING_SIZE)
+		{
+			head = 0U;
+		}
+	}
+	__DMB();
+	pc_rx_ring_head = head;
+	return 1U;
+}
+
+void PCStreamProcessPending(void)
+{
+	unsigned char chunk[PC_RX_PROCESS_CHUNK_SIZE];
+	uint16_t tail;
+	uint16_t head;
+	uint32_t count;
+
+	if (pc_rx_ring_overflow != 0U)
+	{
+		/* OTG_FS runs at the FreeRTOS syscall ceiling, so this short critical
+		 * section gives a coherent reset of the SPSC indices. */
+		taskENTER_CRITICAL();
+		pc_rx_ring_tail = pc_rx_ring_head;
+		pc_rx_ring_overflow = 0U;
+		taskEXIT_CRITICAL();
+		PCStreamReceive(NULL, 0U);
+	}
+
+	for (;;)
+	{
+		tail = pc_rx_ring_tail;
+		head = pc_rx_ring_head;
+		count = 0U;
+		while (tail != head && count < sizeof(chunk))
+		{
+			chunk[count++] = pc_rx_ring[tail];
+			tail++;
+			if (tail == PC_RX_RING_SIZE)
+			{
+				tail = 0U;
+			}
+		}
+
+		if (count == 0U)
+		{
+			return;
+		}
+
+		__DMB();
+		pc_rx_ring_tail = tail;
+		PCStreamReceive(chunk, count);
+	}
+}
 
 #if COMMUNICATION_CHOOSE == COMMUNICATION_OF_IFANTRY
 
@@ -56,6 +156,33 @@ void PCReceive(const unsigned char *PCbuffer, uint32_t length)
     #endif
 }
 
+void PCStreamReceive(const unsigned char *data, uint32_t length)
+{
+	static unsigned char frame_buffer[PC_RECVBUF_SIZE];
+	static uint32_t frame_length;
+	uint32_t i;
+
+	if (data == NULL)
+	{
+		frame_length = 0U;
+		return;
+	}
+
+	for (i = 0U; i < length; i++)
+	{
+		if (frame_length == 0U && data[i] != '!')
+		{
+			continue;
+		}
+		frame_buffer[frame_length++] = data[i];
+		if (frame_length == PC_RECVBUF_SIZE)
+		{
+			PCReceive(frame_buffer, frame_length);
+			frame_length = 0U;
+		}
+	}
+}
+
 void SendtoPCPack(unsigned char *buff)
 {
 	volatile unsigned char aim_press_r = remote_controller.dji_remote.mouse.press_r;
@@ -90,7 +217,11 @@ void SendtoPCPack(unsigned char *buff)
 void SendtoPC(void)
 {
     SendtoPCPack(SendToPC_Buff);
-    CDC_Transmit_FS(SendToPC_Buff, PC_SENDBUF_SIZE);
+    uint8_t tx_ret = CDC_Transmit_FS(SendToPC_Buff, PC_SENDBUF_SIZE);
+    if (tx_ret == USBD_BUSY)
+    {
+        usb_cdc_busy_count++;
+    }
 }
 
 #endif
@@ -271,8 +402,8 @@ void PCReceive(const unsigned char *PCbuffer, uint32_t length)
 		pc_control_shadow.nav_speed_w = 0.0f;
 		pc_control_shadow.shoot_state = frame.fire_code & 0x03U;
 		pc_control_shadow.cap_state = (frame.fire_code >> 2) & 0x03U;
-		pc_control_shadow.through_hole = (frame.fire_code >> 4) & 0x01U;
-		pc_control_shadow.big_yaw_mode = (frame.fire_code >> 5) & 0x01U;
+		pc_control_shadow.follow_mode  = (frame.fire_code >> 4) & 0x01U;  // [FIX] bit4 = FollowMode (原误读为 through_hole)
+		pc_control_shadow.aim_mode    = (frame.fire_code >> 5) & 0x01U;  // [FIX] bit5 = AimMode   (原误读为 big_yaw_mode)
 		pc_control_shadow.rotate_state = (frame.fire_code >> 6) & 0x03U;
 
 		/* 保留旧接口镜像；安全关键消费者改用PCControlGetSnapshot。 */
@@ -283,8 +414,10 @@ void PCReceive(const unsigned char *PCbuffer, uint32_t length)
 		NAV_cmd.Nav_Speed_w = 0.0f;
 		Shoot_Cmd.Shoot_State = pc_control_shadow.shoot_state;
 		PC_statecontrol.CapState = pc_control_shadow.cap_state;
-		PC_statecontrol.if_through_hole = pc_control_shadow.through_hole;
-		big_yaw_controller.big_yaw_mode = pc_control_shadow.big_yaw_mode;
+		/* [FIX] 旧字段 through_hole/big_yaw_mode 实为 FireCode.bit4 FollowMode / bit5 AimMode。
+		   左侧 legacy 镜像字段名保留（被其他模块读取），但值来自重命名后的 snapshot 字段。 */
+		PC_statecontrol.if_through_hole = pc_control_shadow.follow_mode;
+		big_yaw_controller.big_yaw_mode = pc_control_shadow.aim_mode;
 		PC_statecontrol.RotateState = pc_control_shadow.rotate_state;
 		pc_control_last_rx_tick = now;
 		pc_control_received = 1U;
@@ -340,10 +473,16 @@ void PCReceive(const unsigned char *PCbuffer, uint32_t length)
 		Can1SendSentryCmd(cmd);
 		break;
 	}
-	case PC_DOWNLINK_MAP_PATH: // 0x02 — 107B, 转发0x0307
-		if (length != sizeof(MapPathFrame_t)) return;
-		Can1SendMapPath(PCbuffer + 2);
+	case PC_DOWNLINK_MAP_PATH: // 0x02 — 64B 分片帧, 重组后转发 0x0307
+	{
+		static uint8_t map_path_payload[MAP_PATH_PAYLOAD_SIZE];
+		if (length != sizeof(MapPathFragment_t)) return;
+		if (MapPath_OnFragment(PCbuffer, HAL_GetTick(), map_path_payload) == 1U)
+		{
+			Can1SendMapPath(map_path_payload);
+		}
 		break;
+	}
 	case PC_DOWNLINK_CUSTOM_INFO: // 0x03 — 36B, 转发0x0308
 		if (length != sizeof(CustomInfoFrame_t)) return;
 		Can1SendCustomInfo(PCbuffer + 2);
@@ -427,7 +566,7 @@ void SendtoPCBlood_2(unsigned char* buff)
     pc_send_data_blood_2.Enemy2 = JudgeBlood_E.ID2 * 10;
     pc_send_data_blood_2.Enemy3 = JudgeBlood_E.ID3 * 10;
     pc_send_data_blood_2.Enemy4 = JudgeBlood_E.ID4 * 10;
-    pc_send_data_blood_2.E_base = JudgeBlood_E.ID8 * 10;
+    pc_send_data_blood_2.E_base = JudgeBlood_E.ID8 * 100;
     pc_send_data_blood_2.Enemy7 = JudgeBlood_E.ID7 * 10;
 	pc_send_data_blood_2.crc8 = 0;
 	Append_CRC8_Check_Sum((unsigned char *)&pc_send_data_blood_2, PC_SENDBUF_SIZE);
@@ -447,37 +586,50 @@ void SendtoPCRFIDAndBuff(unsigned char* buff)
 
 void SendtoPCPos(unsigned char* buff)
 {
-	static uint8_t count = 0;
-	if(count!=0 && count!=5 && count!=6)
+	static const uint8_t position_index[5] = {1U, 2U, 3U, 4U, 7U};
+	static uint8_t slot = 0U;
+	const uint8_t robot_index = position_index[slot];
+
+	PCSendPosition.start_flag = '!';
+	PCSendPosition.data_pack_type = JUDGE_PC_DATA_POS;
+	PCSendPosition.Friend.position_type = JudgeData_position.Friend[robot_index].position_type;
+	PCSendPosition.Friend.ID_X_100 = JudgeData_position.Friend[robot_index].ID_X_100;
+	PCSendPosition.Friend.ID_Y_100 = JudgeData_position.Friend[robot_index].ID_Y_100;
+	PCSendPosition.Enemy.position_type = JudgeData_position.Enemy[robot_index].position_type;
+	PCSendPosition.Enemy.ID_X_100 = JudgeData_position.Enemy[robot_index].ID_X_100;
+	PCSendPosition.Enemy.ID_Y_100 = JudgeData_position.Enemy[robot_index].ID_Y_100;
+	PCSendPosition.bullet_speed_100 = chassis_pack_get_1.bullet_speed;
+	PCSendPosition.crc8 = 0;
+	Append_CRC8_Check_Sum((unsigned char *)&PCSendPosition, PC_SEND_BLOOD_SIZE);
+	memcpy(buff, (void *)&PCSendPosition, PC_SEND_BLOOD_SIZE);
+
+	slot++;
+	if (slot >= 5U)
 	{
-		PCSendPosition.start_flag = '!';
-		PCSendPosition.data_pack_type = JUDGE_PC_DATA_POS;
-		PCSendPosition.Friend.position_type = JudgeData_position.Friend[count].position_type;
-		PCSendPosition.Friend.ID_X_100 = JudgeData_position.Friend[count].ID_X_100;
-		PCSendPosition.Friend.ID_Y_100 = JudgeData_position.Friend[count].ID_Y_100;
-		PCSendPosition.Enemy.position_type = JudgeData_position.Enemy[count].position_type;
-		PCSendPosition.Enemy.ID_X_100 = JudgeData_position.Enemy[count].ID_X_100;
-		PCSendPosition.Enemy.ID_Y_100 = JudgeData_position.Enemy[count].ID_Y_100;
-		PCSendPosition.bullet_speed_100 = chassis_pack_get_1.bullet_speed;
-		PCSendPosition.crc8 = 0;
-		Append_CRC8_Check_Sum((unsigned char *)&PCSendPosition, PC_SEND_BLOOD_SIZE);
-		memcpy(buff, (void *)&PCSendPosition, PC_SEND_BLOOD_SIZE);
+		slot = 0U;
 	}
-	count++;
-	if(count >= 8) count = 0;
 }
 
 void SendtoPCExtend(unsigned char* buff)
 {
 	PCSendExtended.start_flag = '!';
 	PCSendExtended.data_pack_type = JUDGE_PC_DATA_EXTENDED;
+	// 2026-07-21变更: 对齐上位机 ChassisData 结构体
+	// byte 2-3: UWB偏航角 (来自底盘 CAN 0x0A2)
+	PCSendExtended.uwb_angle_yaw = uwb_steer_recv.uwb_angle_yaw;
+	// byte 4-5: 伤害值差 (CAN 0x0A0)
 	PCSendExtended.damage_difference = damage_diff.damage_difference;
-	PCSendExtended.sentry_posture = 0;  // 姿态回读已移至TypeID 7
-	PCSendExtended.reserve_8 = 0;
-	// [SMALL_YAW_REMOVED] 变量改名: small_yaw_offset → yaw_bias_offset (数据来源不变)
-	int16_t yaw_bias_offset_angle_10 = (int16_t)(big_yaw_controller.big_yaw_gyro_bias * 10.0f);
-	PCSendExtended.gimbal_vel_data1 = ((uint32_t)(yaw_bias_offset_angle_10 & 0xFFFF)) | ((uint32_t)(chassis_speed_recv.chassis_yaw_v_100 & 0xFFFF) << 16);
-	PCSendExtended.gimbal_vel_data2 = ((uint32_t)(chassis_speed_recv.chassis_x_v_100 & 0xFFFF)) | ((uint32_t)(chassis_speed_recv.chassis_y_v_100 & 0xFFFF) << 16);
+	// byte 6-9: ChassisPacked1
+	//   low16:  舵角当前角×10 (int16, 单位0.1°), 来自底盘 CAN 0x0A2
+	//   high16: 底盘角速度×100 (int16, 单位0.01rad/s), 来自 CAN 0x09A
+	int16_t steer_angle_10 = (int16_t)(uwb_steer_recv.steer_angle * 10.0f);
+	PCSendExtended.chassis_packed1 = ((uint32_t)(steer_angle_10 & 0xFFFF))
+	                               | ((uint32_t)(chassis_speed_recv.chassis_yaw_v_100 & 0xFFFF) << 16);
+	// byte 10-13: ChassisPacked2
+	//   low16:  底盘x速度×100 (int16, 单位0.01m/s)
+	//   high16: 底盘y速度×100 (int16, 单位0.01m/s)
+	PCSendExtended.chassis_packed2 = ((uint32_t)(chassis_speed_recv.chassis_x_v_100 & 0xFFFF))
+	                               | ((uint32_t)(chassis_speed_recv.chassis_y_v_100 & 0xFFFF) << 16);
 	PCSendExtended.crc8 = 0;
 	Append_CRC8_Check_Sum((unsigned char *)&PCSendExtended, PC_SEND_BLOOD_SIZE);
 	memcpy(buff, (void *)&PCSendExtended, PC_SEND_BLOOD_SIZE);
@@ -529,7 +681,27 @@ void SendtoPCRobotCmd(unsigned char* buff)
 	memcpy(buff, (void *)&PCSendRobotCmd, PC_SEND_BLOOD_SIZE);
 }
 
-// TypeID 10: 发送哨兵姿态时长 (CAN 0x09F)
+#define SENTRY_DURATION_FRESH_MS 1500U
+
+static uint8_t SentryDurationDataIsFresh(void)
+{
+	const uint32_t now = HAL_GetTick();
+
+	if (sentry_duration_last_rx_tick == 0U ||
+		outpost_hp_recv.last_rx_tick == 0U)
+	{
+		return 0U;
+	}
+	if ((uint32_t)(now - sentry_duration_last_rx_tick) > SENTRY_DURATION_FRESH_MS ||
+		(uint32_t)(now - outpost_hp_recv.last_rx_tick) > SENTRY_DURATION_FRESH_MS)
+	{
+		return 0U;
+	}
+	return 1U;
+}
+
+// TypeID 10: 发送哨兵姿态时长 + 前哨站HP (CAN 0x09F + 0x0003前哨HP)
+// 2026-07-21变更: 保持15B布局, 把原 byte 10-13 的 reserved 改成 ally/enemy_outpost_HP
 void SendtoPCSentryDuration(unsigned char* buff)
 {
 	static volatile uint32_t sentry_duration_send_cnt = 0;
@@ -537,19 +709,22 @@ void SendtoPCSentryDuration(unsigned char* buff)
 
 	PCSendSentryDuration.start_flag = '!';
 	PCSendSentryDuration.data_pack_type = JUDGE_PC_DATA_SENTRY_DURATION;
-	// [DEBUG] 固定测试值
-	PCSendSentryDuration.normal_attack_duration   = 10;
-	PCSendSentryDuration.normal_defend_duration   = 20;
-	PCSendSentryDuration.normal_move_duration     = 30;
-	PCSendSentryDuration.reserved_duration_1      = 0;
-	PCSendSentryDuration.enhanced_attack_duration  = 40;
-	PCSendSentryDuration.enhanced_defend_duration  = 50;
-	PCSendSentryDuration.enhanced_move_duration    = 60;
-	PCSendSentryDuration.reserved_duration_2      = 0;
-	PCSendSentryDuration.reserved = 0;
+	// 哨兵姿态时长 (来自底盘 CAN 0x09F)
+	PCSendSentryDuration.normal_attack_duration     = sentry_duration.normal_attack_duration;
+	PCSendSentryDuration.normal_defend_duration     = sentry_duration.normal_defend_duration;
+	PCSendSentryDuration.normal_move_duration       = sentry_duration.normal_move_duration;
+	PCSendSentryDuration.reserved_duration_1       = 0;
+	PCSendSentryDuration.enhanced_attack_duration   = sentry_duration.enhanced_attack_duration;
+	PCSendSentryDuration.enhanced_defend_duration   = sentry_duration.enhanced_defend_duration;
+	PCSendSentryDuration.enhanced_move_duration    = sentry_duration.enhanced_move_duration;
+	PCSendSentryDuration.reserved_duration_2       = 0;
+	// 前哨站HP: 直接使用底盘CAN 0x0A3转发的原始uint16值, 不走6bit压缩解压
+	PCSendSentryDuration.ally_outpost_HP  = outpost_hp_recv.ally_outpost_HP;
+	PCSendSentryDuration.enemy_outpost_HP = outpost_hp_recv.enemy_outpost_HP;
+	// CRC8 校验 (覆盖 byte 0-13)
 	PCSendSentryDuration.crc8 = 0;
-	Append_CRC8_Check_Sum((unsigned char *)&PCSendSentryDuration, PC_SEND_BLOOD_SIZE);
-	memcpy(buff, (void *)&PCSendSentryDuration, PC_SEND_BLOOD_SIZE);
+	Append_CRC8_Check_Sum((unsigned char *)&PCSendSentryDuration, sizeof(PCSendDataSentryDuration_t));
+	memcpy(buff, (void *)&PCSendSentryDuration, sizeof(PCSendDataSentryDuration_t));
 }
 
 static int16_t GimbalDynamicsToInt16(float value, float scale)
@@ -594,6 +769,22 @@ void SendtoPCGimbalDynamics(unsigned char* buff)
 
 void SendtoPC(uint8_t data_type)
 {
+	if (data_type == JUDGE_PC_DATA_SENTRY_DURATION &&
+		SentryDurationDataIsFresh() == 0U)
+	{
+		return;
+	}
+
+	/* TxState 忙时直接丢弃当前帧, 避免覆盖正在 DMA 传输的 SendToPC_Buff。
+	 * 这是"避免上行帧发送冲突"的简化方案: 不操作 USB 寄存器,
+	 * 只在前一帧未发送完成时跳过本次 Pack+Transmit, 防止单缓冲区被覆盖。 */
+	USBD_CDC_HandleTypeDef *hcdc = (USBD_CDC_HandleTypeDef *)hUsbDeviceFS.pClassData;
+	if (hcdc != NULL && hcdc->TxState != 0U)
+	{
+		usb_cdc_busy_count++;
+		return;
+	}
+
 	if(data_type == USUAL_PC_DATA)
 	{
 		SendtoPCPack(SendToPC_Buff);
@@ -636,15 +827,151 @@ void SendtoPC(uint8_t data_type)
 	}
 	else if(data_type == JUDGE_PC_DATA_SENTRY_DURATION)
 	{
+		// TypeID 10: 15B (含CRC8), 与其他上行帧统一长度
 		SendtoPCSentryDuration(SendToPC_Buff);
 	}
 	else if(data_type == JUDGE_PC_DATA_GIMBAL_DYNAMICS)
 	{
 		SendtoPCGimbalDynamics(SendToPC_Buff);
 	}
-	CDC_Transmit_FS(SendToPC_Buff,PC_SENDBUF_SIZE);
+	uint8_t tx_ret = CDC_Transmit_FS(SendToPC_Buff,PC_SENDBUF_SIZE);
+	if (tx_ret == USBD_BUSY)
+	{
+		usb_cdc_busy_count++;
+	}
 }
 #endif
+
+/* ===== 0x02 MapPath 分片重组状态机 (2026-07-18 协议变更) ===== */
+/* 详见 map_path_fragment_reassembly.md
+ * 上位机将原 107B MapPathFrame 拆成两个固定 64B 物理帧下发:
+ *   fragment 0: payload[0..55]  (56B)  -> 重组 buffer [0..55]
+ *   fragment 1: payload[0..48]  (49B)  -> 重组 buffer [56..104]
+ * 重组后的 105B 即裁判系统 0x0307 map_data_t 原始 payload。
+ * CRC16 算法为 reflected 0x1021 (CRC-16/X-25), 复用 Get_CRC16_Check_Sum。
+ */
+static map_path_pending_t map_path_pending;
+MapPathRxDebug_t g_map_path_rx_debug;
+
+static void map_path_clear_pending(void)
+{
+	map_path_pending.active = 0U;
+	map_path_pending.sequence = 0U;
+	map_path_pending.has_fragment[0] = 0U;
+	map_path_pending.has_fragment[1] = 0U;
+	map_path_pending.started_ms = 0U;
+}
+
+/* 校验单个 64B fragment frame 的固定字段和 CRC16。
+ * 返回 1 合法, 0 非法。 */
+static uint8_t map_path_frame_is_valid(const uint8_t *frame)
+{
+	const MapPathFragment_t *f = (const MapPathFragment_t *)frame;
+	uint16_t crc_expected;
+
+	if (f->head != 0x21U) return 0U;
+	if (f->type_id != PC_DOWNLINK_MAP_PATH) return 0U;
+	if (f->fragment_count != MAP_PATH_FRAGMENT_COUNT) return 0U;
+	if (f->fragment_index > 1U) return 0U;
+
+	/* PayloadLength 必须与 FragmentIndex 严格匹配 */
+	if (f->fragment_index == 0U && f->payload_length != MAP_PATH_FRAGMENT0_LEN) return 0U;
+	if (f->fragment_index == 1U && f->payload_length != MAP_PATH_FRAGMENT1_LEN) return 0U;
+
+	/* CRC16 校验 byte 0-61, little-endian */
+	crc_expected = Get_CRC16_Check_Sum((uint8_t *)frame, 62U, 0xFFFFU);
+	if ((uint8_t)(crc_expected & 0xFFU) != frame[62]) return 0U;
+	if ((uint8_t)((crc_expected >> 8) & 0xFFU) != frame[63]) return 0U;
+
+	return 1U;
+}
+
+/* 校验重组后的 105B payload: intention 必须为 1/2/3 */
+static uint8_t map_path_payload_is_valid(const uint8_t *payload_105)
+{
+	uint8_t intention = payload_105[0];
+	return (intention >= 1U && intention <= 3U) ? 1U : 0U;
+}
+
+uint8_t MapPath_OnFragment(const uint8_t *frame_64, uint32_t now_ms, uint8_t *out_payload_105)
+{
+	const MapPathFragment_t *f;
+	uint8_t sequence;
+	uint8_t index;
+
+	if (frame_64 == NULL || out_payload_105 == NULL)
+	{
+		return 0U;
+	}
+
+	if (map_path_frame_is_valid(frame_64) == 0U)
+	{
+		g_map_path_rx_debug.invalid_frame_count++;
+		map_path_clear_pending();
+		return 0U;
+	}
+
+	f = (const MapPathFragment_t *)frame_64;
+	sequence = f->sequence;
+	index = f->fragment_index;
+	g_map_path_rx_debug.last_sequence = sequence;
+	g_map_path_rx_debug.last_fragment_index = index;
+	if (index == 0U)
+	{
+		g_map_path_rx_debug.fragment0_valid_count++;
+	}
+	else
+	{
+		g_map_path_rx_debug.fragment1_valid_count++;
+	}
+
+	/* 超时清空 (从首段开始计时 100ms) */
+	if (map_path_pending.active != 0U &&
+		(uint32_t)(now_ms - map_path_pending.started_ms) > MAP_PATH_TIMEOUT_MS)
+	{
+		g_map_path_rx_debug.timeout_count++;
+		map_path_clear_pending();
+	}
+
+	if (index == 0U)
+	{
+		/* 首段: 清空旧 pending, 以该 sequence 新建 pending */
+		map_path_clear_pending();
+		map_path_pending.active = 1U;
+		map_path_pending.sequence = sequence;
+		map_path_pending.started_ms = now_ms;
+		memcpy(&map_path_pending.payload[0], f->payload, MAP_PATH_FRAGMENT0_LEN);
+		map_path_pending.has_fragment[0] = 1U;
+		return 0U;
+	}
+
+	/* index == 1: 尾段, 必须有同 sequence 的首段, 且未重复收尾段 */
+	if (map_path_pending.active == 0U ||
+		map_path_pending.has_fragment[0] == 0U ||
+		map_path_pending.sequence != sequence ||
+		map_path_pending.has_fragment[1] != 0U)
+	{
+		g_map_path_rx_debug.order_drop_count++;
+		map_path_clear_pending();
+		return 0U;
+	}
+
+	memcpy(&map_path_pending.payload[MAP_PATH_FRAGMENT0_LEN], f->payload, MAP_PATH_FRAGMENT1_LEN);
+	map_path_pending.has_fragment[1] = 1U;
+
+	if (map_path_payload_is_valid(map_path_pending.payload) == 0U)
+	{
+		g_map_path_rx_debug.invalid_payload_count++;
+		map_path_clear_pending();
+		return 0U;
+	}
+
+	/* 重组完成: 输出 105B payload, 清空 pending */
+	memcpy(out_payload_105, map_path_pending.payload, MAP_PATH_PAYLOAD_SIZE);
+	g_map_path_rx_debug.reassembly_success_count++;
+	map_path_clear_pending();
+	return 1U;
+}
 
 void PCStreamReceive(const unsigned char *data, uint32_t length)
 {
@@ -654,7 +981,14 @@ void PCStreamReceive(const unsigned char *data, uint32_t length)
 	static uint32_t last_byte_tick;
 	const uint32_t now = HAL_GetTick();
 
-	if (data == NULL || length == 0U)
+	if (data == NULL)
+	{
+		frame_length = 0U;
+		expected_length = 0U;
+		last_byte_tick = 0U;
+		return;
+	}
+	if (length == 0U)
 	{
 		return;
 	}
@@ -693,8 +1027,8 @@ void PCStreamReceive(const unsigned char *data, uint32_t length)
 				expected_length = sizeof(SentryCommandFrame_t);
 				break;
 			case PC_DOWNLINK_MAP_PATH:
-				expected_length = sizeof(MapPathFrame_t);
-				break;
+			expected_length = sizeof(MapPathFragment_t);  // 64B 分片帧
+			break;
 			case PC_DOWNLINK_CUSTOM_INFO:
 				expected_length = sizeof(CustomInfoFrame_t);
 				break;

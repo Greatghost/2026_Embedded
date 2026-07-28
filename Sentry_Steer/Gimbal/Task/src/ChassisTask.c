@@ -21,11 +21,24 @@ void ChassisTask(void *pvParameters)
 
     static int i = 0;
 
-    vTaskDelay(5000);
+    /* Preserve the original five-second chassis-output warm-up without
+     * leaving USB RX unserviced (a 512-byte ring would otherwise overflow). */
+    {
+        const TickType_t warmup_start = xTaskGetTickCount();
+        while ((TickType_t)(xTaskGetTickCount() - warmup_start) <
+               pdMS_TO_TICKS(5000U))
+        {
+            PCStreamProcessPending();
+            vTaskDelay(pdMS_TO_TICKS(1U));
+        }
+    }
 
     while (1)
     {
         xLastWakeTime = xTaskGetTickCount();
+
+        /* USB IRQ only enqueues bytes; consume and validate them here. */
+        PCStreamProcessPending();
 
         if (i % 2 == 0) // 500HZ
         {
@@ -46,6 +59,11 @@ void ChassisTask(void *pvParameters)
             memcpy(send_to_chassis_data[1], &chassis_send_pack2, 8);
             CanSend(&CHASSIS_CAN_COMM_CAN_Handlerx, send_to_chassis_data[1], SEND_TO_CHASSIS_CAN_ID_2, &chassis_tx_header[1], &chassis_send_wait_time[1]);
         }
+
+        /* USB中断只发布路径快照；这里每1ms发送或重试一个CAN 0x152分段。
+         * 15段通常在15ms内完成，且不会与USB IRQ并发进入HAL CAN发送。 */
+        Can1ServiceMapPathTx();
+        Can1ServiceCustomInfoTx();
 
 //        // 1 kHZ
 //        Pack_Yaw();

@@ -51,7 +51,7 @@
 // FIFO 1 接收ID
 #define CAN2_FIFO1_ID0 0x002
 #define CAN2_FIFO1_ID1 0x003
-#define CAN2_FIFO1_ID2 0x000
+#define CAN2_FIFO1_ID2 0x002  // [FIX] 原 0x000 会接受杂散帧, 改为重复 ID0
 #define CAN2_FIFO1_ID3 0x001
 
 // 电容信息获取
@@ -108,7 +108,7 @@
 // FIFO 1 接收ID
 #define CAN2_FIFO1_ID0 0x002
 #define CAN2_FIFO1_ID1 0x003
-#define CAN2_FIFO1_ID2 0x000
+#define CAN2_FIFO1_ID2 0x002  // [FIX] 原 0x000 会接受杂散帧, 改为重复 ID0
 #define CAN2_FIFO1_ID3 0x001
 
 // 电容信息获取
@@ -151,8 +151,15 @@
 #define SEND_TO_GIMBAL_ROBOT_COMMAND_CAN_ID 0x09E // 0x0303小地图下发指令
 #define SEND_TO_GIMBAL_SENTRY_DURATION_CAN_ID 0x09F // 0x020D哨兵姿态时长(20260713协议更新)
 #define SEND_TO_GIMBAL_DAMAGE_DIFF_CAN_ID 0x0A0      // 0x0003伤害值差(20260713协议更新)
+#define SEND_TO_GIMBAL_MOTOR_OFFLINE_CAN_ID 0x0A1  // 电机掉线状态上报(2026-07-19新增)
+#define SEND_TO_GIMBAL_UWB_STEER_CAN_ID 0x0A2       // UWB角度+舵角当前角(2026-07-21新增)
+#define SEND_TO_GIMBAL_OUTPOST_HP_CAN_ID 0x0A3      // 前哨站HP原始值(2026-07-21新增, 高精度)
 // 新增: 接收云台转发的SentryCmd
 #define GET_FROM_GIMBAL_SENTRY_CMD_CAN_ID 0x15A    // 云台转发SentryCmd
+// 新增: 接收云台转发的map_data分段(15帧/次, 105B payload)
+#define GET_FROM_GIMBAL_MAP_PATH_CAN_ID 0x152    // 云台转发map_data分段
+// 新增: 接收云台转发的custom_info分段(5帧/次, 34B payload)
+#define GET_FROM_GIMBAL_CUSTOM_INFO_CAN_ID 0x153    // 云台转发custom_info分段
 
 // FIFO 0 接收ID
 #define CAN1_FIFO0_ID0 DJI_3508_MOTORS_1
@@ -175,8 +182,9 @@
 // FIFO 1 接收ID
 #define CAN2_FIFO1_ID0 0x002
 #define CAN2_FIFO1_ID1 0x003
-#define CAN2_FIFO1_ID2 0x000
-#define CAN2_FIFO1_ID3 0x001
+// [FIX] 原 0x000 浪费槽位, 改为接收云台转发的custom_info分段(0x153)
+#define CAN2_FIFO1_ID2 GET_FROM_GIMBAL_CUSTOM_INFO_CAN_ID  // 接收云台转发的custom_info分段
+#define CAN2_FIFO1_ID3 GET_FROM_GIMBAL_MAP_PATH_CAN_ID  // 接收云台转发的map_data分段
 
 // 电容信息获取
 #define SUPER_POWER_CAN_ID 0x051

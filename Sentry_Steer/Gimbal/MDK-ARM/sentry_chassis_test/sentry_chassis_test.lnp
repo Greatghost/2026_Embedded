@@ -97,6 +97,7 @@
 "sentry_chassis_test\ist8310driver_middleware.o"
 "sentry_chassis_test\actiontask.o"
 "sentry_chassis_test\bluetoothtask.o"
+"sentry_chassis_test\buzzeralarmtask.o"
 "sentry_chassis_test\chassistask.o"
 "sentry_chassis_test\cpu_task.o"
 "sentry_chassis_test\gimbaltask.o"

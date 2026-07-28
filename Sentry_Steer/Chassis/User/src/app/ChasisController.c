@@ -131,6 +131,13 @@ float angle_z_err_get(float target_ang, float zeros_angle)
         //     AngErr_right = limit_pi(AngErr_front - GIMBAL_MOTOR_SIGN * 90.0f);
         // }
         if (infantry.yaw_motor_type == YAW_DM_MOTOR) {
+            // 修改: yaw 闭环目标改用云台 yaw 编码器读数 (target_ang) 代替速度方向 (target_ang_speed)
+            // 原代码 target_ang_speed = atan2(set_y_v, set_x_v) 依赖底盘系速度 set_x_v/set_y_v,
+            // 而 set_x_v/set_y_v 经 cos_dir/sin_dir 旋转得到 (steer.c 行 198-199/213-214),
+            // 隐含 β 依赖, 造成 yaw 闭环目标随底盘 yaw 变化, 形成耦合 -> 平移时底盘轻微转动
+            // 稳态时 target_ang_speed = β − α = −(target_ang / YAW_DM_ANGLE_SCALE)
+            // 直接用 target_ang / YAW_DM_ANGLE_SCALE 替换, 不经过 set_x_v/set_y_v 旋转, 消除耦合
+            // 稳态几何保持不变 (β = α − 90°, current_speed_angle_bias = −90°)
             AngErr_front = limit_pi(zeros_angle / YAW_DM_ANGLE_SCALE - target_ang_speed + current_speed_angle_bias);
             AngErr_back = limit_pi(AngErr_front + 180.0f);
             AngErr_left = limit_pi(AngErr_front + GIMBAL_MOTOR_SIGN * 90.0f);
@@ -521,6 +528,21 @@ static void chassis_pid_integral_clear(void)
             infantry.steers_speed_pid[i].Last_ITerm = 0.0f;
         }
     }
+
+    #ifdef STEER_TORQUE_FEEDFORWARD
+    /* 清零整车扭矩前馈PID积分项，与轮PID同步清零 */
+    infantry.chassis_translate_x_pid.Iout = 0.0f;
+    infantry.chassis_translate_x_pid.ITerm = 0.0f;
+    infantry.chassis_translate_x_pid.Last_ITerm = 0.0f;
+    infantry.chassis_translate_y_pid.Iout = 0.0f;
+    infantry.chassis_translate_y_pid.ITerm = 0.0f;
+    infantry.chassis_translate_y_pid.Last_ITerm = 0.0f;
+    infantry.chassis_rotate_pid.Iout = 0.0f;
+    infantry.chassis_rotate_pid.ITerm = 0.0f;
+    infantry.chassis_rotate_pid.Last_ITerm = 0.0f;
+    for (int i = 0; i < 4; i++)
+        infantry.wheels_ff_current[i] = 0.0f;
+    #endif
 }
 
 static void chassis_recovery_reset(void)

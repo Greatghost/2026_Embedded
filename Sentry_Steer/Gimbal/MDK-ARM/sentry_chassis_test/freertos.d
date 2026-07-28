@@ -128,3 +128,4 @@ sentry_chassis_test\freertos.o: ../Task/inc/GimbalTask.h
 sentry_chassis_test\freertos.o: ../application/inc/BombBay.h
 sentry_chassis_test\freertos.o: ../components/algorithm/inc/SystemIdentification.h
 sentry_chassis_test\freertos.o: ../Task/inc/Test_Task.h
+sentry_chassis_test\freertos.o: ../Task/inc/BuzzerAlarmTask.h

@@ -17,7 +17,7 @@ void HeatUpdate(void)
     heat_controller.HeatMax = referee_data.Game_Robot_State.shooter_barrel_heat_limit - ONE_BULLET_HEAT * 4; // 保留的子弹热量
 //	    heat_controller.HeatCool = referee_data.Game_Robot_State.shooter_barrel_cooling_value / 10;
     heat_controller.HeatCool = referee_data.Game_Robot_State.shooter_barrel_cooling_value / 50;
-    heat_controller.CurHeat = referee_data.Power_Heat_Data.shooter_id1_17mm_cooling_heat;
+    heat_controller.CurHeat = referee_data.Power_Heat_Data.shooter_17mm_barrel_heat;
 
     if (heat_controller.heat_count != heat_controller.last_heat_count)//固定50HZ更新,但更新会有停顿(注释UI部分后也会)?
     {

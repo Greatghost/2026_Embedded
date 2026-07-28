@@ -364,7 +364,7 @@ void Motor_Data_Pack()
     memset(is_has_motor_data[0], 0, SEND_ID_NUMS * 2);
     uint8_t can_select = 0;
 
-    for (int i = 0; i < SEND_ID_NUMS; i++)
+    for (int i = 0; i < 5; i++)
     {
         can_select = motor_communication[i].can == CAN1 ? 0 : 1;
         switch (motor_communication[i].motor_type)
@@ -735,6 +735,10 @@ void GimbalTask(void *pvParameters)
 
         PC_Send(index);
         index++;
+
+        /* USB CDC TxState 看门狗：检测上位机长时间不读数据导致 TxState 卡死，
+         * 超过 100ms 强制清零，避免"突然收不到数据、reset 才恢复"的问题 */
+        CDC_Transmit_FS_Watchdog(100U);
 
         /*  延时  */
         vTaskDelayUntil(&xLastWakeTime, xFrequency);

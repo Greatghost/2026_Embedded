@@ -118,11 +118,27 @@ void REFEREE_Configuration(void)
 
 void REFEREE_SendBytes(uint8_t *data, uint8_t len)
 {
-    while (DMA_GetCmdStatus(REFEREE_SEND_DMAx_Streamx) == ENABLE)
-        ;
-    memcpy(SendToReferee_Buff, data, len);
-    DMA_SetCurrDataCounter(REFEREE_SEND_DMAx_Streamx, len);
-    DMA_Cmd(REFEREE_SEND_DMAx_Streamx, ENABLE);
+    if (data == NULL || len == 0U || len > REFEREE_SENDBUF_SIZE)
+    {
+        return;
+    }
+
+    for (;;)
+    {
+        /* Check-and-start is one task-level transaction. If DMA is busy,
+         * yield instead of burning CPU for an entire serial frame. */
+        taskENTER_CRITICAL();
+        if (DMA_GetCmdStatus(REFEREE_SEND_DMAx_Streamx) == DISABLE)
+        {
+            memcpy(SendToReferee_Buff, data, len);
+            DMA_SetCurrDataCounter(REFEREE_SEND_DMAx_Streamx, len);
+            DMA_Cmd(REFEREE_SEND_DMAx_Streamx, ENABLE);
+            taskEXIT_CRITICAL();
+            return;
+        }
+        taskEXIT_CRITICAL();
+        vTaskDelay(pdMS_TO_TICKS(1U));
+    }
 }
 
 // /**
@@ -167,5 +183,10 @@ void REFEREE_SEND_DMAx_Streamx_IRQHandler(void)
         DMA_ClearFlag(REFEREE_SEND_DMAx_Streamx, REFEREE_SEND_DMA_FLAG_TCIFx);
         DMA_ClearITPendingBit(REFEREE_SEND_DMAx_Streamx, REFEREE_SEND_DMA_IT_TCIFx);
         DMA_Cmd(REFEREE_SEND_DMAx_Streamx, DISABLE);
+        if (g_map_path_referee_tx_debug.dma_pending != 0U)
+        {
+            g_map_path_referee_tx_debug.dma_pending = 0U;
+            g_map_path_referee_tx_debug.uart_dma_complete_count++;
+        }
     }
 }

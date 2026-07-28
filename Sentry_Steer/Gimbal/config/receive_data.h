@@ -10,11 +10,11 @@ typedef struct
 	uint8_t Enemy_outpost : 6;	// 敌方哨兵是否无敌
 	uint8_t Robot_Red_Blue : 1; // 1 -> red ; 0 -> blue
 	uint8_t self_outpost : 6;
-	uint8_t sentry_posture : 2; // 哨兵姿态(来自裁判系统0x020D): 1=进攻, 2=防御, 3=移动, 0=未知
+	uint8_t reserve_1bit : 1;  // 保留位, 填充到2字节 (原sentry_posture已移至TypeID 7/10独立通道)
 	uint16_t shooter1_heat;
 	uint16_t bullet_remaining_num_17mm; // 0x208
 	uint16_t stage_remain_time;			// 0x0001
-} JudgeData_1_t;
+} JudgeData_1_t;  // sizeof == 8 bytes
 
 typedef struct
 {
@@ -48,19 +48,13 @@ typedef struct
 	uint8_t remaining_energy;
 
 } JudgeData_Buff_t; // 裁判系统0x0204
+typedef char JudgeDataBuffSizeCheck[(sizeof(JudgeData_Buff_t) == 8U) ? 1 : -1];
 
 typedef struct // 0x0101 场地事件数据
 {
-	// uint32_t event_type;
-	uint8_t self_supply_status : 3;
-	uint8_t self_Buff_status : 3;
-	uint8_t self_highland_status : 6;
-	uint8_t self_BaseShield : 7;
-	uint16_t last_dart_time : 9;
-	uint8_t dart_target : 2;
-	uint8_t gain_point_statuss : 2;
-	// uint8_t _ : 3;
+	uint32_t event_data; // RoboMaster 2026 V2.0.0 bit0..31 原始场地事件
 } ext_event_data_t;
+typedef char EventDataSizeCheck[(sizeof(ext_event_data_t) == 4U) ? 1 : -1];
 
 typedef struct
 {

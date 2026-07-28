@@ -7,10 +7,16 @@
 // BUZZER_MUSIC_SEE_YOU_AGAIN_MAIN  - See You Again 主旋律(oh~How) 2倍速
 // ========================================
 
-#define BUZZER_MUSIC_SEE_YOU_AGAIN_INTRO 1  // 当前选择: See You Again 主旋律(oh~How) 2倍速
+#define BUZZER_MUSIC_SEE_YOU_AGAIN_MAIN 1  // 当前选择: See You Again 主旋律(oh~How) 2倍速
 
 void Set_Buzzer_Frequency(uint32_t frequency)
 {
+    // frequency==0 时原本会触发整数除零 → HardFault,这里做保护:置 CCR3=0 实现静音
+    if (frequency == 0U)
+    {
+        __HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_3, 0);
+        return;
+    }
     uint32_t period = (8400000 / frequency) - 1;
     // 修改自动重装载值（ARR）
     __HAL_TIM_SET_AUTORELOAD(&htim4, period);
@@ -20,7 +26,7 @@ void Set_Buzzer_Frequency(uint32_t frequency)
 
 void Initialization_Completed(void)
 {
-    HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_3); // 启动PWM输出
+    //HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_3); // 启动PWM输出
 
 #if defined(BUZZER_MUSIC_NOKIA)
     // ========== 诺基亚来电铃声 (180BPM) ==========
@@ -176,7 +182,8 @@ void Initialization_Completed(void)
     HAL_Delay(50);
 #endif
 
-    HAL_TIM_PWM_Stop(&htim4, TIM_CHANNEL_3); // 停止 PWM
+    /* 不再 HAL_TIM_PWM_Stop,保持 PWM 运行,仅置 CCR3=0 静音,
+     * 后续 BuzzerAlarmTask 可直接 Set_Buzzer_Frequency 发声 */
 
     LED_Off(GPIO_PIN_12);
     LED_On(GPIO_PIN_11);

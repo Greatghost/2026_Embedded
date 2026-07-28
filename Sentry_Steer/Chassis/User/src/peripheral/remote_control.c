@@ -39,7 +39,7 @@ void Blue_Tooth_Deal(uint16_t *blue_tooth_recv)
             break;
         case BLUE_TOOTH_CONTROL_MODE:
             setRobotState(CONTROL_MODE);
-            setControlModeAction(FOLLOW_GIMBAL);
+            setControlModeAction(SPEED_FOLLOW);
             remote_controller.blue_tooth_key = BLUE_TOOTH_NO_ACTION;
             break;
         case BLUE_TOOTH_ROTATE_MODE:

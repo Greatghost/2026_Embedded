@@ -86,3 +86,5 @@ sentry_chassis_test\main.o: ../config/can_send_config.h
 sentry_chassis_test\main.o: ../components/motor/inc/Motor_Typdef.h
 sentry_chassis_test\main.o: ../config/robot_config.h
 sentry_chassis_test\main.o: ../config/can_config.h
+sentry_chassis_test\main.o: ../bsp/boards/inc/bsp_buzzer.h
+sentry_chassis_test\main.o: ../bsp/boards/inc/bsp_led.h

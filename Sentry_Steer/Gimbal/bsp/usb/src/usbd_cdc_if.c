@@ -23,7 +23,7 @@
 #include "pc_serial.h"
 
 /* USER CODE BEGIN INCLUDE */
-
+#include "stm32f4xx_hal_pcd.h"   /* PCD_HandleTypeDef, HAL_PCD_EP_Flush, USBx_INEP */
 /* USER CODE END INCLUDE */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -110,6 +110,12 @@ uint8_t UserTxBufferFS[APP_TX_DATA_SIZE];
 extern USBD_HandleTypeDef hUsbDeviceFS;
 
 /* USER CODE BEGIN EXPORTED_VARIABLES */
+
+/* USB CDC 发送诊断计数器 */
+volatile uint32_t usb_cdc_busy_count = 0U;      /* CDC_Transmit_FS 返回 USBD_BUSY 的累计次数 */
+volatile uint32_t usb_cdc_tx_reset_count = 0U;  /* 看门狗强制清零 TxState 的累计次数 */
+volatile uint32_t usb_cdc_not_configured_count = 0U; /* USB 未枚举时发送被拒的累计次数 */
+volatile uint8_t  usb_cdc_last_dev_state = 0U;       /* 最近一次观察到的 USB 设备状态 */
 
 /* USER CODE END EXPORTED_VARIABLES */
 
@@ -261,7 +267,9 @@ static int8_t CDC_Control_FS(uint8_t cmd, uint8_t *pbuf, uint16_t length)
 static int8_t CDC_Receive_FS(uint8_t *Buf, uint32_t *Len)
 {
   /* USER CODE BEGIN 6 */
-  PCStreamReceive(Buf, *Len);
+  /* IRQ context only copies bytes. Parsing and CAN forwarding run in
+   * ChassisTask, outside the USB interrupt. */
+  (void)PCStreamEnqueueFromISR(Buf, *Len);
 
   USBD_CDC_SetRxBuffer(&hUsbDeviceFS, &Buf[0]);
   USBD_CDC_ReceivePacket(&hUsbDeviceFS);
@@ -286,6 +294,18 @@ uint8_t CDC_Transmit_FS(uint8_t *Buf, uint16_t Len)
   uint8_t result = USBD_OK;
   /* USER CODE BEGIN 7 */
   USBD_CDC_HandleTypeDef *hcdc = (USBD_CDC_HandleTypeDef *)hUsbDeviceFS.pClassData;
+
+  /* 记录最近一次 USB 设备状态（供调试观察） */
+  usb_cdc_last_dev_state = hUsbDeviceFS.dev_state;
+
+  /* USB 未配置（未枚举/已断开）时直接返回，避免设置 TxState=1 后
+   * DMA 完成中断永不触发，导致 TxState 永久卡死 */
+  if (hUsbDeviceFS.dev_state != USBD_STATE_CONFIGURED)
+  {
+    usb_cdc_not_configured_count++;
+    return USBD_FAIL;
+  }
+
   if (hcdc->TxState != 0)
   {
     return USBD_BUSY;
@@ -295,6 +315,92 @@ uint8_t CDC_Transmit_FS(uint8_t *Buf, uint16_t Len)
   /* USER CODE END 7 */
   return result;
 }
+
+/* USER CODE BEGIN 8 */
+
+/**
+ * @brief USB CDC TxState 看门狗
+ *
+ * 当上位机停止读取 USB 数据时，USB 主机不发 IN 令牌，DMA 传输完成中断
+ * 不触发，TxState 永久保持为 1，导致后续所有 CDC_Transmit_FS 返回 USBD_BUSY。
+ *
+ * 检测到 TxState 卡死超过 timeout_ms 后，必须做四件事才能彻底恢复:
+ *   1) 清 TxState 软件标志        —— 让 CDC_Transmit_FS 不再返回 BUSY
+ *   2) HAL_PCD_EP_Flush 清空 TX FIFO —— 清掉残留的旧数据(否则新数据会拼到旧数据后面,
+ *      上位机重新读取时先收到碎片,帧同步丢失表现为"收不到数据")
+ *   3) 清 DIEPINT 挂起的中断标志  —— 否则旧 XFRC 标志可能立即触发中断干扰新传输
+ *   4) 清 IN_ep 软件状态(xfer_len/buff/count) —— 否则 HAL_PCD_EP_Transmit 行为异常
+ *
+ * 只清 TxState 不够:TX FIFO 残留数据会导致上位机重新读取时帧错位。
+ * 在 GimbalTask 主循环中以 2ms 周期调用, timeout_ms 取 100。
+ */
+void CDC_Transmit_FS_Watchdog(uint32_t timeout_ms)
+{
+  static uint32_t stuck_start_tick = 0U;
+  USBD_CDC_HandleTypeDef *hcdc;
+  PCD_HandleTypeDef *hpcd;
+  uint32_t epnum;
+  uint32_t USBx_BASE;   /* USBx_INEP() 宏依赖此局部变量,HAL 内部同样如此 */
+
+  if (hUsbDeviceFS.pClassData == NULL)
+  {
+    stuck_start_tick = 0U;
+    return;
+  }
+
+  if (hUsbDeviceFS.dev_state != USBD_STATE_CONFIGURED)
+  {
+    stuck_start_tick = 0U;
+    return;
+  }
+
+  hcdc = (USBD_CDC_HandleTypeDef *)hUsbDeviceFS.pClassData;
+
+  if (hcdc->TxState != 0U)
+  {
+    if (stuck_start_tick == 0U)
+    {
+      stuck_start_tick = HAL_GetTick();
+    }
+    else if ((HAL_GetTick() - stuck_start_tick) > timeout_ms)
+    {
+      /* 1. 清 TxState 软件标志 */
+      hcdc->TxState = 0U;
+
+      /* 2/3/4. 刷新 USB IN 端点硬件状态 */
+      hpcd = (PCD_HandleTypeDef *)hUsbDeviceFS.pData;
+      if (hpcd != NULL)
+      {
+        epnum = CDC_IN_EP & 0x7FU;
+        USBx_BASE = (uint32_t)hpcd->Instance;   /* 等同于 USBx */
+
+        /* 2. 清空 TX FIFO (HAL_PCD_EP_Flush 内部只调 USB_FlushTxFifo,
+         *    不清端点使能状态和中断标志,所以下面还要手动清) */
+        HAL_PCD_EP_Flush(hpcd, CDC_IN_EP);
+
+        /* 3. 清 DIEPINT 挂起的中断标志 (写1清零) */
+        USBx_INEP(epnum)->DIEPINT = 0xFFFFFFFFU;
+
+        /* 4. 清 HAL 软件层 IN_ep 状态,防止 HAL_PCD_EP_Transmit 误判 */
+        if (hpcd->IN_ep[epnum].xfer_len > 0U)
+        {
+          hpcd->IN_ep[epnum].xfer_len = 0U;
+          hpcd->IN_ep[epnum].xfer_buff = NULL;
+          hpcd->IN_ep[epnum].xfer_count = 0U;
+        }
+      }
+
+      usb_cdc_tx_reset_count++;
+      stuck_start_tick = 0U;
+    }
+  }
+  else
+  {
+    stuck_start_tick = 0U;
+  }
+}
+
+/* USER CODE END 8 */
 
 /**
  * @brief  CDC_TransmitCplt_FS

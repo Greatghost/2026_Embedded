@@ -37,6 +37,7 @@
 // #include "SDCardTask.h"
 #include "Test_Task.h"
 #include "ShootTask.h"
+#include "BuzzerAlarmTask.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -65,6 +66,7 @@ osThreadId ChassisTaskHandle;
 osThreadId CPUTaskHandle;
 osThreadId iwdgTaskHandle;
 osThreadId TestTaskHandle;
+osThreadId BuzzerAlarmTaskHandle;
 //osThreadId ShootTaskHandle;
 /* USER CODE END Variables */
 osThreadId testHandle;
@@ -162,6 +164,10 @@ void MX_FREERTOS_Init(void) {
   // Chassis Task
   osThreadDef(ChassisTask_, ChassisTask, osPriorityRealtime, 0, 512);
   ChassisTaskHandle = osThreadCreate(osThread(ChassisTask_), NULL);
+
+  // Buzzer Alarm Task (电机掉线蜂鸣器告警, 2026-07-19新增)
+  osThreadDef(BuzzerAlarmTask_, BuzzerAlarmTask, osPriorityNormal, 0, 256);
+  BuzzerAlarmTaskHandle = osThreadCreate(osThread(BuzzerAlarmTask_), NULL);
   // Shoot Task
 //  osThreadDef(ShootTask_, ShootTask, osPriorityRealtime, 0, 256);
 //  ShootTaskHandle = osThreadCreate(osThread(ShootTask_), NULL);

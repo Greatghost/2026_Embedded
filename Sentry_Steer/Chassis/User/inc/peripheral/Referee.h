@@ -2,13 +2,13 @@
  ******************************************************************************
  * @file    referee.h
  * @author  Karolance Future
- * @version V1.3.0
- * @date    2022/03/21
+ * @version V2.0.0
+ * @date    2026/06/26
  * @brief   Header file of referee.c
  ******************************************************************************
  * @attention
  *
- *   依据裁判系统 串口协议附录 V1.3
+ *   依据 RoboMaster 2026 机甲大师高校系列赛通信协议 V2.0.0
  *
  ******************************************************************************
  */
@@ -48,9 +48,10 @@
 #define Game_Result_BlueWin 2 // 蓝方胜利
 
 /* 警告信息 */
-#define Warning_Yellow 1  // 黄牌警告
-#define Warning_Red 2	  // 红牌警告
-#define Warning_Failure 3 // 判负
+#define Warning_Both_Yellow 1 // 双方黄牌
+#define Warning_Yellow 2      // 黄牌
+#define Warning_Red 3         // 红牌
+#define Warning_Failure 4     // 判负
 
 /* 机器人ID */
 #define Robot_ID_Red_Hero 1			// 红方英雄
@@ -80,15 +81,12 @@
 /* 扣血类型 */
 #define Hurt_Type_ArmoredPlate 0	 // 装甲板伤害
 #define Hurt_Type_ModuleOffline 1	 // 模块离线
-#define Hurt_Type_OverShootSpeed 2	 // 枪口超射速
-#define Hurt_Type_OverShootHeat 3	 // 枪管超热量
-#define Hurt_Type_OverChassisPower 4 // 底盘超功率
 #define Hurt_Type_Collision 5		 // 装甲撞击
 
 /* 发射机构编号 */
-#define Shooter_ID1_17mm 1 // 1号17mm发射机构
-#define Shooter_ID2_17mm 2 // 2号17mm发射机构
-#define Shooter_ID1_42mm 3 // 1号42mm发射机构
+#define Shooter_ID1_17mm 1   // 17mm发射机构
+#define Shooter_ID_Reserved 2 // 保留
+#define Shooter_ID1_42mm 3   // 42mm发射机构
 
 /* 飞镖信息 */
 #define Dart_State_Open 0	  // 飞镖闸门开启
@@ -152,7 +150,7 @@
 #define UI_Color_White 8  // 白色
 
 // 哨兵决策
-#define SENTRY_DECISION_SIZE 19 // 上传数据最大的长度为21？？实际使用19
+#define SENTRY_DECISION_SIZE 19 // 5B帧头+2B cmd+6B交互头+4B指令+2B CRC16
 #define HEADER_LEN 5			// 帧头长度
 #define CMD_LEN 2				// 命令码长度
 #define CRC_LEN 2				// 尾部CRC16校验
@@ -192,43 +190,20 @@ typedef struct // 0x0003 友方机器人血量数据
 /* 0x010X --------------------------------------------------------------------*/
 typedef struct // 0x0101 场地事件数据
 {
-	// uint32_t event_type;
-	uint8_t self_supply_status : 3;	  // 己方补给站状态：0-未激活/1-已激活/2-已使用
-	uint8_t self_Buff_status : 3;	  // 己方Buff状态：0-无/1-攻击/2-防御/3-恢复/4-冷却
-	uint8_t self_highland_status : 6; // 己方高地状态：0-未占领/1-已占领
-	uint8_t self_BaseShield : 7;	  // 己方基地护盾状态：0-无/1-有
-	uint16_t last_dart_time : 9;	  // 己方飞镖剩余发射时间（秒）
-	uint8_t dart_target : 2;		  // 飞镖目标：0-前哨站/1-基地
-	uint8_t gain_point_statuss : 2;	  // 得分状态：0-无/1-击杀/2-占领
-									  // uint8_t _ : 3;
+	uint32_t event_data; // 按协议 bit0..31 原样保存，避免跨基础类型位域布局不一致
 } ext_event_data_t;
 
-typedef struct // 0x0102 补给站动作标识
+typedef struct // 0x0104 裁判警告数据
 {
-	uint8_t reserved;				// 保留字节
-	uint8_t supply_robot_id;		// 补给站对应机器人ID
-	uint8_t supply_projectile_step; // 补弹步骤：0-未开始/1-进行中/2-完成
-	uint8_t supply_projectile_num;	// 补弹数量
-} ext_supply_projectile_action_t;
-
-typedef struct // 0x0103 请求补给站补弹数据，由参赛队发送（RM 对抗赛尚未开放）
-{
-	uint8_t supply_projectile_id; // 补给站ID
-	uint8_t supply_robot_id;	  // 请求补弹的机器人ID
-	uint8_t supply_num;			  // 请求补弹数量
-} ext_supply_projectile_booking_t;
-
-typedef struct // 0x0104 裁判警告信息
-{
-	uint8_t level;		   // 警告等级：1-黄牌/2-红牌/3-判负
-	uint8_t foul_robot_id; // 犯规机器人ID
-	uint8_t count;		   // 犯规次数
+	uint8_t level;
+	uint8_t offending_robot_id;
+	uint8_t count;
 } ext_referee_warning_t;
 
-typedef struct // 0x0105 飞镖发射口倒计时
+typedef struct // 0x0105 飞镖发射相关数据
 {
-	uint8_t dart_remaining_time; // 飞镖发射口剩余开启时间（秒）
-	uint16_t dart_info;			 // 飞镖信息：bit0-1闸门状态/bit2-3目标
+	uint8_t dart_remaining_time;
+	uint16_t dart_info;
 } ext_dart_remaining_time_t;
 
 // 0x120 哨兵自主决策
@@ -246,12 +221,13 @@ typedef struct
 	uint32_t sentry_bullet_claim : 11;			   // 申请购买弹丸数量
 	uint32_t sentry_remote_bullet_claim_times : 4; // 远程兑换弹丸次数
 	uint32_t sentry_remote_HP_claim_times : 4;	   // 远程兑换血量次数
-	uint32_t sentry_posture : 2;				   // 哨兵姿态：0-未知/1-进攻/2-防御/3-移动
-	uint32_t reserve : 9;						   // 保留位
+	uint32_t sentry_posture : 3;				   // 哨兵姿态：0-未知/1-进攻/2-防御/3-移动/4-强化进攻/5-强化防御/6-强化移动 (RM2026 V2.0 bit21-23)
+	uint32_t sentry_confirm_activate_rune : 1;	   // bit24：确认使能量机关进入正在激活状态
+	uint32_t reserve : 7;						   // bit25-31：保留位
 } Sentry_decision_referee_t;
 
 /* 0x020X --------------------------------------------------------------------*/
-typedef struct // 0x0201 比赛机器人状态
+typedef struct // 0x0201 机器人性能体系数据
 {
 	uint8_t robot_id;
 	uint8_t robot_level;
@@ -260,45 +236,43 @@ typedef struct // 0x0201 比赛机器人状态
 	uint16_t shooter_barrel_cooling_value;
 	uint16_t shooter_barrel_heat_limit;
 	uint16_t chassis_power_limit;
+	float shooter_barrel_speed_limit;
 	uint8_t mains_power_gimbal_output : 1;
 	uint8_t mains_power_chassis_output : 1;
 	uint8_t mains_power_shooter_output : 1;
+	uint8_t reserved : 5;
 } ext_game_robot_state_t;
 
-typedef struct // 0x0202 实时功率热量数据
+typedef struct // 0x0202 实时底盘缓冲能量和射击热量数据
 {
-	uint16_t chassis_volt;
-	uint16_t chassis_current;
-	float chassis_power;
+	uint16_t reserved_0;
+	uint16_t reserved_2;
+	float reserved_4;
 	uint16_t buffer_energy;
-	uint16_t shooter_id1_17mm_cooling_heat;
-	uint16_t shooter_id2_17mm_cooling_heat;
-	uint16_t shooter_id1_42mm_cooling_heat;
+	uint16_t shooter_17mm_barrel_heat;
+	uint16_t shooter_42mm_barrel_heat;
 } ext_power_heat_data_t;
 
+/*
+ * 0x0203：V2.0.0 命令一览表误写为 16B，详细字段表 1-14 及其
+ * _packed 示例均为 x/y/angle 共 12B；按详细字段定义解析。
+ */
 typedef struct // 0x0203 机器人位置
 {
 	float x;
 	float y;
-	float z;
-	float yaw;
+	float angle;
 } ext_game_robot_pos_t;
 
-typedef struct // 0x0204 机器人增益
+typedef struct // 0x0204 机器人增益和底盘能量
 {
-	uint8_t recovery_buff;		// 恢复Buff等级：0-无/1-5级
-	uint8_t cooling_buff;		// 冷却Buff等级：0-无/1-5级
-	uint8_t defence_buff;		// 防御Buff等级：0-无/1-5级
-	uint8_t vulnerability_buff; // 易伤Debuff等级：0-无/1-5级
-	uint16_t attack_buff;		// 攻击Buff值
-	uint8_t remaining_energy;	// 剩余能量
+	uint8_t recovery_buff;
+	uint16_t cooling_buff;
+	uint8_t defence_buff;
+	uint8_t vulnerability_buff;
+	uint16_t attack_buff;
+	uint8_t remaining_energy;
 } ext_buff_musk_t;
-
-typedef struct // 0x205 空中支援状态
-{
-	uint8_t airforce_status; // 空中支援状态：0-未激活/1-已激活/2-已使用
-	uint8_t time_remain;	 // 空中支援剩余时间（秒）
-} air_support_data_t;
 
 typedef struct // 0x0206 伤害状态
 {
@@ -328,15 +302,15 @@ typedef struct // 0x0209 机器人RFID状态
 	uint8_t  rfid_status_2; // RFID状态扩展8bit (RoboMaster 2026协议)
 } ext_rfid_status_t;
 
-// typedef struct // 0x020A 飞镖机器人客户端指令数据
-// {
-// 	uint8_t dart_launch_opening_status;
-// 	uint8_t dart_attack_target;
-// 	uint16_t target_change_time;
-// 	uint16_t operate_launch_cmd_time;
-// } ext_dart_client_cmd_t;
+typedef struct // 0x020A 飞镖选手端指令数据
+{
+	uint8_t dart_launch_opening_status;
+	uint8_t reserved;
+	uint16_t target_change_time;
+	uint16_t latest_launch_cmd_time;
+} ext_dart_client_cmd_t;
 
-typedef struct // 0x20B 地面机器人位置
+typedef struct // 0x020B 地面机器人位置
 {
 	float hero_x;
 	float hero_y;
@@ -346,9 +320,14 @@ typedef struct // 0x20B 地面机器人位置
 	float standard_3_y;
 	float standard_4_x;
 	float standard_4_y;
-	float standard_5_x;
-	float standard_5_y;
+	float reserved_32;
+	float reserved_36;
 } ground_robot_position_t;
+
+typedef struct // 0x020C 雷达标记进度
+{
+	uint16_t mark_progress;
+} radar_mark_data_t;
 
 // 0x020D 哨兵信息 (原RoboMaster 2026协议 V1.2.0，20260713更新为V2.0.0)
 typedef struct
@@ -384,7 +363,9 @@ typedef struct
 {
 	uint8_t radar_double_hurt_chance : 2; // 雷达双倍伤害机会次数
 	uint8_t radar_if_double_hurt : 1;	  // 是否激活双倍伤害：0-否/1-是
-	uint8_t _ : 5;						  // 保留位
+	uint8_t encryption_level : 2;		  // 己方加密等级
+	uint8_t can_modify_key : 1;			  // 当前是否可以修改密钥
+	uint8_t reserved : 2;
 } radar_info_t;
 
 /* 0x030X --------------------------------------------------------------------*/
@@ -473,12 +454,54 @@ typedef struct // 0x0303 小地图下发信息标识
     uint16_t cmd_source;
 } ext_robot_command_t;
 
-typedef struct // 0x0305 小地图接收信息标识
+typedef struct // 0x0305 选手端小地图接收雷达数据
 {
-	uint16_t target_robot_ID; // 目标机器人ID
-	float target_position_x;  // 目标位置X坐标
-	float target_position_y;  // 目标位置Y坐标
+	uint16_t opponent_hero_position_x;
+	uint16_t opponent_hero_position_y;
+	uint16_t opponent_engineer_position_x;
+	uint16_t opponent_engineer_position_y;
+	uint16_t opponent_infantry_3_position_x;
+	uint16_t opponent_infantry_3_position_y;
+	uint16_t opponent_infantry_4_position_x;
+	uint16_t opponent_infantry_4_position_y;
+	uint16_t opponent_aerial_position_x;
+	uint16_t opponent_aerial_position_y;
+	uint16_t opponent_sentry_position_x;
+	uint16_t opponent_sentry_position_y;
+	uint16_t ally_hero_position_x;
+	uint16_t ally_hero_position_y;
+	uint16_t ally_engineer_position_x;
+	uint16_t ally_engineer_position_y;
+	uint16_t ally_infantry_3_position_x;
+	uint16_t ally_infantry_3_position_y;
+	uint16_t ally_infantry_4_position_x;
+	uint16_t ally_infantry_4_position_y;
+	uint16_t ally_aerial_position_x;
+	uint16_t ally_aerial_position_y;
+	uint16_t ally_sentry_position_x;
+	uint16_t ally_sentry_position_y;
 } ext_client_map_command_t;
+
+/*
+ * 0x0307：V2.0.0 命令一览表误写为 103B，详细字段表 1-37 明确
+ * sender_id 位于偏移 103、大小 2B，因此完整 data 段为 105B。
+ */
+typedef struct // 0x0307 选手端小地图接收路径数据
+{
+	uint8_t intention;
+	uint16_t start_position_x;
+	uint16_t start_position_y;
+	int8_t delta_x[49];
+	int8_t delta_y[49];
+	uint16_t sender_id;
+} map_data_t;
+
+typedef struct // 0x0308 选手端小地图接收机器人数据
+{
+	uint16_t sender_id;
+	uint16_t receiver_id;
+	uint8_t user_data[30];
+} custom_info_t;
 
 /* 自定义绘制UI结构体 -------------------------------------------------------*/
 typedef struct // 绘制UI UI图形数据
@@ -576,6 +599,46 @@ typedef struct // 绘制UI UI删除图形完整结构体
 	uint16_t CRC16;											  // CRC16校验
 } UI_Delete_t;
 
+/*
+ * 协议结构尺寸必须与 RoboMaster 2026 V2.0.0 的详细字段表一致。
+ * 使用负数组长度让不匹配在 ARMCC 编译期直接失败。
+ */
+#define REFEREE_SIZE_ASSERT(type, size) \
+	typedef char referee_size_check_##type[(sizeof(type) == (size)) ? 1 : -1]
+
+REFEREE_SIZE_ASSERT(frame_header_struct_t, 5U);
+REFEREE_SIZE_ASSERT(ext_game_status_t, 11U);
+REFEREE_SIZE_ASSERT(ext_game_result_t, 1U);
+REFEREE_SIZE_ASSERT(robot_HP_friend_t, 20U);
+REFEREE_SIZE_ASSERT(ext_event_data_t, 4U);
+REFEREE_SIZE_ASSERT(ext_referee_warning_t, 3U);
+REFEREE_SIZE_ASSERT(ext_dart_remaining_time_t, 3U);
+REFEREE_SIZE_ASSERT(Student_interactive_header_data_t, 6U);
+REFEREE_SIZE_ASSERT(Sentry_decision_referee_t, 4U);
+REFEREE_SIZE_ASSERT(ext_game_robot_state_t, 17U);
+REFEREE_SIZE_ASSERT(ext_power_heat_data_t, 14U);
+REFEREE_SIZE_ASSERT(ext_game_robot_pos_t, 12U);
+REFEREE_SIZE_ASSERT(ext_buff_musk_t, 8U);
+REFEREE_SIZE_ASSERT(ext_robot_hurt_t, 1U);
+REFEREE_SIZE_ASSERT(ext_shoot_data_t, 7U);
+REFEREE_SIZE_ASSERT(ext_bullet_remaining_t, 8U);
+REFEREE_SIZE_ASSERT(ext_rfid_status_t, 5U);
+REFEREE_SIZE_ASSERT(ext_dart_client_cmd_t, 6U);
+REFEREE_SIZE_ASSERT(ground_robot_position_t, 40U);
+REFEREE_SIZE_ASSERT(radar_mark_data_t, 2U);
+REFEREE_SIZE_ASSERT(sentry_info_t, 14U);
+REFEREE_SIZE_ASSERT(radar_info_t, 1U);
+REFEREE_SIZE_ASSERT(ext_student_interactive_header_data_t, 6U);
+REFEREE_SIZE_ASSERT(ext_robot_command_t, 12U);
+REFEREE_SIZE_ASSERT(ext_client_map_command_t, 48U);
+REFEREE_SIZE_ASSERT(map_data_t, 105U);
+REFEREE_SIZE_ASSERT(custom_info_t, 34U);
+REFEREE_SIZE_ASSERT(graphic_data_struct_t, 15U);
+REFEREE_SIZE_ASSERT(string_data_struct_t, 45U);
+REFEREE_SIZE_ASSERT(delete_data_struct_t, 2U);
+
+#undef REFEREE_SIZE_ASSERT
+
 #pragma pack(pop)
 
 /* Functions -----------------------------------------------------------------*/
@@ -584,6 +647,8 @@ void Referee_UARTInit(uint8_t *Buffer0, uint8_t *Buffer1, uint16_t BufferLength)
 
 void Referee_UnpackFifoData(void);
 void Referee_SolveFifoData(uint8_t *frame);
+uint8_t Referee_IsRobotHPFresh(void);
+uint8_t Referee_IsSentryInfoFresh(void);
 
 void UI_Draw_Line(graphic_data_struct_t *Graph,		 // UI图形数据结构体指针
 				  char GraphName[3],				 // 图形名 作为客户端的索引
@@ -673,10 +738,42 @@ void UI_PushUp_Graphs(uint8_t Counter, void *Graphs, uint8_t RobotID);
 void UI_PushUp_String(UI_String_t *String, uint8_t RobotID);
 void UI_PushUp_Delete(UI_Delete_t *Delete, uint8_t RobotID);
 
+/**
+  * @brief  封装并发送 0x0307 地图路径数据帧(2026 V2.0新增)
+  * @param  map_data_105: 105B map_data_t payload 指针
+  * @retval 无
+  * @note   完整帧 114B = 5B帧头 + 2B cmd_id + 105B data + 2B CRC16
+  *         每次完整重组只发送一次，不复用云台板fragment层CRC
+  */
+typedef struct
+{
+	volatile uint32_t call_count;              /* 进入0x0307发送函数次数 */
+	volatile uint32_t invalid_argument_count;  /* NULL或本机ID不是7/107 */
+	volatile uint32_t frame_built_count;       /* 114B帧及CRC构造完成次数 */
+	volatile uint32_t uart_dma_submit_count;   /* 成功提交UART DMA次数 */
+	volatile uint32_t uart_dma_complete_count; /* UART DMA传输完成中断次数 */
+	volatile uint8_t dma_pending;              /* 当前是否有0x0307 DMA待完成 */
+	volatile uint8_t last_sequence;            /* 最近一次0x0307帧序号 */
+	volatile uint16_t last_sender_id;           /* 最后使用的本机哨兵ID */
+} MapPathRefereeTxDebug_t;
+
+extern MapPathRefereeTxDebug_t g_map_path_referee_tx_debug;
+
+void Referee_SendMapData0x0307(const uint8_t *map_data_105);
+
+/**
+  * @brief  封装并发送 0x0308 自定义信息数据帧(2026 V2.0新增)
+  * @param  custom_data_34: 34B custom_info_t payload 指针
+  * @retval 无
+  * @note   完整帧 43B = 5B帧头 + 2B cmd_id + 34B data + 2B CRC16
+  *         每次完整重组只发送一次，不复用云台板fragment层CRC
+  */
+void Referee_SendCustomInfo0x0308(const uint8_t *custom_data_34);
+
 /* 裁判系统数据解码器 */
 typedef struct Referee_Decoder
 {
-	uint16_t judgementFullCount; // FIFO缓冲区圈数
+	volatile uint32_t judgementFullCount; // DMA环形缓冲区累计圈数（ISR更新，不回零）
 	uint64_t receive_data_len;	 // 接收数据总长度
 	uint64_t decode_data_len;	 // 解码数据总长度
 
@@ -702,23 +799,11 @@ typedef struct Referee_t
 	robot_HP_friend_t Game_Robot_friend_HP; // 0x0003 友方机器人血量
 
 	/* 0x010X 场地事件数据 */
-	ext_event_data_t Event_Data;							   // 0x0101 场地事件
-	ext_supply_projectile_action_t Supply_Projectile_Action;   // 0x0102 补给站动作
-	ext_supply_projectile_booking_t Supply_Projectile_Booking; // 0x0103 补弹请求
-	ext_referee_warning_t Referee_Warning;					   // 0x0104 裁判警告
-	ext_dart_remaining_time_t Dart_Remaining_Time;			   // 0x0105 飞镖倒计时
+	ext_event_data_t Event_Data;				 // 0x0101 场地事件
+	ext_referee_warning_t Referee_Warning;		 // 0x0104 裁判警告
+	ext_dart_remaining_time_t Dart_Remaining_Time; // 0x0105 飞镖相关数据
 
 	/* 0x020X 机器人状态数据 */
-	// ext_game_robot_state_t Game_Robot_State;
-	// ext_power_heat_data_t Power_Heat_Data;
-	// ext_game_robot_pos_t Game_Robot_Pos;
-	// ext_buff_musk_t Buff_Musk;
-	// aerial_robot_energy_t Aerial_Robot_Energy;
-	// ext_robot_hurt_t Robot_Hurt;
-	// ext_shoot_data_t Shoot_Data;
-	// ext_bullet_remaining_t Bullet_Remaining;
-
-	// ext_dart_client_cmd_t Dart_Client_Cmd;
 	ext_game_robot_state_t Game_Robot_State;	   // 0x0201 机器人状态
 	ext_power_heat_data_t Power_Heat_Data;		   // 0x0202 功率热量
 	ext_game_robot_pos_t Game_Robot_Pos;		   // 0x0203 机器人位置
@@ -727,10 +812,11 @@ typedef struct Referee_t
 	ext_shoot_data_t Shoot_Data;				   // 0x0207 射击信息
 	ext_bullet_remaining_t Bullet_Remaining;	   // 0x0208 剩余弹量
 	ext_rfid_status_t rfid_status;				   // 0x0209 RFID状态
+	ext_dart_client_cmd_t Dart_Client_Cmd;		   // 0x020A 飞镖指令
 	ground_robot_position_t ground_robot_position; // 0x020B 地面机器人位置
+	radar_mark_data_t Radar_Mark_Data;			   // 0x020C 雷达标记进度
 	sentry_info_t Sentry_info;					   // 0x020D 哨兵信息
-
-	radar_info_t Radar_Info; // 0x020E 雷达信息
+	radar_info_t Radar_Info;					   // 0x020E 雷达信息
 
 	Sentry_alert_t Sentry_alert_info; // 哨兵告警信息
 
@@ -778,6 +864,6 @@ extern uint8_t Radar_double_hurt_chance;	   // 雷达双倍伤害机会次数
 // 哨兵决策数据结构体声明
 extern Sentry_decision_referee_t sentry_decision_referee; // 哨兵自主决策数据
 
-#define MAX_REFEREE_DATA_LEN 45
+#define MAX_REFEREE_DATA_LEN REF_PROTOCOL_FRAME_MAX_SIZE
 
 #endif /* __REFEREE_H__ */

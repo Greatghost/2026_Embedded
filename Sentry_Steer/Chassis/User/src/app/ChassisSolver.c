@@ -51,7 +51,7 @@ void DJIKeyMouseUpdate(ChassisSolver *infantry)
         else if (remote_controller.dji_remote.rc.s[LEFT_SW] == Mid)
         {
             setRobotState(CONTROL_MODE);
-            setControlModeAction(FOLLOW_GIMBAL);
+            setControlModeAction(SPEED_FOLLOW);
             setShootAction(SHOOT_POWERDOWN_MODE);
             setGimbalAction(GIMBAL_ACT_MODE);
 
@@ -64,7 +64,7 @@ void DJIKeyMouseUpdate(ChassisSolver *infantry)
         else
         {
             setRobotState(CONTROL_MODE);
-            setControlModeAction(FOLLOW_GIMBAL);
+            setControlModeAction(SPEED_FOLLOW);
             setShootAction(SHOOT_POWERDOWN_MODE);
             // setGimbalAction(GIMBAL_POWERDOWN);
             setGimbalAction(GIMBAL_ACT_MODE);  // 可环顾四周
@@ -197,12 +197,12 @@ void DJIKeyMouseUpdate(ChassisSolver *infantry)
             switch (key_and) // 按键下降沿
             {
             case KEY_B:
-                setControlModeAction(FOLLOW_GIMBAL);
+                setControlModeAction(SPEED_FOLLOW);
                 break;
             case KEY_V:
                 break;
             case KEY_SHIFT:
-                setControlModeAction(FOLLOW_GIMBAL);
+                setControlModeAction(SPEED_FOLLOW);
                 chassis_solver.chassis_speed_w = 0.00f; // rad /s
                 break;
             case KEY_CTRL:
@@ -216,7 +216,7 @@ void DJIKeyMouseUpdate(ChassisSolver *infantry)
             case KEY_F:
                 break;
             case KEY_G:
-                setControlModeAction(FOLLOW_GIMBAL);
+                setControlModeAction(SPEED_FOLLOW);
                 break;
             case KEY_Z:
                 break;
@@ -324,7 +324,7 @@ void DJIRemoteUpdate(ChassisSolver *infantry)
 
             // 模式设置
             setRobotState(CONTROL_MODE);
-            setControlModeAction(FOLLOW_GIMBAL);
+            setControlModeAction(SPEED_FOLLOW);
             setShootAction(SHOOT_POWERDOWN_MODE); // 先不打弹
             setGimbalAction(GIMBAL_ACT_MODE);
 
@@ -337,7 +337,7 @@ void DJIRemoteUpdate(ChassisSolver *infantry)
         case Up:
             // 模式设置
             setRobotState(CONTROL_MODE);
-            setControlModeAction(FOLLOW_GIMBAL);
+            setControlModeAction(SPEED_FOLLOW);
             setShootAction(SHOOT_TEST_MODE);
             setGimbalAction(GIMBAL_POWERDOWN);
             // setSuperPower(POWER_TO_BATTERY);

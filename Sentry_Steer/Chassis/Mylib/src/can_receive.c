@@ -1,6 +1,7 @@
 #include "can_receive.h"
 #include "GimbalSend.h"   // 获取sentry_cmd_from_gimbal结构体
-#include "GimbalReceive.h" // 获取gimbal_receiver_pack1/2结构体
+#include "GimbalReceive.h" // 获取gimbal_receiver_pack1/2结构体 和 MapPath_OnCanReceive
+#include "counter.h"      // GetTime_ms() 用于 0x152 分段超时判定
 
 void CanReceiveAll(CAN_TypeDef *can, CanRxMsg *rx_message)
 {
@@ -111,8 +112,8 @@ void CanReceiveAll(CAN_TypeDef *can, CanRxMsg *rx_message)
             {
                 extern Sentry_decision_referee_t sentry_decision_referee;
                 uint32_t cmd = sentry_cmd_from_gimbal.sentry_cmd;
-                // posture: bit21-22
-                sentry_decision_referee.sentry_posture = (cmd >> 21) & 0x03;
+                // posture: bit21-23 (RM2026 V2.0, 3 bits, 1-6)
+                sentry_decision_referee.sentry_posture = (cmd >> 21) & 0x07;
                 // 其他位按协议保留，暂不处理
                 // sentry_bullet_claim: bit2-12 (累计值)
                 sentry_decision_referee.sentry_bullet_claim = (cmd >> 2) & 0x7FF;
@@ -125,6 +126,14 @@ void CanReceiveAll(CAN_TypeDef *can, CanRxMsg *rx_message)
                 // sentry_immediate_revive: bit1
                 sentry_decision_referee.sentry_immediate_revive = (cmd >> 1) & 0x01;
             }
+            break;
+        case GET_FROM_GIMBAL_MAP_PATH_CAN_ID:
+            // 接收云台转发的map_data分段(15帧/次, 105B payload)
+            MapPath_OnCanReceive(rx_message->Data, (uint32_t)GetTime_ms());
+            break;
+        case GET_FROM_GIMBAL_CUSTOM_INFO_CAN_ID:
+            // 接收云台转发的custom_info分段(5帧/次, 34B payload)
+            CustomInfo_OnCanReceive(rx_message->Data, (uint32_t)GetTime_ms());
             break;
         default:
             break;

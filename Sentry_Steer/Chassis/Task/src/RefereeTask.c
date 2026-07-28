@@ -66,6 +66,11 @@ void Send_to_Referee(uint16_t cmd_id, uint16_t data_len)
 void Send_DecisionPack()
 {
 	uint8_t id_ = referee_data.Game_Robot_State.robot_id;
+
+	if (id_ != Robot_ID_Red_Sentry && id_ != Robot_ID_Blue_Sentry)
+	{
+		return;
+	}
 	
 	Student_interactive_header_data_t custom_interactive_header;
 	custom_interactive_header.data_cmd_id = 0x0120;//子内容ID
@@ -89,6 +94,7 @@ void Sentry_Decision_Init(void)
 	sentry_decision_referee.sentry_remote_bullet_claim_times =0;
 	sentry_decision_referee.sentry_remote_HP_claim_times =0;
 	sentry_decision_referee.sentry_posture =0;  // 初始化姿态为未知
+	sentry_decision_referee.sentry_confirm_activate_rune = 0;
 	sentry_decision_referee.reserve = 0;
 }
 /**
@@ -112,12 +118,48 @@ void Refereetask(void *pvParameters)
 	uint16_t UI_PushUp_Counter_10;
 
 	static uint32_t index = 0;
+	static uint8_t map_data_snapshot[MAP_PATH_PAYLOAD_SIZE];
+	static uint8_t custom_info_snapshot[CUSTOM_INFO_PAYLOAD_SIZE];
+	static TickType_t last_map_path_tx_tick;
+	static uint8_t has_map_path_tx;
+	static TickType_t last_custom_info_tx_tick;
+	static uint8_t has_custom_info_tx;
 
 	Sentry_Decision_Init();
 	
 	while (1)
 	{
 		Referee_UnpackFifoData();
+
+		/* === 0x152 / 0x153 重组完成后转发到裁判系统 ===
+		 * ISR 中只置 flag 不发送，此处任务上下文检测 flag 后调用阻塞发送
+		 * 避免在 CAN ISR 中调用 REFEREE_SendBytes 导致卡死 */
+		/* 0x0307官方频率上限为1Hz。ready缓冲区保留最新完整路径；到期后
+		 * 原子取快照，并仅在裁判系统已给出有效哨兵ID(7/107)时上传。 */
+		if (map_data_ready &&
+			(referee_data.Game_Robot_State.robot_id == Robot_ID_Red_Sentry ||
+			 referee_data.Game_Robot_State.robot_id == Robot_ID_Blue_Sentry) &&
+			(has_map_path_tx == 0U ||
+			 (TickType_t)(xTaskGetTickCount() - last_map_path_tx_tick) >= pdMS_TO_TICKS(1000U)) &&
+			MapPath_TakeReady(map_data_snapshot) != 0U)
+		{
+			Referee_SendMapData0x0307(map_data_snapshot);
+			last_map_path_tx_tick = xTaskGetTickCount();
+			has_map_path_tx = 1U;
+		}
+		/* 0x0308 频率上限为3Hz，且 sender_id 同样依赖有效的0x0201。 */
+		if (custom_info_ready &&
+			(referee_data.Game_Robot_State.robot_id == Robot_ID_Red_Sentry ||
+			 referee_data.Game_Robot_State.robot_id == Robot_ID_Blue_Sentry) &&
+			(has_custom_info_tx == 0U ||
+			 (TickType_t)(xTaskGetTickCount() - last_custom_info_tx_tick) >= pdMS_TO_TICKS(334U)) &&
+			CustomInfo_TakeReady(custom_info_snapshot) != 0U)
+		{
+			Referee_SendCustomInfo0x0308(custom_info_snapshot);
+			last_custom_info_tx_tick = xTaskGetTickCount();
+			has_custom_info_tx = 1U;
+		}
+
 		if(index % 50  == 0) // 2hz
 		{
 			if(JudgeData_ForSend1.is_game_start && (JudgeData_ForSend2.Self_blood == 0))

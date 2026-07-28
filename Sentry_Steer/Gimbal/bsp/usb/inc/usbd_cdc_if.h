@@ -94,6 +94,12 @@ extern USBD_CDC_ItfTypeDef USBD_Interface_fops_FS;
 
 /* USER CODE BEGIN EXPORTED_VARIABLES */
 
+/* USB CDC 发送诊断计数器（供调试观察用） */
+extern volatile uint32_t usb_cdc_busy_count;      /* CDC_Transmit_FS 返回 USBD_BUSY 的累计次数 */
+extern volatile uint32_t usb_cdc_tx_reset_count;   /* 看门狗强制清零 TxState 的累计次数 */
+extern volatile uint32_t usb_cdc_not_configured_count; /* USB 未枚举时发送被拒的累计次数 */
+extern volatile uint8_t  usb_cdc_last_dev_state;        /* 最近一次观察到的 USB 设备状态 */
+
 /* USER CODE END EXPORTED_VARIABLES */
 
 /**
@@ -108,6 +114,17 @@ extern USBD_CDC_ItfTypeDef USBD_Interface_fops_FS;
 uint8_t CDC_Transmit_FS(uint8_t* Buf, uint16_t Len);
 
 /* USER CODE BEGIN EXPORTED_FUNCTIONS */
+
+/**
+ * @brief USB CDC TxState 看门狗
+ * @note  当上位机长时间不读取 USB 数据时，USB 主机不发送 IN 令牌，
+ *        DMA 传输完成中断不触发，TxState 永久保持为 1，导致后续所有
+ *        CDC_Transmit_FS 返回 USBD_BUSY，上位机收不到任何数据。
+ *        本函数检测 TxState 卡死超过 timeout_ms 后强制清零，恢复发送能力。
+ *        建议在 GimbalTask 主循环中以 2ms 周期调用，timeout_ms 取 100。
+ * @param timeout_ms TxState 卡死超时阈值（单位 ms）
+ */
+void CDC_Transmit_FS_Watchdog(uint32_t timeout_ms);
 
 /* USER CODE END EXPORTED_FUNCTIONS */
 

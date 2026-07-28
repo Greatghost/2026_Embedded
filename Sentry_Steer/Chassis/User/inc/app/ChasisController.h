@@ -172,6 +172,14 @@ typedef struct Infantry
   float cos_dir; // 云台与底盘的夹角
   float sin_dir;
 
+#ifdef STEER_TORQUE_FEEDFORWARD
+  /* === 整车扭矩前馈（整车速度外环PID + 动力学扭矩分配） === */
+  PID_t chassis_translate_x_pid;  /* 平动x外环PID（云台坐标系，输入m/s，输出N）        */
+  PID_t chassis_translate_y_pid;  /* 平动y外环PID（云台坐标系，输入m/s，输出N）        */
+  PID_t chassis_rotate_pid;       /* 旋转外环PID（输入rad/s，输出N·m）                  */
+  float wheels_ff_current[4];     /* 各轮前馈电流输出（C620电流值，调试/Ozone观察用）   */
+#endif
+
   // 功率控制
   PowerLimiter power_limiter;
   float set_power; // 机器人功率设置

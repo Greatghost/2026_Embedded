@@ -23,7 +23,9 @@ void BufferEnergyCalc()
         buffer_energy.max_Power = referee_data.Game_Robot_State.chassis_power_limit;
     }
 #if REGEREE_TEST
-    float delt_P = (referee_data.Power_Heat_Data.chassis_power - TEST_MAX_POWER);
+    /* RoboMaster 2026 V2.0.0 的 0x0202 不再提供 chassis_power，
+     * 测试模式下不应读取协议中的保留字节。 */
+    float delt_P = 0.0f;
 #else
     float delt_P = (INA260_1.Power / 1000.0f - buffer_energy.max_Power);
 #endif

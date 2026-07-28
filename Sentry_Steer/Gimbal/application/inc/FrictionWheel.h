@@ -19,8 +19,14 @@
 #define BULLET_17MM_30MS_SPEED_L 43000
 #define BULLET_17MM_15MS_SPEED_R BULLET_17MM_15MS_SPEED_L
 #define BULLET_17MM_18MS_SPEED_R BULLET_17MM_18MS_SPEED_L
-#define BULLET_17MM_23MS_SPEED_R BULLET_17MM_23MS_SPEED_L 
+#define BULLET_17MM_23MS_SPEED_R BULLET_17MM_23MS_SPEED_L
 #define BULLET_17MM_30MS_SPEED_R BULLET_17MM_30MS_SPEED_L
+
+/* UNSTOPPABLE 模式下摩擦轮目标转速补偿量
+ * 高弹频连续打弹时, 摩擦轮受子弹持续摩擦导致实际转速下沉,
+ * 提升目标设定值以让 PID 维持在实际弹速要求的转速附近, 避免弹速下降。
+ * 单位与 set_speed_l/r 一致 (deg/s, 带符号由调用处处理)。 */
+#define UNSTOPPABLE_FRICTION_BOOST 2000.0f
 
 /*  摩擦轮结构体  */
 typedef struct FrictionWheel_t

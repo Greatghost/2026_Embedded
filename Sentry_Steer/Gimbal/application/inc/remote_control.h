@@ -80,7 +80,8 @@ enum SHOOT_ACTION
     SHOOT_FIRE_MODE,      // 射击模式
     SHOOT_AUTO_AIM_MODE,  // 自瞄模式
     SHOOT_SUPPLY_MODE,    // 补给模式
-    SHOOT_UNSTOPPABLE_MODE // 双杆触发连射模式
+    SHOOT_UNSTOPPABLE_MODE,        // 双杆触发连射模式
+    SHOOT_UNSTOPPABLE_AUTO_AIM_MODE // 强化进攻姿态下的高速辅瞄射击模式(current_posture==4)
 };
 
 enum CHASSIS_FORMAT

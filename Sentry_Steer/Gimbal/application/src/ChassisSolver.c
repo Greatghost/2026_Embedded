@@ -110,7 +110,16 @@ void PCStateControl() // 比赛专用
         }
 
         // 删除过洞模式检查，直接根据 RotateState 设置速度
-        if (pc_control.rotate_state == 0U)
+        // [FIX] FollowMode (FireCode bit4) 优先于 Rotate
+        //   FollowMode=1 → SPEED_FOLLOW (底盘 yaw 速度跟随云台 yaw)
+        //   FollowMode=0 且 rotate_state==0 → NOT_FOLLOW_GIMBAL
+        //   FollowMode=0 且 rotate_state!=0 → CV_ROTATE (小陀螺分档)
+        if (pc_control.follow_mode == 1U)
+        {
+            setControlModeAction(SPEED_FOLLOW);
+            chassis_solver.chassis_speed_w = 0.f;
+        }
+        else if (pc_control.rotate_state == 0U)
         {
             setControlModeAction(NOT_FOLLOW_GIMBAL);
             chassis_solver.chassis_speed_w = 0.f;
@@ -148,7 +157,13 @@ void PCStateControl() // 比赛专用
             setSuperPower(POWER_TO_BATTERY);
         }
 
-        setShootAction(SHOOT_AUTO_AIM_MODE); // 辅瞄爽打
+        // 射击模式: 强化进攻姿态 (current_posture==4, sentry_cmd bit21-23 提取) 进入
+        //          SHOOT_UNSTOPPABLE_AUTO_AIM_MODE (辅瞄判定 + 高弹频);
+        //          其他姿态维持 SHOOT_AUTO_AIM_MODE
+        if (current_posture == 4U)
+            setShootAction(SHOOT_UNSTOPPABLE_AUTO_AIM_MODE);
+        else
+            setShootAction(SHOOT_AUTO_AIM_MODE); // 辅瞄爽打
         setGimbalAction(GIMBAL_AUTO_AIM_MODE);
 
         // 摇杆推上 → 手动打弹（自瞄模式下也可手动触发）
@@ -447,7 +462,7 @@ void DJIKeyMouseUpdate(ChassisSolver *infantry)
         // 过洞底盘跟随 并 限制功率从而缓速移动
         if (Hole_flag)
         {
-            setControlModeAction(FOLLOW_GIMBAL);
+            setControlModeAction(SPEED_FOLLOW);
             chassis_send_pack1.through_hole_flag = 1;
         }
         else
@@ -836,17 +851,19 @@ void DJIRemoteUpdate(ChassisSolver *infantry)
         case Up:
             // 底盘不动，打弹
             setRobotState(CONTROL_MODE);
-            setControlModeAction(FOLLOW_GIMBAL);
+            setControlModeAction(SPEED_FOLLOW);
             setGimbalAction(GIMBAL_ACT_MODE);
 
-            // 双杆同时推过半程 → UNSTOPPABLE 射击，否则正常射击
-            if ((abs((int)remote_controller.dji_remote.rc.ch[LEFT_CH_UD] - CH_MIDDLE) > 330 
-                    || abs((int)remote_controller.dji_remote.rc.ch[LEFT_CH_LR] - CH_MIDDLE) > 330) 
-                    && (abs((int)remote_controller.dji_remote.rc.ch[RIGHT_CH_UD] - CH_MIDDLE) > 330 
-                    || abs((int)remote_controller.dji_remote.rc.ch[RIGHT_CH_LR] - CH_MIDDLE) > 330)){
+            // 射击模式选择: 仅由左摇杆(物理, =RIGHT_CH)决定, 右摇杆(物理, =LEFT_CH)专心控云台瞄准
+            //   - 左摇杆上推接近到底 (> 600) → UNSTOPPABLE 连续高速射击
+            //   - 左摇杆上推过半 (> 330)    → FIRE 模式, is_shoot=TRUE (单发)
+            //   - 左摇杆居中                → FIRE 模式, is_shoot=FALSE (待机)
+            if (((int)remote_controller.dji_remote.rc.ch[RIGHT_CH_UD] - CH_MIDDLE) > 400)
+            {
                 setShootAction(SHOOT_UNSTOPPABLE_MODE);
-            }                
-            else{
+            }
+            else
+            {
                 setShootAction(SHOOT_FIRE_MODE);
             }
             setSuperPower(POWER_TO_BATTERY);

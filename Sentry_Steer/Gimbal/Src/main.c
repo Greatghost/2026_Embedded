@@ -22,7 +22,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "bsp_buzzer.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -124,8 +124,9 @@ int main(void)
   Robot_Init();
   /* USER CODE END 1 */
 
-  
-  // Initialization_Completed();
+
+  //Initialization_Completed();
+  //HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_3); // 启动PWM输出
   /* Call init function for freertos objects (in cmsis_os2.c) */
   MX_FREERTOS_Init();
 

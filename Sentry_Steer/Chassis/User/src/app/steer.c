@@ -2,18 +2,35 @@
 #include "PowerLimit.h"
 
 extern uint8_t speed_follow_enable_flag;
+
+/* === 舵电机角度环 Kp 自适应 (2026-07-21 新增) ===
+ * 解决问题: 舵电机运动时超调抖动 vs 减小 Kp 影响反应速度的矛盾
+ * 策略: 误差大时提高 Kp 加快响应,误差小时降低 Kp 抑制超调
+ * 误差 |err| >= 45° : Kp = 33 (基准 30 × 1.1)
+ * 误差 |err| <= 5°  : Kp = 27 (基准 30 × 0.9)
+ * 5° < |err| < 45° : 线性插值
+ * 切换方法: 启用/注释下面的 #define STEER_ANGLE_KP_LINEAR_GAIN
+ */
+#define STEER_ANGLE_KP_LINEAR_GAIN
+#ifdef STEER_ANGLE_KP_LINEAR_GAIN
+#define STEER_ANGLE_KP_BASE          30.0f   /* 基准 Kp (与 PID_Init 中保持一致) */
+#define STEER_ANGLE_KP_HIGH_SCALE    1.1f    /* 大误差时 Kp 倍率 */
+#define STEER_ANGLE_KP_LOW_SCALE     0.7f    /* 小误差时 Kp 倍率 */
+#define STEER_ANGLE_ERR_HIGH_DEG     45.0f   /* 大误差阈值 (度) */
+#define STEER_ANGLE_ERR_LOW_DEG      5.0f    /* 小误差阈值 (度) */
+#endif
 void steer_pid_init()
 {
     // 舵向初始编码值设定
     infantry.steer_init_encoder[STEER1] = 3798;
-    infantry.steer_init_encoder[STEER2] = 3155;
-    infantry.steer_init_encoder[STEER3] = 5693;
+    infantry.steer_init_encoder[STEER2] = 3106;
+    infantry.steer_init_encoder[STEER3] = 5739  ;
     infantry.steer_init_encoder[STEER4] = 1026;
 
     // 轮毂电机安装方向
     infantry.steer_wheel_install_direction[STEER1] = 1;
     infantry.steer_wheel_install_direction[STEER2] = 1;
-    infantry.steer_wheel_install_direction[STEER3] = -1;
+    infantry.steer_wheel_install_direction[STEER3] = 1;
     infantry.steer_wheel_install_direction[STEER4] = -1;
     // 轮子控制PID
     PID_Init(&infantry.wheels_pid[STEER1], C620_MAX_SEND_CURRENT, 600, 0, 10, 0.3, 0, 0, 0, 0, 0, 1, Integral_Limit);
@@ -56,13 +73,73 @@ void steer_pid_init()
     Feedforward_Init(&infantry.Steer_6020_FF, 6000, infantry.Steer_6020_FF_Coefficient, 0.004, 0, 0); // 15000
 
     // 底盘前后跟随 输出旋转角速度rad/s  输入弧度制角度
-    // 降低Kp以减少震荡，增加死区稳定性
     PID_Init(&infantry.turn_pid, 3.0, 0, 0.05f, 3.0f, 0, 0.05f, 0, 0, 0.001, 0.009, 1, DerivativeFilter | OutputFilter);
 
     TD_Init(&infantry.steer_angle_td[0], 40000, 0.01);
     TD_Init(&infantry.steer_angle_td[1], 40000, 0.01);
     TD_Init(&infantry.steer_angle_td[2], 40000, 0.01);
     TD_Init(&infantry.steer_angle_td[3], 40000, 0.01);
+
+#ifdef STEER_TORQUE_FEEDFORWARD
+    /* === 整车速度外环PID初始化（扭矩前馈） ===
+     * 参数推导依据：
+     *   - 现有轮电机速度PID: Kp=10, Ki=0.3, 输出±16000 (C620电流值)
+     *   - 当1 m/s速度误差时，轮速误差≈1005 deg/s，轮PID输出≈10050（接近满量程）
+     *   - 整车外环应更温和，输出"力"而非"电流"，避免与轮速PID冲突
+     *
+     * 平动外环PID参数推导：
+     *   - 整车质量 m=25kg，期望1 m/s误差→0.6 m/s²加速度→15N力
+     *   - Kp=15, Ki=3(消除稳态误差), Kd=0.5(轻微阻尼)+微分滤波
+     *   - max_out=80N(限制最大加速度3.2 m/s²)，integral_limit=20
+     *
+     * 旋转外环PID参数推导：
+     *   - 转动惯量 I=0.8 kg·m²，期望1 rad/s误差→1 rad/s²角加速度→0.8 N·m
+     *   - Kp=0.8, Ki=0.15, Kd=0.03+微分滤波
+     *   - max_out=5 N·m(限制最大角加速度6.25 rad/s²)，integral_limit=1.5
+     */
+    PID_Init(&infantry.chassis_translate_x_pid,
+             STEER_FF_MAX_FORCE,    /* max_out = 80N */
+             20.0f,                  /* integral_limit */
+             0.05f,                  /* deadband = 0.05 m/s */
+             15.0f,                  /* Kp = 15 */
+             3.0f,                   /* Ki = 3 */
+             0.5f,                   /* Kd = 0.5 */
+             0, 0,                   /* A, B（不用变速积分） */
+             0,                      /* output_lpf_rc（不用输出滤波） */
+             0.005f,                 /* derivative_lpf_rc = 5ms */
+             1,                      /* ols_order */
+             Integral_Limit | DerivativeFilter);
+
+    PID_Init(&infantry.chassis_translate_y_pid,
+             STEER_FF_MAX_FORCE,    /* max_out = 80N */
+             20.0f,                  /* integral_limit */
+             0.05f,                  /* deadband = 0.05 m/s */
+             15.0f,                  /* Kp = 15 */
+             3.0f,                   /* Ki = 3 */
+             0.5f,                   /* Kd = 0.5 */
+             0, 0,                   /* A, B */
+             0,                      /* output_lpf_rc */
+             0.005f,                 /* derivative_lpf_rc = 5ms */
+             1,                      /* ols_order */
+             Integral_Limit | DerivativeFilter);
+
+    PID_Init(&infantry.chassis_rotate_pid,
+             STEER_FF_MAX_TORQUE,   /* max_out = 5 N·m */
+             1.5f,                   /* integral_limit */
+             0.05f,                  /* deadband = 0.05 rad/s */
+             0.8f,                   /* Kp = 0.8 */
+             0.15f,                  /* Ki = 0.15 */
+             0.03f,                  /* Kd = 0.03 */
+             0, 0,                   /* A, B */
+             0,                      /* output_lpf_rc */
+             0.005f,                 /* derivative_lpf_rc = 5ms */
+             1,                      /* ols_order */
+             Integral_Limit | DerivativeFilter);
+
+    /* 初始化前馈电流数组 */
+    for (int i = 0; i < 4; i++)
+        infantry.wheels_ff_current[i] = 0.0f;
+#endif /* STEER_TORQUE_FEEDFORWARD */
 }
 
 /**********************************************************************************************************
@@ -145,6 +222,109 @@ float steer_moving_optimization(uint8_t steer_num)
     infantry.steer_vector[steer_num].module *= invert_flag;
     return min_angle;
 }
+
+#ifdef STEER_TORQUE_FEEDFORWARD
+/**
+ * @brief 整车速度外环PID + 动力学扭矩前馈分配
+ *
+ * 三层架构的"中层 + 下层"实现：
+ *
+ * 【中层 - 整车速度闭环】
+ *   - 平动外环PID：target_x_v ↔ x_v → F_x_g (N, 云台坐标系)
+ *   - 平动外环PID：target_y_v ↔ y_v → F_y_g (N, 云台坐标系)
+ *   - 旋转外环PID：target_yaw_v ↔ yaw_v → T_yaw (N·m)
+ *   - 叠加滚动阻力前馈：F_roll = mu * m * g * sign(v_target)
+ *
+ * 【下层 - 动力学分配】
+ *   - 坐标变换：F_x_g/F_y_g（云台系）→ F_x_c/F_y_c（底盘系）
+ *   - 每轮平动力：F_i_trans = (F_x_c * cos(steer_angle) + F_y_c * sin(steer_angle)) / 4
+ *   - 每轮旋转力：F_i_rot = T_yaw / (4 * R)（等分，假设舵角已对齐切线方向）
+ *   - 轮扭矩：T_wheel = (F_i_trans + F_i_rot) * r_wheel
+ *   - 转C620电流：I_ff = T_wheel * STEER_FF_TORQUE_TO_C620
+ *   - 叠加到 wheels_set_current[i]
+ *
+ * @note 在 steer_chassis_control() 的4轮PID计算完成后调用
+ *       此时 steer_pos_kinematics() 已更新 x_v/y_v/yaw_v（在ChasisControlTask中先调用）
+ *
+ * @note y_v 符号约定：
+ *   steer_pos_kinematics() 中 y_v = -(vy*cos + vx*sin)，负号为0x09A协议约定
+ *   前馈中取 -y_v 作为物理速度（向左为正）
+ *   ⚠ 若调试发现y轴前馈方向反了，把下方 -infantry.y_v 改成 infantry.y_v
+ */
+static void steer_torque_feedforward_apply(void)
+{
+    /* === 第一步：整车速度外环PID === */
+    /* 平动x（云台坐标系，向前为正）
+     * PID_Calculate(measure, ref) → 误差 = ref - measure = target_x_v - x_v */
+    float F_x_g = PID_Calculate(&infantry.chassis_translate_x_pid,
+                                infantry.x_v, infantry.target_x_v);
+
+    /* 平动y（云台坐标系，向左为正）
+     * y_v 带负号约定，取 -y_v 作为物理速度 */
+    float F_y_g = PID_Calculate(&infantry.chassis_translate_y_pid,
+                                -infantry.y_v, infantry.target_y_v);
+
+    /* 旋转 */
+    float T_yaw = PID_Calculate(&infantry.chassis_rotate_pid,
+                                infantry.yaw_v, infantry.target_yaw_v);
+
+    /* === 第二步：阻力前馈（滚动阻力） ===
+     * F_roll = mu * m * g，沿目标速度方向施加
+     * 克服静摩擦/滚动阻力，让车动起来 */
+    float F_roll = STEER_FF_ROLL_RESISTANCE_COEF * STEER_FF_CHASSIS_MASS * STEER_FF_GRAVITY;
+    float target_v_mag = sqrtf(infantry.target_x_v * infantry.target_x_v +
+                               infantry.target_y_v * infantry.target_y_v);
+    if (target_v_mag > 0.01f)
+    {
+        /* 沿目标速度方向加阻力前馈 */
+        float dir_x = infantry.target_x_v / target_v_mag;
+        float dir_y = infantry.target_y_v / target_v_mag;
+        F_x_g += F_roll * dir_x;
+        F_y_g += F_roll * dir_y;
+    }
+
+    /* === 第三步：坐标变换（云台系 → 底盘系） ===
+     * 正运动学：x_v = vx*c - vy*s,  -y_v = vy*c + vx*s
+     * 逆变换（力同为矢量）：F_x_c = c*F_x_g - s*F_y_g
+     *                      F_y_c = -s*F_x_g + c*F_y_g */
+    float F_x_c = infantry.cos_dir * F_x_g - infantry.sin_dir * F_y_g;
+    float F_y_c = -infantry.sin_dir * F_x_g + infantry.cos_dir * F_y_g;
+
+    /* === 第四步：动力学分配到各轮 ===
+     * 对每个轮，基于当前实际舵角分解力 */
+    for (int i = 0; i < 4; i++)
+    {
+        /* 当前舵角（弧度，与正运动学 steer_pos_kinematics 一致的定义） */
+        float steer_angle_deg = (infantry.sensors_info.steer_recv[i].angle -
+                                 infantry.steer_init_encoder[i]) / 8192.0f * 360.0f;
+        float steer_angle_rad = steer_angle_deg * DEG2R_RATIO;
+
+        /* 平动分量：力在轮子方向的投影，4轮等分 */
+        float F_i_trans = (F_x_c * arm_cos_f32(steer_angle_rad) +
+                           F_y_c * arm_sin_f32(steer_angle_rad)) / 4.0f;
+
+        /* 旋转分量：每轮切线方向 F_rot = T / (4 * R)
+         * 假设舵角已对齐切线方向（稳态准确，瞬态由PID补偿） */
+        float F_i_rot = T_yaw / (4.0f * STEER_INFANTRY_RADIUS);
+
+        /* 总轮扭矩 = (平动力 + 旋转力) * 轮半径 */
+        float T_wheel = (F_i_trans + F_i_rot) * STEER_WHEEL_RADIUS;
+
+        /* 转C620电流值 */
+        float I_ff = T_wheel * STEER_FF_TORQUE_TO_C620;
+
+        /* 限幅（保守值，防止前馈过强干扰PID） */
+        I_ff = LIMIT_MAX_MIN(I_ff, STEER_FF_MAX_CURRENT_PER_WHEEL,
+                            -STEER_FF_MAX_CURRENT_PER_WHEEL);
+
+        /* 保存前馈电流（调试/Ozone观察用） */
+        infantry.wheels_ff_current[i] = I_ff;
+
+        /* 叠加到轮电机电流（在PID输出基础上加） */
+        infantry.excute_info.wheels_set_current[i] += I_ff;
+    }
+}
+#endif /* STEER_TORQUE_FEEDFORWARD */
 
 /**********************************************************************************************************
  *函 数 名: steer_control
@@ -294,11 +474,38 @@ void steer_chassis_control(void)
 
             /*pid计算*/
             infantry.excute_info.wheels_set_current[i] = PID_Calculate(&infantry.wheels_pid[i], infantry.sensors_info.wheels_decode[i].speed, infantry.steer_vector[i].module);
+            #ifdef STEER_ANGLE_KP_LINEAR_GAIN
+            /* 舵电机角度环 Kp 自适应: 根据角度误差线性调整 Kp
+             * steer_vector[i].angle = steer_decode[i].angle + steer_moving_optimization(i)
+             * 故 steer_vector[i].angle - steer_decode[i].angle 即最短路径误差,范围 [-180,180]
+             * - 误差大时提高 Kp 加快响应
+             * - 误差小时降低 Kp 抑制超调抖动 */
+            {
+                float steer_err_abs = fabsf(infantry.steer_vector[i].angle - infantry.sensors_info.steer_decode[i].angle);
+                float kp_scale;
+                if (steer_err_abs <= STEER_ANGLE_ERR_LOW_DEG)
+                    kp_scale = STEER_ANGLE_KP_LOW_SCALE;
+                else if (steer_err_abs >= STEER_ANGLE_ERR_HIGH_DEG)
+                    kp_scale = STEER_ANGLE_KP_HIGH_SCALE;
+                else
+                    kp_scale = STEER_ANGLE_KP_LOW_SCALE +
+                              (STEER_ANGLE_KP_HIGH_SCALE - STEER_ANGLE_KP_LOW_SCALE) *
+                              (steer_err_abs - STEER_ANGLE_ERR_LOW_DEG) /
+                              (STEER_ANGLE_ERR_HIGH_DEG - STEER_ANGLE_ERR_LOW_DEG);
+                infantry.steers_angle_pid[i].Kp = STEER_ANGLE_KP_BASE * kp_scale;
+            }
+            #endif
             // 加一层td滤波作缓冲
             infantry.Steer_Speed_Setpoint[i] = PID_Calculate(&infantry.steers_angle_pid[i], infantry.sensors_info.steer_decode[i].angle, TD_Calculate(&infantry.steer_angle_td[i], infantry.steer_vector[i].angle));
             infantry.steers_set_current = PID_Calculate(&infantry.steers_speed_pid[i], infantry.sensors_info.steer_decode[i].speed, infantry.Steer_Speed_Setpoint[i]) + Feedforward_Calculate(&infantry.Steer_6020_FF, infantry.Steer_Speed_Setpoint[i]);
             infantry.excute_info.steers_set_current[i] = infantry.steers_set_current;
         }
+
+        #ifdef STEER_TORQUE_FEEDFORWARD
+        /* 整车扭矩前馈：在轮速PID输出基础上叠加动力学前馈电流
+         * 在4轮速度PID计算完成后调用，此时x_v/y_v/yaw_v已由steer_pos_kinematics()更新 */
+        steer_torque_feedforward_apply();
+        #endif
     }
     else
     {
@@ -307,6 +514,20 @@ void steer_chassis_control(void)
             infantry.excute_info.steers_set_current[m] = 0.0f;
             infantry.excute_info.wheels_set_current[m] = PID_Calculate(&infantry.wheels_pid[m], infantry.sensors_info.wheels_decode[m].speed, 0.0f);
         }
+        #ifdef STEER_TORQUE_FEEDFORWARD
+        /* 停车时清零前馈PID积分项，防止下次启动时积分突变 */
+        infantry.chassis_translate_x_pid.Iout = 0.0f;
+        infantry.chassis_translate_x_pid.ITerm = 0.0f;
+        infantry.chassis_translate_x_pid.Last_ITerm = 0.0f;
+        infantry.chassis_translate_y_pid.Iout = 0.0f;
+        infantry.chassis_translate_y_pid.ITerm = 0.0f;
+        infantry.chassis_translate_y_pid.Last_ITerm = 0.0f;
+        infantry.chassis_rotate_pid.Iout = 0.0f;
+        infantry.chassis_rotate_pid.ITerm = 0.0f;
+        infantry.chassis_rotate_pid.Last_ITerm = 0.0f;
+        for (int m = 0; m < 4; m++)
+            infantry.wheels_ff_current[m] = 0.0f;
+        #endif
     }
 }
 
@@ -332,7 +553,9 @@ void steer_pos_kinematics(void)
     float steer_angle_rad[4]; // 四个舵轮的物理角度
 
     // 四个舵轮yaw切线方向角度（与逆运动学w_vector.angle一致）
-    float tangent_angle_rad[4] = {-45.0f * DEG2R_RATIO, 45.0f * DEG2R_RATIO, -135.0f * DEG2R_RATIO, 135.0f * DEG2R_RATIO};
+    // [FIX bug②] 原为 {-45, 45, -135, 135}，与逆运动学 w_vector 的 {-135, 135, -45, 45} 每个偏 90°，
+    //             导致纯自转时 angle_diff=90° → cos≈0 → yaw_v≈0。现改为与逆运动学一致。
+    float tangent_angle_rad[4] = {-135.0f * DEG2R_RATIO, 135.0f * DEG2R_RATIO, -45.0f * DEG2R_RATIO, 45.0f * DEG2R_RATIO};
 
     // 第一步：计算每个轮的物理线速度和舵轮角度
     for (int i = 0; i < 4; i++)
@@ -350,12 +573,14 @@ void steer_pos_kinematics(void)
     }
 
     // 第二步：平均计算平动分量（yaw分量平均为0）
+    // [FIX bug①] 原为 sin 给 x、cos 给 y，与逆运动学 add_vector 的 cos 给 x、sin 给 y 相反。
+    //             现改为 cos 给 x、sin 给 y，与逆运动学一致。
     float vx_chassis_sum = 0.0f;
     float vy_chassis_sum = 0.0f;
     for (int i = 0; i < 4; i++)
     {
-        vx_chassis_sum += wheel_speed_m_s[i] * arm_sin_f32(steer_angle_rad[i]);
-        vy_chassis_sum += wheel_speed_m_s[i] * arm_cos_f32(steer_angle_rad[i]);
+        vx_chassis_sum += wheel_speed_m_s[i] * arm_cos_f32(steer_angle_rad[i]);
+        vy_chassis_sum += wheel_speed_m_s[i] * arm_sin_f32(steer_angle_rad[i]);
     }
     float vx_chassis = vx_chassis_sum / 4.0f;
     float vy_chassis = vy_chassis_sum / 4.0f;
@@ -365,7 +590,8 @@ void steer_pos_kinematics(void)
     for (int i = 0; i < 4; i++)
     {
         // 平动分量：robot_vector 在该舵轮方向的分量
-        float robot_speed_contribution = vx_chassis * arm_sin_f32(steer_angle_rad[i]) + vy_chassis * arm_cos_f32(steer_angle_rad[i]);
+        // [FIX bug①] 同步修改：cos 给 x、sin 给 y
+        float robot_speed_contribution = vx_chassis * arm_cos_f32(steer_angle_rad[i]) + vy_chassis * arm_sin_f32(steer_angle_rad[i]);
 
         // yaw分量：轮速 - 平动分量
         float yaw_speed_component = wheel_speed_m_s[i] - robot_speed_contribution;
@@ -380,8 +606,12 @@ void steer_pos_kinematics(void)
     infantry.yaw_v = yaw_sum / 4.0f;
 
     // 第五步：底盘坐标系 → 云台坐标系
-    infantry.x_v = vy_chassis * infantry.cos_dir - vx_chassis * infantry.sin_dir;   // 向前
-    infantry.y_v = -(vx_chassis * infantry.cos_dir + vy_chassis * infantry.sin_dir); // 向左
+    // [FIX bug①] vx_chassis/vy_chassis 含义已修正（vx=true_x, vy=true_y），坐标变换同步调整
+    //   逆运动学(云台→底盘): chassis_x = gimbal_x*cos + gimbal_y*sin, chassis_y = gimbal_y*cos - gimbal_x*sin
+    //   正运动学(底盘→云台): gimbal_x = chassis_x*cos - chassis_y*sin, gimbal_y = chassis_x*sin + chassis_y*cos
+    //   y_v 保留原有负号（与下游 0x09A 协议约定一致）
+    infantry.x_v = vx_chassis * infantry.cos_dir - vy_chassis * infantry.sin_dir;   // 向前
+    infantry.y_v = -(vy_chassis * infantry.cos_dir + vx_chassis * infantry.sin_dir); // 向左
 }
 
 /**

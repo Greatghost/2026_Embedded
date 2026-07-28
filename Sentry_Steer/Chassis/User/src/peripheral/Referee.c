@@ -27,8 +27,39 @@ RefereeDataUpdate referee_data_updater;
 extern uint8_t radar_msg_update_flag;
 
 /* Private variables ---------------------------------------------------------*/
-// 裁判系统完整数据接收缓冲区
-int8_t fullDataBuffer[MAX_REFEREE_DATA_LEN];
+/*
+ * 裁判系统完整数据接收缓冲区。
+ * V2.0.0 的整帧上限为 127B；按 128B 分配，禁止旧版 45B 缓冲区在
+ * 接收较长 0x0301 时越界破坏其后的全局调试结构。
+ */
+uint8_t fullDataBuffer[MAX_REFEREE_DATA_LEN];
+
+#define REFEREE_SOURCE_FRESH_MS 1500U
+
+static volatile TickType_t referee_robot_hp_last_rx_tick;
+static volatile TickType_t referee_sentry_info_last_rx_tick;
+static volatile uint8_t referee_robot_hp_received;
+static volatile uint8_t referee_sentry_info_received;
+
+uint8_t Referee_IsRobotHPFresh(void)
+{
+	if (referee_robot_hp_received == 0U)
+	{
+		return FALSE;
+	}
+	return ((TickType_t)(xTaskGetTickCount() - referee_robot_hp_last_rx_tick) <=
+			pdMS_TO_TICKS(REFEREE_SOURCE_FRESH_MS)) ? TRUE : FALSE;
+}
+
+uint8_t Referee_IsSentryInfoFresh(void)
+{
+	if (referee_sentry_info_received == 0U)
+	{
+		return FALSE;
+	}
+	return ((TickType_t)(xTaskGetTickCount() - referee_sentry_info_last_rx_tick) <=
+			pdMS_TO_TICKS(REFEREE_SOURCE_FRESH_MS)) ? TRUE : FALSE;
+}
 
 /* Functions -----------------------------------------------------------------*/
 
@@ -52,6 +83,11 @@ void Referee_StructInit(void)
 {
 	// 清零协议帧头
 	memset(&referee_data.Referee_Receive_Header, 0, sizeof(referee_data.Referee_Receive_Header));
+	memset(&referee_data.decoder, 0, sizeof(referee_data.decoder));
+	referee_robot_hp_received = 0U;
+	referee_sentry_info_received = 0U;
+	referee_robot_hp_last_rx_tick = 0U;
+	referee_sentry_info_last_rx_tick = 0U;
 
 	// 清零 0x000X 比赛基础数据
 	memset(&referee_data.Game_Status, 0, sizeof(referee_data.Game_Status));
@@ -60,8 +96,6 @@ void Referee_StructInit(void)
 
 	// 清零 0x010X 场地事件数据
 	memset(&referee_data.Event_Data, 0, sizeof(referee_data.Event_Data));
-	memset(&referee_data.Supply_Projectile_Action, 0, sizeof(referee_data.Supply_Projectile_Action));
-	memset(&referee_data.Supply_Projectile_Booking, 0, sizeof(referee_data.Supply_Projectile_Booking));
 	memset(&referee_data.Referee_Warning, 0, sizeof(referee_data.Referee_Warning));
 	memset(&referee_data.Dart_Remaining_Time, 0, sizeof(referee_data.Dart_Remaining_Time));
 
@@ -75,8 +109,9 @@ void Referee_StructInit(void)
 	memset(&referee_data.Shoot_Data, 0, sizeof(referee_data.Shoot_Data));
 	memset(&referee_data.Bullet_Remaining, 0, sizeof(referee_data.Bullet_Remaining));
 	memset(&referee_data.rfid_status, 0, sizeof(referee_data.rfid_status));
-	// memset(&referee_data.Dart_Client_Cmd, 0, sizeof(referee_data.Dart_Client_Cmd));
+	memset(&referee_data.Dart_Client_Cmd, 0, sizeof(referee_data.Dart_Client_Cmd));
 	memset(&referee_data.ground_robot_position, 0, sizeof(referee_data.ground_robot_position));
+	memset(&referee_data.Radar_Mark_Data, 0, sizeof(referee_data.Radar_Mark_Data));
 	memset(&referee_data.Sentry_info, 0, sizeof(referee_data.Sentry_info));
 	memset(&referee_data.Radar_Info, 0, sizeof(referee_data.Radar_Info));
 	memset(&referee_data.Sentry_alert_info, 0, sizeof(referee_data.Sentry_alert_info));
@@ -98,22 +133,65 @@ void Referee_StructInit(void)
  * @retval 无
  * @note   采用状态机解析协议帧，包含帧头检测、长度读取、CRC校验
  */
+static uint64_t Referee_GetDmaProducerCount(void)
+{
+	uint32_t primask;
+	uint32_t wraps;
+	uint16_t remaining;
+
+	/*
+	 * DMA can reload NDTR before the TC ISR increments the software lap count.
+	 * Snapshot both with interrupts masked and account for a pending TC flag.
+	 */
+	primask = __get_PRIMASK();
+	__disable_irq();
+	wraps = referee_data.decoder.judgementFullCount;
+	remaining = DMA_GetCurrDataCounter(REFEREE_RECV_DMAx_Streamx);
+	if (DMA_GetFlagStatus(REFEREE_RECV_DMAx_Streamx,
+						  REFEREE_RECV_DMA_FLAG_TCIFx) != RESET)
+	{
+		wraps++;
+		remaining = DMA_GetCurrDataCounter(REFEREE_RECV_DMAx_Streamx);
+	}
+	__DMB();
+	if (primask == 0U)
+	{
+		__enable_irq();
+	}
+
+	return (uint64_t)wraps * REFEREE_RECVBUF_SIZE +
+		   (uint64_t)(REFEREE_RECVBUF_SIZE - remaining);
+}
+
 void Referee_UnpackFifoData()
 {
-	// 计算当前已接收的总数据长度 = DMA剩余长度 + 环形缓冲区圈数*缓冲区大小
-	referee_data.decoder.receive_data_len = REFEREE_RECVBUF_SIZE - DMA_GetCurrDataCounter(REFEREE_RECV_DMAx_Streamx) + referee_data.decoder.judgementFullCount * REFEREE_RECVBUF_SIZE;
+	/* Parse a fixed producer snapshot. Bytes received during this pass remain
+	 * for the next task iteration. */
+	referee_data.decoder.receive_data_len = Referee_GetDmaProducerCount();
 
-	// 防止数据长度溢出，限制最大解析长度
-	if (referee_data.decoder.receive_data_len - referee_data.decoder.decode_data_len > 2 * REFEREE_RECVBUF_SIZE)
+	/* One circular DMA lap is the maximum retained history. */
+	if (referee_data.decoder.receive_data_len < referee_data.decoder.decode_data_len)
 	{
-		referee_data.decoder.decode_data_len = referee_data.decoder.receive_data_len - 2 * REFEREE_RECVBUF_SIZE;
+		referee_data.decoder.decode_data_len = referee_data.decoder.receive_data_len;
+		referee_data.decoder.judgementStep = STEP_HEADER_SOF;
+		referee_data.decoder.index = 0U;
+	}
+	else if (referee_data.decoder.receive_data_len -
+			 referee_data.decoder.decode_data_len > REFEREE_RECVBUF_SIZE)
+	{
+		referee_data.decoder.decode_data_len =
+			referee_data.decoder.receive_data_len - REFEREE_RECVBUF_SIZE;
+		referee_data.decoder.judgementStep = STEP_HEADER_SOF;
+		referee_data.decoder.index = 0U;
+		global_debugger.referee_debugger.err_msgs_num++;
+		global_debugger.referee_debugger.dma_overrun_count++;
 	}
 	// 计算当前读取的缓冲区索引
-	int read_arr = referee_data.decoder.decode_data_len % REFEREE_RECVBUF_SIZE;
+	int read_arr = (int)(referee_data.decoder.decode_data_len % REFEREE_RECVBUF_SIZE);
 	u8 byte;
 
 	// 循环读取未解析的字节数据
-	while (referee_data.decoder.receive_data_len > referee_data.decoder.decode_data_len + 1)
+	while (referee_data.decoder.receive_data_len > referee_data.decoder.decode_data_len)
 	{
 		// 从DMA缓冲区读取单字节数据
 		byte = Refereebuffer[read_arr];
@@ -158,6 +236,8 @@ void Referee_UnpackFifoData()
 				// 长度非法，重置状态机
 				referee_data.decoder.judgementStep = STEP_HEADER_SOF;
 				referee_data.decoder.index = 0;
+				global_debugger.referee_debugger.err_msgs_num++;
+				global_debugger.referee_debugger.length_error_count++;
 			}
 		}
 		break;
@@ -186,6 +266,7 @@ void Referee_UnpackFifoData()
 					referee_data.decoder.index = 0;
 
 					global_debugger.referee_debugger.err_msgs_num++;
+					global_debugger.referee_debugger.crc8_error_count++;
 				}
 			}
 		}
@@ -214,6 +295,7 @@ void Referee_UnpackFifoData()
 				{
 					// 校验失败，错误计数+1
 					global_debugger.referee_debugger.err_msgs_num++;
+					global_debugger.referee_debugger.crc16_error_count++;
 				}
 			}
 		}
@@ -229,15 +311,40 @@ void Referee_UnpackFifoData()
 		// 解析长度+1，更新缓冲区读取索引
 		referee_data.decoder.decode_data_len++;
 		read_arr = read_arr + 1 >= REFEREE_RECVBUF_SIZE ? 0 : read_arr + 1;
-		// 重新计算接收总长度
-		referee_data.decoder.receive_data_len = REFEREE_RECVBUF_SIZE - DMA_GetCurrDataCounter(REFEREE_RECV_DMAx_Streamx) + referee_data.decoder.judgementFullCount * REFEREE_RECVBUF_SIZE;
 	}
-	// 环形缓冲区边界处理，防止计数溢出
-	if (referee_data.decoder.receive_data_len % REFEREE_RECVBUF_SIZE > (REFEREE_RECVBUF_SIZE / 3) &&
-		referee_data.decoder.receive_data_len % REFEREE_RECVBUF_SIZE < (2 * REFEREE_RECVBUF_SIZE / 3))
+}
+
+#define REFEREE_VARIABLE_DATA_LENGTH 0xFFFFU
+#define REFEREE_UNKNOWN_DATA_LENGTH  0xFFFEU
+#define REFEREE_INTERACTIVE_HEADER_SIZE 6U
+#define REFEREE_INTERACTIVE_MAX_DATA_LENGTH 118U
+
+static uint16_t Referee_ExpectedDataLength(uint16_t cmd_id)
+{
+	switch (cmd_id)
 	{
-		referee_data.decoder.decode_data_len -= REFEREE_RECVBUF_SIZE * referee_data.decoder.judgementFullCount;
-		referee_data.decoder.judgementFullCount = 0;
+	case GAME_STATE_CMD_ID: return (uint16_t)sizeof(ext_game_status_t);
+	case GAME_RESULT_CMD_ID: return (uint16_t)sizeof(ext_game_result_t);
+	case GAME_ROBOT_HP_CMD_ID: return (uint16_t)sizeof(robot_HP_friend_t);
+	case FIELD_EVENTS_CMD_ID: return (uint16_t)sizeof(ext_event_data_t);
+	case REFEREE_WARNING_CMD_ID: return (uint16_t)sizeof(ext_referee_warning_t);
+	case DART_REMAINING_TIME_CMD_ID: return (uint16_t)sizeof(ext_dart_remaining_time_t);
+	case ROBOT_STATE_CMD_ID: return (uint16_t)sizeof(ext_game_robot_state_t);
+	case POWER_HEAT_DATA_CMD_ID: return (uint16_t)sizeof(ext_power_heat_data_t);
+	case ROBOT_POS_CMD_ID: return (uint16_t)sizeof(ext_game_robot_pos_t);
+	case BUFF_MUSK_CMD_ID: return (uint16_t)sizeof(ext_buff_musk_t);
+	case ROBOT_HURT_CMD_ID: return (uint16_t)sizeof(ext_robot_hurt_t);
+	case SHOOT_DATA_CMD_ID: return (uint16_t)sizeof(ext_shoot_data_t);
+	case BULLET_REMAINING_CMD_ID: return (uint16_t)sizeof(ext_bullet_remaining_t);
+	case ROBOT_RFID_STATE_CMD_ID: return (uint16_t)sizeof(ext_rfid_status_t);
+	case DART_CLIENT_CMD_ID: return (uint16_t)sizeof(ext_dart_client_cmd_t);
+	case GROUND_ROBOT_POSITION_ID: return (uint16_t)sizeof(ground_robot_position_t);
+	case RADAR_MARK_DATA_CMD_ID: return (uint16_t)sizeof(radar_mark_data_t);
+	case SENTRY_INFO_CMD_ID: return (uint16_t)sizeof(sentry_info_t);
+	case RADAR_INFO_CMD_ID: return (uint16_t)sizeof(radar_info_t);
+	case STUDENT_INTERACTIVE_DATA_CMD_ID: return REFEREE_VARIABLE_DATA_LENGTH;
+	case ROBOT_COMMAND_CMD_ID: return (uint16_t)sizeof(ext_robot_command_t);
+	default: return REFEREE_UNKNOWN_DATA_LENGTH;
 	}
 }
 
@@ -250,6 +357,8 @@ void Referee_UnpackFifoData()
 void Referee_SolveFifoData(uint8_t *frame)
 {
 	uint16_t cmd_id = 0;
+	uint16_t expected_data_length;
+	uint16_t data_length;
 	uint8_t index = 0;
 
 	// 复制协议帧头到全局结构体
@@ -258,6 +367,20 @@ void Referee_SolveFifoData(uint8_t *frame)
 	// 读取命令ID
 	memcpy(&cmd_id, frame + index, sizeof(uint16_t));
 	index += sizeof(uint16_t);
+	data_length = referee_data.Referee_Receive_Header.data_length;
+	expected_data_length = Referee_ExpectedDataLength(cmd_id);
+
+	if ((expected_data_length == REFEREE_VARIABLE_DATA_LENGTH &&
+		 (data_length < REFEREE_INTERACTIVE_HEADER_SIZE ||
+		  data_length > REFEREE_INTERACTIVE_MAX_DATA_LENGTH)) ||
+		(expected_data_length != REFEREE_VARIABLE_DATA_LENGTH &&
+		 expected_data_length != REFEREE_UNKNOWN_DATA_LENGTH &&
+		 data_length != expected_data_length))
+	{
+		global_debugger.referee_debugger.err_msgs_num++;
+		global_debugger.referee_debugger.length_error_count++;
+		return;
+	}
 
 	// 根据命令ID解析对应数据
 	switch (cmd_id)
@@ -267,13 +390,16 @@ void Referee_SolveFifoData(uint8_t *frame)
 		global_debugger.referee_debugger.cmd_0x0001_num++;
 		memcpy(&referee_data.Game_Status, frame + index, sizeof(ext_game_status_t));
 		break;
-		//	case GAME_RESULT_CMD_ID:
-		//		memcpy(&referee_data.Game_Result, frame + index, sizeof(ext_game_result_t));
-		//		break;
+	case GAME_RESULT_CMD_ID:
+		global_debugger.referee_debugger.cmd_0x0002_num++;
+		memcpy(&referee_data.Game_Result, frame + index, sizeof(ext_game_result_t));
+		break;
 	// 友方机器人血量数据 0x0003
 	case GAME_ROBOT_HP_CMD_ID:
 		global_debugger.referee_debugger.cmd_0x0003_num++;
 		memcpy(&referee_data.Game_Robot_friend_HP, frame + index, sizeof(robot_HP_friend_t));
+		referee_robot_hp_last_rx_tick = xTaskGetTickCount();
+		referee_robot_hp_received = 1U;
 		break;
 		//	case DART_FLYING_STATE_CMD_ID:
 		//		break;
@@ -283,15 +409,10 @@ void Referee_SolveFifoData(uint8_t *frame)
 		global_debugger.referee_debugger.cmd_0x0101_num++;
 		memcpy(&referee_data.Event_Data, frame + index, sizeof(ext_event_data_t));
 		break;
-		//	case SUPPLY_PROJECTILE_ACTION_CMD_ID:
-		//		memcpy(&referee_data.Supply_Projectile_Action, frame + index, sizeof(ext_supply_projectile_action_t));
-		//		break;
-		//	case SUPPLY_PROJECTILE_BOOKING_CMD_ID:
-		//		memcpy(&referee_data.Supply_Projectile_Booking, frame + index, sizeof(ext_supply_projectile_booking_t));
-		//		break;
-		//	case REFEREE_WARNING_CMD_ID:
-		//		memcpy(&referee_data.Referee_Warning, frame + index, sizeof(ext_referee_warning_t));
-		//		break;
+	case REFEREE_WARNING_CMD_ID:
+		global_debugger.referee_debugger.cmd_0x0104_num++;
+		memcpy(&referee_data.Referee_Warning, frame + index, sizeof(ext_referee_warning_t));
+		break;
 	// 飞镖剩余时间数据 0x0105
 	case DART_REMAINING_TIME_CMD_ID:
 		global_debugger.referee_debugger.cmd_0x0105_num++;
@@ -345,18 +466,31 @@ void Referee_SolveFifoData(uint8_t *frame)
 		global_debugger.referee_debugger.cmd_0x0209_num++;
 		memcpy(&referee_data.rfid_status, frame + index, sizeof(ext_rfid_status_t));
 		break;
-		//	case DART_CLIENT_CMD_ID:
-		//		memcpy(&referee_data.Dart_Client_Cmd, frame + index, sizeof(ext_dart_client_cmd_t));
-		//		break;
+	case DART_CLIENT_CMD_ID:
+		global_debugger.referee_debugger.cmd_0x020A_num++;
+		memcpy(&referee_data.Dart_Client_Cmd, frame + index, sizeof(ext_dart_client_cmd_t));
+		break;
 	// 地面机器人位置数据 0x020B
 	case GROUND_ROBOT_POSITION_ID:
 		global_debugger.referee_debugger.cmd_0x020B_num++;
 		memcpy(&referee_data.ground_robot_position,frame + index, sizeof(ground_robot_position_t));
 		break;
+	// 雷达标记进度数据 0x020C
+	case RADAR_MARK_DATA_CMD_ID:
+		global_debugger.referee_debugger.cmd_0x020C_num++;
+		memcpy(&referee_data.Radar_Mark_Data, frame + index, sizeof(radar_mark_data_t));
+		break;
 	// 哨兵状态数据 0x020D
 	case SENTRY_INFO_CMD_ID:
 		global_debugger.referee_debugger.cmd_0x020D_num++;
 		memcpy(&referee_data.Sentry_info, frame + index, sizeof(sentry_info_t));
+		referee_sentry_info_last_rx_tick = xTaskGetTickCount();
+		referee_sentry_info_received = 1U;
+		break;
+	// 雷达自主决策信息同步 0x020E
+	case RADAR_INFO_CMD_ID:
+		global_debugger.referee_debugger.cmd_0x020E_num++;
+		memcpy(&referee_data.Radar_Info, frame + index, sizeof(radar_info_t));
 		break;
 	// 机器人交互数据 0x0301
 	case STUDENT_INTERACTIVE_DATA_CMD_ID:
@@ -380,22 +514,38 @@ void Referee_SolveFifoData(uint8_t *frame)
 		referee_data.Robot_Interactive_Data.sender_id = sender_id;
 		referee_data.Robot_Interactive_Data.receiver_id = receiver_id;
 
-		uint8_t sentry_id;
-		// 判断哨兵ID：红方7号/蓝方107号
-		if(referee_data.Game_Robot_State.robot_id < 10) sentry_id = 7;
-		else sentry_id = 107;
+		uint16_t sentry_id = 0U;
+		/* 只有 0x0201 已给出有效哨兵 ID 时才接收定向交互数据。
+		 * 旧逻辑把 robot_id=0 误判为红方哨兵 7。 */
+		if (referee_data.Game_Robot_State.robot_id == Robot_ID_Red_Sentry ||
+			referee_data.Game_Robot_State.robot_id == Robot_ID_Blue_Sentry)
+		{
+			sentry_id = referee_data.Game_Robot_State.robot_id;
+		}
 
 		// 根据data_cmd_id分别解析不同的雷达数据
-		if(receiver_id == sentry_id)
+		if(sentry_id != 0U && receiver_id == sentry_id)
 		{
 			switch(data_cmd_id)
 			{
 				case 0x0201: // 哨兵预警信息: carID(2) + distance(4) + quadrant(2)
+					if (data_length != (uint16_t)(6U + sizeof(radar_sentinel_alert_t)))
+					{
+						global_debugger.referee_debugger.err_msgs_num++;
+						global_debugger.referee_debugger.length_error_count++;
+						return;
+					}
 					global_debugger.referee_debugger.radar_0x0201_num++;
 					memcpy(&referee_data.Radar_Alert_Info, frame + index, sizeof(radar_sentinel_alert_t));
 					radar_msg_update_flag = NEAREST_ENEMY_POS;
 					break;
 				case 0x0202: // 哨兵赛场坐标: 7个float坐标(哨兵自身+敌方1,2,3,4,6,7)
+					if (data_length != (uint16_t)(6U + sizeof(radar_sentry_position_t)))
+					{
+						global_debugger.referee_debugger.err_msgs_num++;
+						global_debugger.referee_debugger.length_error_count++;
+						return;
+					}
 					global_debugger.referee_debugger.radar_0x0202_num++;
 					memcpy(&referee_data.Radar_Position_Info, frame + index, sizeof(radar_sentry_position_t));
 					// 同步更新到Robot_Interactive_Data.position以兼容旧代码
@@ -416,6 +566,12 @@ void Referee_SolveFifoData(uint8_t *frame)
 					radar_msg_update_flag = ALL_ENEMY_POS;
 					break;
 				case 0x0205: // 敌方血量: 5个uint16(敌方1,2,3,4,7号)
+					if (data_length != (uint16_t)(6U + sizeof(radar_enemy_hp_t)))
+					{
+						global_debugger.referee_debugger.err_msgs_num++;
+						global_debugger.referee_debugger.length_error_count++;
+						return;
+					}
 					global_debugger.referee_debugger.radar_0x0205_num++;
 					memcpy(&referee_data.Radar_Enemy_HP, frame + index, sizeof(radar_enemy_hp_t));
 					// 同步更新到Robot_Interactive_Data.enemy_hp以兼容旧代码
@@ -926,4 +1082,119 @@ void UI_PushUp_Delete(UI_Delete_t *Delete, uint8_t RobotID)
 
 	/* 发送数据 */
 	REFEREE_SendBytes((uint8_t *)Delete, sizeof(UI_Delete_t));
+}
+
+/*==============================================================================
+              ##### 0x0307 地图路径数据转发 (2026 V2.0新增) #####
+  ==============================================================================
+*/
+
+/**
+ * @brief  封装并发送 0x0307 地图路径数据帧
+ * @param  map_data_105: 105B map_data_t payload 指针
+ * @retval 无
+ * @note   完整帧 114B = 5B帧头(SOF+data_length+seq+CRC8)
+ *         + 2B cmd_id(0x0307 LE) + 105B data + 2B CRC16
+ *         每次完整重组只发送一次，CRC8/CRC16 由裁判发送器计算
+ */
+MapPathRefereeTxDebug_t g_map_path_referee_tx_debug;
+
+void Referee_SendMapData0x0307(const uint8_t *map_data_105)
+{
+	static uint8_t seq = 0;
+	/* 5B header + 2B cmd_id + 105B data + 2B CRC16 = 114B (SendToReferee_Buff[128] 足够) */
+	uint8_t frame[5 + 2 + 105 + 2];
+	uint16_t sender_id = (uint16_t)referee_data.Game_Robot_State.robot_id;
+
+	g_map_path_referee_tx_debug.call_count++;
+	g_map_path_referee_tx_debug.last_sender_id = sender_id;
+	if (map_data_105 == NULL ||
+		(sender_id != Robot_ID_Red_Sentry &&
+		 sender_id != Robot_ID_Blue_Sentry))
+	{
+		/* 0x0307要求sender_id与机器人自身ID匹配。未收到有效裁判ID时不得上传。 */
+		g_map_path_referee_tx_debug.invalid_argument_count++;
+		return;
+	}
+
+	/* 帧头: SOF + data_length(=105, LE) + seq + CRC8 */
+	frame[0] = HEADER_SOF;
+	frame[1] = (uint8_t)(105U & 0xFFU);
+	frame[2] = (uint8_t)((105U >> 8) & 0xFFU);
+	frame[3] = ++seq;
+	g_map_path_referee_tx_debug.last_sequence = frame[3];
+	/* Append_CRC8_Check_Sum 计算 frame[0..3] 并写入 frame[4] */
+	Append_CRC8_Check_Sum(frame, REF_PROTOCOL_HEADER_SIZE);
+
+	/* cmd_id = 0x0307 (LE) */
+	frame[5] = (uint8_t)(MAP_DATA_CMD_ID & 0xFFU);
+	frame[6] = (uint8_t)((MAP_DATA_CMD_ID >> 8) & 0xFFU);
+
+	/* 105B map_data_t payload */
+	memcpy(&frame[7], map_data_105, 105U);
+	/* payload byte 103..104: sender_id。以裁判下发的自身ID为唯一可信源，
+	 * 防止上位机默认0或红蓝方配置错误导致裁判系统拒收。 */
+	frame[7U + 103U] = (uint8_t)(sender_id & 0xFFU);
+	frame[7U + 104U] = (uint8_t)((sender_id >> 8) & 0xFFU);
+
+	/* 帧尾 CRC16: 覆盖 header + cmd_id + data = 112B, 写入 frame[112..113] */
+	Append_CRC16_Check_Sum(frame, sizeof(frame));
+	g_map_path_referee_tx_debug.frame_built_count++;
+
+	/* 通过裁判系统串口发送 */
+	REFEREE_SendBytes(frame, (uint8_t)sizeof(frame));
+	g_map_path_referee_tx_debug.uart_dma_submit_count++;
+	g_map_path_referee_tx_debug.dma_pending = 1U;
+}
+
+/*==============================================================================
+              ##### 0x0308 自定义信息数据转发 (2026 V2.0新增) #####
+  ==============================================================================
+*/
+
+/**
+ * @brief  封装并发送 0x0308 自定义信息数据帧
+ * @param  custom_data_34: 34B custom_info_t payload 指针
+ * @retval 无
+ * @note   完整帧 43B = 5B帧头(SOF+data_length+seq+CRC8)
+ *         + 2B cmd_id(0x0308 LE) + 34B data + 2B CRC16
+ *         每次完整重组只发送一次，CRC8/CRC16 由裁判发送器计算
+ */
+void Referee_SendCustomInfo0x0308(const uint8_t *custom_data_34)
+{
+	static uint8_t seq = 0;
+	/* 5B header + 2B cmd_id + 34B data + 2B CRC16 = 43B */
+	uint8_t frame[5 + 2 + 34 + 2];
+	uint16_t sender_id = (uint16_t)referee_data.Game_Robot_State.robot_id;
+
+	if (custom_data_34 == NULL ||
+		(sender_id != Robot_ID_Red_Sentry &&
+		 sender_id != Robot_ID_Blue_Sentry))
+	{
+		return;
+	}
+
+	/* 帧头: SOF + data_length(=34, LE) + seq + CRC8 */
+	frame[0] = HEADER_SOF;
+	frame[1] = (uint8_t)(34U & 0xFFU);
+	frame[2] = (uint8_t)((34U >> 8) & 0xFFU);
+	frame[3] = ++seq;
+	/* Append_CRC8_Check_Sum 计算 frame[0..3] 并写入 frame[4] */
+	Append_CRC8_Check_Sum(frame, REF_PROTOCOL_HEADER_SIZE);
+
+	/* cmd_id = 0x0308 (LE) */
+	frame[5] = (uint8_t)(CUSTOM_INFO_CMD_ID & 0xFFU);
+	frame[6] = (uint8_t)((CUSTOM_INFO_CMD_ID >> 8) & 0xFFU);
+
+	/* 34B custom_info_t payload */
+	memcpy(&frame[7], custom_data_34, 34U);
+	/* sender_id 必须与本机 ID 匹配，以裁判 0x0201 为唯一可信来源。 */
+	frame[7] = (uint8_t)(sender_id & 0xFFU);
+	frame[8] = (uint8_t)((sender_id >> 8) & 0xFFU);
+
+	/* 帧尾 CRC16: 覆盖 header + cmd_id + data = 41B, 写入 frame[41..42] */
+	Append_CRC16_Check_Sum(frame, sizeof(frame));
+
+	/* 通过裁判系统串口发送 */
+	REFEREE_SendBytes(frame, (uint8_t)sizeof(frame));
 }

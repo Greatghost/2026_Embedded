@@ -183,3 +183,37 @@ ros2 run gimbal_driver gimbal_driver_node --ros-args \
 | `src/navi_tf_bridge/launch/map_aim_point.launch.py` | try/except 修复（原有bug）           |
 
 **未涉及修改的模块：** behavior_tree 决策、gimbal_driver 云台控制、navi_tf_bridge 导航解算。
+
+---
+
+## 附录：开发验证记录（原 `SENTRY_POS.md` 合并，2026-06）
+
+### 编译验证
+
+`colcon build --executor sequential` 6 包通过（auto_aim_common / gimbal_driver / sentry_msgs / simulator / behavior_tree / navi_tf_bridge），0 errors / 0 warnings。
+
+### 17 字节帧合规性验证
+
+- 字节分布：head(1) + type(1) + X(2) + Y(2) + zeros(10) + CRC8(1) = 17B ✓
+- 编解码测试：
+
+  | 场景 | 坐标 (m) | 坐标 (cm) | 帧 X 字节 | 帧 Y 字节 |
+  |------|---------|----------|----------|----------|
+  | 场地中心 | (14.00, 7.50) | (1400, 750) | 0x78 0x05 | 0xEE 0x02 |
+  | 场地原点 | (0.00, 0.00) | (0, 0) | 0x00 0x00 | 0x00 0x00 |
+  | 场地右下 | (28.00, 15.00) | (2800, 1500) | 0xF0 0x0A | 0xDC 0x05 |
+
+- 异常值：X>2800 截断 2800；X<0 截断 0；NaN/Inf 过滤不缓存；2s 超时停止发送。
+
+### 可回滚说明
+
+```bash
+cd <项目根目录>
+rm -rf src && cp -r ../backup/stage2/src_stage2_start_backup src
+rm -rf build/ install/ log/
+source /opt/ros/humble/setup.bash && colcon build --executor sequential
+```
+
+### 编号说明
+
+本文档中哨兵坐标下行串行帧的 `TypeID` 在后续 2026-07-11 下行协议重构中被重新编号为 **`DownlinkTypeID=0x04`**（见 `2026-07-11_上位机下发协议总览.md`）。帧布局（17B、CRC8 poly=0x31/init=0xFF）与 ROS 链路（`/ly/bt/sentry_position` → gimbal_driver → 串口）保持不变。

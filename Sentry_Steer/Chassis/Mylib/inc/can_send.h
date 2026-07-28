@@ -3,6 +3,8 @@
 
 #include "can1.h"
 #include "can2.h"
+#include "FreeRTOS.h"
+#include "task.h"
 
 /* CAN发送结构体定义  */
 #pragma pack(push, 1)
@@ -15,6 +17,6 @@ typedef struct IMU_Out
 
 #pragma pack(pop)
 
-void CanSend(CAN_TypeDef *CANx, int8_t *data, uint32_t std_id, uint8_t data_length);
+int8_t CanSend(CAN_TypeDef *CANx, int8_t *data, uint32_t std_id, uint8_t data_length);
 
 #endif // !CAN_SEND_H
