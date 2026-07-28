@@ -120,6 +120,7 @@
         <SetRegEntry>
           <Number>0</Number>
           <Key>DLGUARM</Key>
+          <Name>?泈\躏</Name>
         </SetRegEntry>
         <SetRegEntry>
           <Number>0</Number>
@@ -163,6 +164,16 @@
           <count>2</count>
           <WinNumber>1</WinNumber>
           <ItemText>g_map_path_tx_debug,0x0A</ItemText>
+        </Ww>
+        <Ww>
+          <count>3</count>
+          <WinNumber>1</WinNumber>
+          <ItemText>DM_Big_Yaw_Motor</ItemText>
+        </Ww>
+        <Ww>
+          <count>4</count>
+          <WinNumber>1</WinNumber>
+          <ItemText>gimbal_controller</ItemText>
         </Ww>
       </WatchWindow1>
       <Tracepoint>
@@ -979,7 +990,7 @@
 
   <Group>
     <GroupName>application</GroupName>
-    <tvExp>1</tvExp>
+    <tvExp>0</tvExp>
     <tvExpOptDlg>0</tvExpOptDlg>
     <cbSel>0</cbSel>
     <RteFlg>0</RteFlg>
@@ -1655,7 +1666,7 @@
 
   <Group>
     <GroupName>Config</GroupName>
-    <tvExp>0</tvExp>
+    <tvExp>1</tvExp>
     <tvExpOptDlg>0</tvExpOptDlg>
     <cbSel>0</cbSel>
     <RteFlg>0</RteFlg>

@@ -166,7 +166,7 @@ typedef struct Infantry
   Vector steer_vector[4];                  // 舵向量
   Vector robot_vector;                     // 底盘运动向量
   // 舵轮6020前馈
-  Feedforward_t Steer_6020_FF;
+  Feedforward_t Steer_6020_FF[4];
   float Steer_6020_FF_Coefficient[3];
 
   float cos_dir; // 云台与底盘的夹角

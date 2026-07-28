@@ -21,6 +21,19 @@
 #define STEER_SPEED_TO_DEGEREE_S (180.0f / STEER_WHEEL_RADIUS / PI) // 从米/s转到度/s转化
 #define STEER_DEGEREE_S_TO_MS (PI * STEER_WHEEL_RADIUS / 180.0f)    // 由度/s转到m/s
 
+/*
+ * 舵轮翻转与起步保护参数
+ *
+ * 翻转使用 80°/100° 迟滞，避免目标误差在 90° 附近时舵角目标和轮速符号
+ * 来回切换。轮速仅在舵角基本对齐后逐步放行，避免舵轮还未转正时车辆
+ * 向侧面或反方向窜动。
+ */
+#define STEER_FLIP_ENTER_ANGLE_DEG       100.0f
+#define STEER_FLIP_EXIT_ANGLE_DEG         80.0f
+#define STEER_WHEEL_FULL_SPEED_ANGLE_DEG  15.0f
+#define STEER_WHEEL_STOP_ANGLE_DEG        75.0f
+#define STEER_MOTION_EPSILON               0.001f
+
 /* =============================================================================
  *  整车扭矩前馈开关（整车速度外环 PID + 动力学扭矩分配）
  * =============================================================================
@@ -82,5 +95,6 @@ void steer_inv_kinematics(void);
 void steer_chassis_control(void);
 void steer_pos_kinematics(void);  // 舵轮正运动学：从舵角度和轮速度反解底盘速度
 void steer_angle_debug(void);     // 舵轮角度调试函数：正弦波振荡调参
+void steer_control_state_reset(void);
 
 #endif

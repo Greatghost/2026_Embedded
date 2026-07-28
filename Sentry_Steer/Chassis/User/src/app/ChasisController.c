@@ -59,31 +59,38 @@ float limit_pi(float in)
  */
 float target_ang_speed = 0.0f;
 
+#define SPEED_FOLLOW_VELOCITY_EPSILON 0.01f
+#define CHASSIS_DIRECTION_SWITCH_HYSTERESIS_DEG 8.0f
+
 #if ROBOT == GOBLIN
 float speed_angle_bias = -28.0f;
 #elif ROBOT == TIGER
-float speed_angle_bias = -90.0f;  // 默认值，SPEED_FOLLOW模式会动态修改为31
+float speed_angle_bias = -90.0f;
 #endif
-float calculate_velocity_angle() {
-    static float last_valid_angle = 0.0f;  // 保存上次有效角度（线程不安全，需根据场景加锁）
-    const float VELOCITY_EPSILON = 0.01f; // 速度小量阈值（可配置）
-
+float calculate_velocity_angle(void)
+{
+    static float last_valid_angle = 0.0f;
+    /*
+     * set_x_v/set_y_v 是已经按当前云台/底盘夹角变换后的底盘系速度。
+     * SPEED_FOLLOW 必须使用这个速度矢量方向作为闭环目标；不能替换成
+     * 云台 yaw 编码器角度 target_ang。
+     */
     float x = infantry.set_x_v;
     float y = infantry.set_y_v;
     float magnitude_sq = x * x + y * y;
+    float velocity_epsilon_sq =
+        SPEED_FOLLOW_VELOCITY_EPSILON * SPEED_FOLLOW_VELOCITY_EPSILON;
 
-    if (magnitude_sq < VELOCITY_EPSILON * VELOCITY_EPSILON) {
-        // 速度过小，返回上次有效角度（保持角度连续性）
-        speed_follow_enable_flag = 0;
-        return last_valid_angle;
-    } else {
-        // 计算并更新有效角度
-        float angle_rad = arm_atan2_f32(y, x);  // 注意参数顺序：y（纵坐标）在前，x（横坐标）在后
-        float angle_deg = angle_rad * 180.0f / PI;
-        last_valid_angle = limit_pi(angle_deg);  // 保存最新有效角度
-        speed_follow_enable_flag = 1;
+    if (magnitude_sq < velocity_epsilon_sq)
+    {
+        speed_follow_enable_flag = 0U;
         return last_valid_angle;
     }
+
+    last_valid_angle =
+        limit_pi(arm_atan2_f32(y, x) * 180.0f / PI);
+    speed_follow_enable_flag = 1U;
+    return last_valid_angle;
 }
 
 /**
@@ -94,126 +101,90 @@ float calculate_velocity_angle() {
 
 float angle_z_err_get(float target_ang, float zeros_angle)
 {
-    float AngErr_front, AngErr_back, AngErr_left, AngErr_right, minAngle, angleBias = 0.0f;
-		
-    if(remote_controller.control_mode_action == SPEED_FOLLOW) target_ang_speed = calculate_velocity_angle();  //目标角度为速度方向
-    
+    float errors[4];
+    uint8_t allowed[4] = {0U, 0U, 0U, 0U};
+    float angle_bias =
+        (infantry.chassis_follow_type == FOUR_SIDES_FOLLOW_45) ? 45.0f : 0.0f;
+    float yaw_scale =
+        (infantry.yaw_motor_type == YAW_GM6020)
+            ? 22.755555556f
+            : YAW_DM_ANGLE_SCALE;
+    float front_error;
+    chassis_direction_e best_direction = CHASSIS_FRONT;
+    float best_abs;
 
+    if (remote_controller.control_mode_action == SPEED_FOLLOW)
+        target_ang_speed = calculate_velocity_angle();
+    else
+        speed_follow_enable_flag = 0U;
 
-
-    // 不同电机的计算不一样，但要保证最终的输出error_angle定义一致
-    if (infantry.chassis_follow_type == FOUR_SIDES_FOLLOW_45) // 增加45度计算夹角
+    /*
+     * SPEED_FOLLOW 的目标是速度矢量方向（单位已经是度）；其他跟随模式
+     * 使用云台编码器角度。两种 yaw 电机仅编码器比例不同。
+     */
+    if (remote_controller.control_mode_action == SPEED_FOLLOW &&
+        speed_follow_enable_flag != 0U)
     {
-        angleBias = 45.0f;
-    }
-    else angleBias = 0.f;
-
-    // 根据模式动态设置speed_angle_bias
-    float current_speed_angle_bias = speed_angle_bias;  // 默认使用全局设置
-    #if ROBOT == TIGER
-    if(remote_controller.control_mode_action == SPEED_FOLLOW && speed_follow_enable_flag == 1)
-    {
-        current_speed_angle_bias = -90.0f;  // SPEED_FOLLOW模式使用31
+        front_error = limit_pi(zeros_angle / yaw_scale -
+                               target_ang_speed +
+                               speed_angle_bias +
+                               angle_bias);
     }
     else
     {
-        current_speed_angle_bias = -90.0f;  // 其他模式使用-90
+        front_error = limit_pi(zeros_angle / yaw_scale -
+                               target_ang / yaw_scale +
+                               angle_bias);
     }
-    #endif
 
-     if(remote_controller.control_mode_action == SPEED_FOLLOW && speed_follow_enable_flag == 1)
-    //if(remote_controller.control_mode_action == SPEED_FOLLOW ) // 舵轮启动已经优化，此处不需要二者混合
-    {
-        // if (infantry.yaw_motor_type == YAW_GM6020) {
-        //     AngErr_front = limit_pi(zeros_angle / 22.755555556f - target_ang_speed / 22.755555556f + angleBias);
-        //     AngErr_back = limit_pi(AngErr_front + 180.0f);
-        //     AngErr_left = limit_pi(AngErr_front + GIMBAL_MOTOR_SIGN * 90.0f);
-        //     AngErr_right = limit_pi(AngErr_front - GIMBAL_MOTOR_SIGN * 90.0f);
-        // }
-        if (infantry.yaw_motor_type == YAW_DM_MOTOR) {
-            // 修改: yaw 闭环目标改用云台 yaw 编码器读数 (target_ang) 代替速度方向 (target_ang_speed)
-            // 原代码 target_ang_speed = atan2(set_y_v, set_x_v) 依赖底盘系速度 set_x_v/set_y_v,
-            // 而 set_x_v/set_y_v 经 cos_dir/sin_dir 旋转得到 (steer.c 行 198-199/213-214),
-            // 隐含 β 依赖, 造成 yaw 闭环目标随底盘 yaw 变化, 形成耦合 -> 平移时底盘轻微转动
-            // 稳态时 target_ang_speed = β − α = −(target_ang / YAW_DM_ANGLE_SCALE)
-            // 直接用 target_ang / YAW_DM_ANGLE_SCALE 替换, 不经过 set_x_v/set_y_v 旋转, 消除耦合
-            // 稳态几何保持不变 (β = α − 90°, current_speed_angle_bias = −90°)
-            AngErr_front = limit_pi(zeros_angle / YAW_DM_ANGLE_SCALE - target_ang_speed + current_speed_angle_bias);
-            AngErr_back = limit_pi(AngErr_front + 180.0f);
-            AngErr_left = limit_pi(AngErr_front + GIMBAL_MOTOR_SIGN * 90.0f);
-            AngErr_right = limit_pi(AngErr_front - GIMBAL_MOTOR_SIGN * 90.0f);
-        }
-    }
-    else{
-        if (infantry.yaw_motor_type == YAW_GM6020)
-        {
-            AngErr_front = limit_pi(zeros_angle / 22.755555556f - target_ang / 22.755555556f + angleBias);
-            AngErr_back = limit_pi(AngErr_front + 180.0f);
-            AngErr_left = limit_pi(AngErr_front + GIMBAL_MOTOR_SIGN * 90.0f);
-            AngErr_right = limit_pi(AngErr_front - GIMBAL_MOTOR_SIGN * 90.0f);
-        }
-        else if (infantry.yaw_motor_type == YAW_DM_MOTOR)
-        {
-            AngErr_front = limit_pi(zeros_angle / YAW_DM_ANGLE_SCALE - target_ang / YAW_DM_ANGLE_SCALE + angleBias);
-            AngErr_back = limit_pi(AngErr_front + 180.0f);
-            AngErr_left = limit_pi(AngErr_front + GIMBAL_MOTOR_SIGN * 90.0f);
-            AngErr_right = limit_pi(AngErr_front - GIMBAL_MOTOR_SIGN * 90.0f);
-        }
-    }
-    
+    errors[CHASSIS_FRONT] = front_error;
+    errors[CHASSIS_BACK] = limit_pi(front_error + 180.0f);
+    errors[CHASSIS_LEFT] =
+        limit_pi(front_error + GIMBAL_MOTOR_SIGN * 90.0f);
+    errors[CHASSIS_RIGHT] =
+        limit_pi(front_error - GIMBAL_MOTOR_SIGN * 90.0f);
 
-    // 判断跟随
     if (infantry.chassis_follow_type == TWO_SIDES_FOLLOW)
     {
-        if (fabs(AngErr_front) > fabs(AngErr_back))
-        {
-            infantry.chassis_direction = CHASSIS_BACK;
-            return AngErr_back;
-        }
-        else
-        {
-            infantry.chassis_direction = CHASSIS_FRONT;
-            return AngErr_front;
-        }
+        allowed[CHASSIS_FRONT] = 1U;
+        allowed[CHASSIS_BACK] = 1U;
     }
     else if (infantry.chassis_follow_type == TWO_SIDES_LEFT_RIGHT)
     {
-        if (fabs(AngErr_left) > fabs(AngErr_right))
-        {
-            infantry.chassis_direction = CHASSIS_RIGHT;
-            return AngErr_right;
-        }
-        else
-        {
-            infantry.chassis_direction = CHASSIS_LEFT;
-            return AngErr_left;
-        }
+        allowed[CHASSIS_LEFT] = 1U;
+        allowed[CHASSIS_RIGHT] = 1U;
+        best_direction = CHASSIS_LEFT;
     }
-    else if (infantry.chassis_follow_type == FOUR_SIDES_FOLLOW || infantry.chassis_follow_type == FOUR_SIDES_FOLLOW_45)
+    else
     {
-        minAngle = MIN(fabs(AngErr_front), MIN(fabs(AngErr_back), MIN(fabs(AngErr_left), fabs(AngErr_right))));
-        if (fabs(fabs(AngErr_front) - minAngle) < 1e-6f)
+        for (int i = 0; i < 4; i++)
+            allowed[i] = 1U;
+    }
+
+    best_abs = fabsf(errors[best_direction]);
+    for (int i = 0; i < 4; i++)
+    {
+        if (allowed[i] != 0U && fabsf(errors[i]) < best_abs)
         {
-            infantry.chassis_direction = CHASSIS_FRONT;
-            return AngErr_front;
-        }
-        else if (fabs(fabs(AngErr_back) - minAngle) < 1e-6f)
-        {
-            infantry.chassis_direction = CHASSIS_BACK;
-            return AngErr_back;
-        }
-        else if (fabs(fabs(AngErr_left) - minAngle) < 1e-6f)
-        {
-            infantry.chassis_direction = CHASSIS_LEFT;
-            return AngErr_left;
-        }
-        else
-        {
-            infantry.chassis_direction = CHASSIS_RIGHT;
-            return AngErr_right;
+            best_abs = fabsf(errors[i]);
+            best_direction = (chassis_direction_e)i;
         }
     }
-    return 0;
+
+    /*
+     * 当前方向只要没有比最佳方向差 8° 以上就继续保持，避免在四个边的
+     * 分界处频繁切换，引发所有舵轮目标同时跳变。
+     */
+    if ((uint32_t)infantry.chassis_direction < 4U &&
+        allowed[infantry.chassis_direction] != 0U &&
+        fabsf(errors[infantry.chassis_direction]) <=
+            best_abs + CHASSIS_DIRECTION_SWITCH_HYSTERESIS_DEG)
+    {
+        best_direction = infantry.chassis_direction;
+    }
+
+    infantry.chassis_direction = best_direction;
+    return errors[best_direction];
 }
 
 // 获取控制方向
@@ -586,7 +557,9 @@ static void chassis_control_state_clear(void)
 
     if (infantry.chassis_type == STEER_WHEEL)
     {
-        Feedforward_Clear(&infantry.Steer_6020_FF);
+        for (int i = 0; i < 4; i++)
+            Feedforward_Clear(&infantry.Steer_6020_FF[i]);
+        steer_control_state_reset();
     }
     else if (infantry.chassis_type == MECANUM_WHEEL)
     {

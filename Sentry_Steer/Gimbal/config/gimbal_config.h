@@ -133,7 +133,7 @@
 #define PITCH_GRAVITY_COMP_ENABLE
 
 // 大Yaw零点: 云台朝正前方时DM_Big_Yaw_Motor.P_Receive的值
-#define GIMBAL_BIG_YAW_ZERO_POINT  124.0f
+#define GIMBAL_BIG_YAW_ZERO_POINT  226.1f
 
 // 大Yaw电机编码器方向符号:
 // 换新电机后若编码器计数方向与旧电机相反(同一物理转角旧为+新为-),

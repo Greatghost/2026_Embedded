@@ -120,6 +120,7 @@
         <SetRegEntry>
           <Number>0</Number>
           <Key>DLGUARM</Key>
+          <Name>?泈4骃</Name>
         </SetRegEntry>
         <SetRegEntry>
           <Number>0</Number>
@@ -183,6 +184,11 @@
           <count>6</count>
           <WinNumber>1</WinNumber>
           <ItemText>global_debugger,0x0A</ItemText>
+        </Ww>
+        <Ww>
+          <count>7</count>
+          <WinNumber>1</WinNumber>
+          <ItemText>infantry</ItemText>
         </Ww>
       </WatchWindow1>
       <Tracepoint>

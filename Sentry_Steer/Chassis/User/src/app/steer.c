@@ -3,6 +3,61 @@
 
 extern uint8_t speed_follow_enable_flag;
 
+/*
+ * 每个轮组独立保存翻转状态。若每周期只按 90° 硬切换，编码器噪声和目标
+ * 微小变化会使舵角目标跳 180°、轮速符号反复改变。
+ */
+static uint8_t steer_flip_state[4];
+static float steer_wheel_alignment_scale[4];
+static float steer_hold_angle[4];
+static uint8_t steer_hold_angle_valid[4];
+
+static float steer_wrap_180(float angle)
+{
+    while (angle > 180.0f)
+        angle -= 360.0f;
+    while (angle <= -180.0f)
+        angle += 360.0f;
+    return angle;
+}
+
+static float steer_wrap_360(float angle)
+{
+    angle = fmodf(angle, 360.0f);
+    if (angle < 0.0f)
+        angle += 360.0f;
+    return angle;
+}
+
+/*
+ * 舵角误差较大时禁止轮电机施力；对齐过程中使用半余弦曲线平滑放行。
+ * 这既避免启动窜动，也避免在阈值处产生轮速阶跃。
+ */
+static float steer_alignment_scale_get(float steer_error_deg)
+{
+    float error_abs = fabsf(steer_error_deg);
+
+    if (error_abs <= STEER_WHEEL_FULL_SPEED_ANGLE_DEG)
+        return 1.0f;
+    if (error_abs >= STEER_WHEEL_STOP_ANGLE_DEG)
+        return 0.0f;
+
+    float ratio = (error_abs - STEER_WHEEL_FULL_SPEED_ANGLE_DEG) /
+                  (STEER_WHEEL_STOP_ANGLE_DEG - STEER_WHEEL_FULL_SPEED_ANGLE_DEG);
+    return 0.5f * (1.0f + arm_cos_f32(PI * ratio));
+}
+
+void steer_control_state_reset(void)
+{
+    for (int i = 0; i < 4; i++)
+    {
+        steer_flip_state[i] = 0U;
+        steer_wheel_alignment_scale[i] = 0.0f;
+        steer_hold_angle[i] = 0.0f;
+        steer_hold_angle_valid[i] = 0U;
+    }
+}
+
 /* === 舵电机角度环 Kp 自适应 (2026-07-21 新增) ===
  * 解决问题: 舵电机运动时超调抖动 vs 减小 Kp 影响反应速度的矛盾
  * 策略: 误差大时提高 Kp 加快响应,误差小时降低 Kp 抑制超调
@@ -21,6 +76,8 @@ extern uint8_t speed_follow_enable_flag;
 #endif
 void steer_pid_init()
 {
+    steer_control_state_reset();
+
     // 舵向初始编码值设定
     infantry.steer_init_encoder[STEER1] = 3798;
     infantry.steer_init_encoder[STEER2] = 3106;
@@ -53,7 +110,6 @@ void steer_pid_init()
     //    infantry.Steer_6020_FF_Coefficient[0] = 10.0f;
     //    infantry.Steer_6020_FF_Coefficient[1] = 0.0f;
     //    infantry.Steer_6020_FF_Coefficient[2] = 0.0f;
-    //    Feedforward_Init(&infantry.Steer_6020_FF, 7500, infantry.Steer_6020_FF_Coefficient, 0.004, 0, 0); // 15000
     // 舵向控制PID
     PID_Init(&infantry.steers_angle_pid[STEER1], 720, 0, 0.05, 30, 0, 0, 0, 0, 0, 0, 1, NONE);
     PID_Init(&infantry.steers_angle_pid[STEER2], 720, 0, 0.05, 30, 0, 0, 0, 0, 0, 0, 1, NONE);
@@ -65,12 +121,15 @@ void steer_pid_init()
     PID_Init(&infantry.steers_speed_pid[STEER3], GM6020_MAX_CURRENT * 4 / 5, 8000, 1.0, 10, 0, 0, 0, 0, 0, 0, 1, Integral_Limit);
     PID_Init(&infantry.steers_speed_pid[STEER4], GM6020_MAX_CURRENT * 4 / 5, 8000, 1.0, 10, 0, 0, 0, 0, 0, 0, 1, Integral_Limit);
 
-    // 6020前馈初始化
+    // 6020前馈初始化（每个舵电机独立保存滤波和微分历史）
     // infantry.Steer_6020_FF_Coefficient[0] = 8.0f;
     // infantry.Steer_6020_FF_Coefficient[1] = 8.0f;
     // infantry.Steer_6020_FF_Coefficient[2] = 8.0f;
-    // infantry.Steer_6020_FF_Coefficient[3] = 8.0f;
-    Feedforward_Init(&infantry.Steer_6020_FF, 6000, infantry.Steer_6020_FF_Coefficient, 0.004, 0, 0); // 15000
+    for (int i = 0; i < 4; i++)
+    {
+        Feedforward_Init(&infantry.Steer_6020_FF[i], 6000,
+                         infantry.Steer_6020_FF_Coefficient, 0.004, 0, 0);
+    }
 
     // 底盘前后跟随 输出旋转角速度rad/s  输入弧度制角度
     PID_Init(&infantry.turn_pid, 3.0, 0, 0.05f, 3.0f, 0, 0.05f, 0, 0, 0.001, 0.009, 1, DerivativeFilter | OutputFilter);
@@ -163,64 +222,50 @@ Vector add_vector(Vector *v1, Vector *v2)
 /*舵向电机控制运动优化*/
 float steer_moving_optimization(uint8_t steer_num)
 {
-    /*顺逆时针转动角度计算*/
-    float min_angle;
-    float flipped_angle_set;
-    float invert_flag = 1.0; // 速度向量反转标志
-    float angle_now = (infantry.sensors_info.steer_recv[steer_num].angle - infantry.steer_init_encoder[steer_num]) / 8192.0f * 360.0f;
-    angle_now += 90.0f; // 根据安装误差添加偏移，使angle_now与angle_set都从y正方向开始计算
-    if (angle_now < 0)
-        angle_now += 360; // 把转动方向统一到相对初始角度正方向
-    float angle_set = fmodf(infantry.steer_vector[steer_num].angle, 360);
-    if (angle_set < 0)
-        angle_set += 360;                                              // 把转动方向统一到相对初始角度正方向
-    float angle_clockwise = fmodf((angle_set - angle_now + 360), 360); // 转动方向统一到相对现在位置正方向
-    float angle_counter_clockwise = 360 - angle_clockwise;
-    /*比较顺逆时针转动角度大小*/
-    if (angle_clockwise <= angle_counter_clockwise)
+    float angle_now;
+    float angle_set;
+    float direct_error;
+    float optimized_error;
+
+    if (steer_num >= 4U)
+        return 0.0f;
+
+    angle_now =
+        (infantry.sensors_info.steer_recv[steer_num].angle -
+         infantry.steer_init_encoder[steer_num]) /
+            8192.0f * 360.0f +
+        90.0f;
+    angle_now = steer_wrap_360(angle_now);
+    angle_set = steer_wrap_360(infantry.steer_vector[steer_num].angle);
+    direct_error = steer_wrap_180(angle_set - angle_now);
+
+    /* 80°/100°迟滞：在90°附近保持上一周期的翻转选择。 */
+    if (steer_flip_state[steer_num] == 0U)
     {
-        min_angle = angle_clockwise;
+        if (fabsf(direct_error) >= STEER_FLIP_ENTER_ANGLE_DEG)
+            steer_flip_state[steer_num] = 1U;
+    }
+    else if (fabsf(direct_error) <= STEER_FLIP_EXIT_ANGLE_DEG)
+    {
+        steer_flip_state[steer_num] = 0U;
+    }
+
+    if (steer_flip_state[steer_num] != 0U)
+    {
+        optimized_error = steer_wrap_180(angle_set + 180.0f - angle_now);
+        infantry.steer_vector[steer_num].module *= -1.0f;
     }
     else
     {
-        min_angle = -angle_counter_clockwise;
+        optimized_error = direct_error;
     }
 
-    /*180度边界特殊处理：恰好对面时不翻转，避免浮点精度问题导致抖动*/
-    if (fabsf(fabsf(min_angle) - 180.0f) < 0.5f)
-    {
-        // 目标恰好对面180°，保持当前策略，不做翻转优化
-        infantry.steer_vector[steer_num].module *= invert_flag;
-        return min_angle;
-    }
+    steer_wheel_alignment_scale[steer_num] =
+        steer_alignment_scale_get(optimized_error);
+    infantry.steer_vector[steer_num].module *=
+        steer_wheel_alignment_scale[steer_num];
 
-    /*若最小旋转角大于90°，则翻转轮组的向量坐标重新计算*/
-    if (fabsf(min_angle) > 90)
-    {
-        float flipped_angle_now = angle_now + 180;
-        if (flipped_angle_now >= 360)
-        {
-            flipped_angle_now -= 360;
-        } // 把翻转后的旋转方向统一到相对初始角正方向
-
-        // 简化翻转角度计算：直接计算翻转后的最小旋转角度
-        float flipped_angle_clockwise = fmodf((angle_set - flipped_angle_now + 360), 360);
-        float flipped_angle_counter_clockwise = 360 - flipped_angle_clockwise;
-
-        if (flipped_angle_clockwise <= flipped_angle_counter_clockwise)
-        {
-            flipped_angle_set = flipped_angle_clockwise;
-        }
-        else
-        {
-            flipped_angle_set = -flipped_angle_counter_clockwise;
-        }
-
-        invert_flag = -1.0; // 改变轮子转向
-        min_angle = flipped_angle_set;
-    }
-    infantry.steer_vector[steer_num].module *= invert_flag;
-    return min_angle;
+    return optimized_error;
 }
 
 #ifdef STEER_TORQUE_FEEDFORWARD
@@ -313,6 +358,9 @@ static void steer_torque_feedforward_apply(void)
         /* 转C620电流值 */
         float I_ff = T_wheel * STEER_FF_TORQUE_TO_C620;
 
+        /* 舵角未对齐时，动力学前馈也必须与轮速目标同步衰减。 */
+        I_ff *= steer_wheel_alignment_scale[i];
+
         /* 限幅（保守值，防止前馈过强干扰PID） */
         I_ff = LIMIT_MAX_MIN(I_ff, STEER_FF_MAX_CURRENT_PER_WHEEL,
                             -STEER_FF_MAX_CURRENT_PER_WHEEL);
@@ -359,10 +407,13 @@ void steer_chassis_control(void)
         infantry.target_y_v = 0.0f;
     if (fabsf(infantry.target_yaw_v) < 1e-5f)
         infantry.target_yaw_v = 0.0f;
-    if (fabsf(infantry.target_x_v) < 1e-5f && fabsf(infantry.target_y_v) < 1e-5f)
-        move_symbol = 0; // 底盘转到位标志位
-    else if (fabsf(infantry.error_angle) < 0.1f && speed_follow_enable_flag == 1)
-        move_symbol = 1;
+    move_symbol =
+        ((fabsf(infantry.target_x_v) >= STEER_MOTION_EPSILON ||
+          fabsf(infantry.target_y_v) >= STEER_MOTION_EPSILON) &&
+         fabsf(infantry.error_angle) < 0.1f &&
+         speed_follow_enable_flag == 1U)
+            ? 1U
+            : 0U;
     if (remote_controller.control_mode_action == SPEED_FOLLOW)
     {
         float speed_follow_optimize_k = arm_cos_f32(infantry.error_angle) + 1e-5;
@@ -384,18 +435,15 @@ void steer_chassis_control(void)
             infantry.turn_pid.Kp = 4.0;
             infantry.turn_pid.MaxOut = 3.5;
             speed_follow_optimize_k = LIMIT_MAX_MIN(speed_follow_optimize_k, 1.0f, 0.2f);
-            float y_opti;
-            if (speed_follow_optimize_k < 0.8f)
-                y_opti = 0.8f;
-            else
-                y_opti = speed_follow_optimize_k;
-
             // 高速转向进行小幅削减,只削减x
             infantry.set_x_v = speed_follow_optimize_k * (infantry.target_x_v * infantry.cos_dir + infantry.target_y_v * infantry.sin_dir);
             infantry.set_y_v = (infantry.target_y_v * infantry.cos_dir - infantry.target_x_v * infantry.sin_dir);
         }
     }
-    if (infantry.target_x_v != 0 || infantry.target_y_v != 0 || infantry.target_yaw_v != 0 || gimbal_receiver_pack1.through_hole_flag)
+    if (fabsf(infantry.target_x_v) >= STEER_MOTION_EPSILON ||
+        fabsf(infantry.target_y_v) >= STEER_MOTION_EPSILON ||
+        fabsf(infantry.target_yaw_v) >= STEER_MOTION_EPSILON ||
+        gimbal_receiver_pack1.through_hole_flag)
     {
         if (remote_controller.control_mode_action != SPEED_FOLLOW) // 非速度跟随下速度矢量计算
         {
@@ -465,6 +513,8 @@ void steer_chassis_control(void)
         {
             /*6020转角最小和3508反向转动策略*/
             infantry.steer_vector[i].angle = infantry.sensors_info.steer_decode[i].angle + steer_moving_optimization(i);
+            steer_hold_angle[i] = infantry.steer_vector[i].angle;
+            steer_hold_angle_valid[i] = 1U;
 
             /*电机安装方向修正*/
             infantry.steer_vector[i].module *= infantry.steer_wheel_install_direction[i];
@@ -497,7 +547,7 @@ void steer_chassis_control(void)
             #endif
             // 加一层td滤波作缓冲
             infantry.Steer_Speed_Setpoint[i] = PID_Calculate(&infantry.steers_angle_pid[i], infantry.sensors_info.steer_decode[i].angle, TD_Calculate(&infantry.steer_angle_td[i], infantry.steer_vector[i].angle));
-            infantry.steers_set_current = PID_Calculate(&infantry.steers_speed_pid[i], infantry.sensors_info.steer_decode[i].speed, infantry.Steer_Speed_Setpoint[i]) + Feedforward_Calculate(&infantry.Steer_6020_FF, infantry.Steer_Speed_Setpoint[i]);
+            infantry.steers_set_current = PID_Calculate(&infantry.steers_speed_pid[i], infantry.sensors_info.steer_decode[i].speed, infantry.Steer_Speed_Setpoint[i]) + Feedforward_Calculate(&infantry.Steer_6020_FF[i], infantry.Steer_Speed_Setpoint[i]);
             infantry.excute_info.steers_set_current[i] = infantry.steers_set_current;
         }
 
@@ -511,8 +561,32 @@ void steer_chassis_control(void)
     {
         for (int m = 0; m < 4; m++)
         {
-            infantry.excute_info.steers_set_current[m] = 0.0f;
+            /*
+             * 控制模式仍在线、但速度为零时保持最后舵角。真正的下电模式仍由
+             * chassis_powerdown_control() 将舵电流清零，不改变原有安全语义。
+             */
+            if (steer_hold_angle_valid[m] == 0U)
+            {
+                steer_hold_angle[m] = infantry.sensors_info.steer_decode[m].angle;
+                steer_hold_angle_valid[m] = 1U;
+                TD_Clear(&infantry.steer_angle_td[m], steer_hold_angle[m]);
+            }
+
+            infantry.steer_vector[m].angle = steer_hold_angle[m];
+            infantry.steer_vector[m].module = 0.0f;
+            infantry.Steer_Speed_Setpoint[m] =
+                PID_Calculate(&infantry.steers_angle_pid[m],
+                              infantry.sensors_info.steer_decode[m].angle,
+                              TD_Calculate(&infantry.steer_angle_td[m],
+                                           steer_hold_angle[m]));
+            infantry.excute_info.steers_set_current[m] =
+                PID_Calculate(&infantry.steers_speed_pid[m],
+                              infantry.sensors_info.steer_decode[m].speed,
+                              infantry.Steer_Speed_Setpoint[m]) +
+                Feedforward_Calculate(&infantry.Steer_6020_FF[m],
+                                      infantry.Steer_Speed_Setpoint[m]);
             infantry.excute_info.wheels_set_current[m] = PID_Calculate(&infantry.wheels_pid[m], infantry.sensors_info.wheels_decode[m].speed, 0.0f);
+            steer_wheel_alignment_scale[m] = 0.0f;
         }
         #ifdef STEER_TORQUE_FEEDFORWARD
         /* 停车时清零前馈PID积分项，防止下次启动时积分突变 */
@@ -692,7 +766,7 @@ void steer_angle_debug(void)
             infantry.steers_set_current = PID_Calculate(&infantry.steers_speed_pid[i],
                                                         infantry.sensors_info.steer_decode[i].speed,
                                                         infantry.Steer_Speed_Setpoint[i]) +
-                                          Feedforward_Calculate(&infantry.Steer_6020_FF, infantry.Steer_Speed_Setpoint[i]);
+                                          Feedforward_Calculate(&infantry.Steer_6020_FF[i], infantry.Steer_Speed_Setpoint[i]);
             infantry.excute_info.steers_set_current[i] = infantry.steers_set_current;
         }
         else
