@@ -211,6 +211,26 @@ typedef struct {
 
 extern MapPathRxDebug_t g_map_path_rx_debug;
 
+/* 上行帧诊断: 按 TypeID 分类计数, 仅记成功提交到 CDC_Transmit_FS 且返回 USBD_OK 的帧。
+ * 索引对应 PC_dataType_enum (0..11)。可直接加入 Keil Watch 观察。
+ */
+#define PC_UPLINK_TYPE_COUNT    12U
+typedef struct {
+    volatile uint32_t by_type[PC_UPLINK_TYPE_COUNT];  /* [0]=USUAL_PC_DATA ... [11]=GIMBAL_DYNAMICS */
+    volatile uint32_t total;                          /* 所有上行帧成功提交累计 */
+} PCUplinkDebug_t;
+extern PCUplinkDebug_t g_pc_uplink_debug;
+
+/* 下行帧诊断: 按 DownlinkTypeID 分类计数, 仅记帧头正确且 TypeID 已知的帧。
+ * 索引对应 PC_DOWNLINK_* 宏 (0x00..0x05)。
+ */
+#define PC_DOWNLINK_TYPE_COUNT  6U
+typedef struct {
+    volatile uint32_t by_type[PC_DOWNLINK_TYPE_COUNT];  /* [0]=CONTROL ... [5]=TRAJECTORY */
+    volatile uint32_t total;
+} PCDownlinkDebug_t;
+extern PCDownlinkDebug_t g_pc_downlink_debug;
+
 // 0x02 分片重组状态机
 typedef struct {
     uint8_t  active;            // 是否有 pending 路径

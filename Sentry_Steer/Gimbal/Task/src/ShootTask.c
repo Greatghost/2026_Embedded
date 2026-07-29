@@ -432,16 +432,16 @@ void Shoot_Cal(void)
     // 摩擦轮 Kp 动态调整: 两个 UNSTOPPABLE 模式下弹频较快, 摩擦轮负载扰动更大,
     // Kp 提升至默认值的 1.1 倍 (2.2 -> 2.42) 以加快转速恢复; 其他模式恢复默认值。
     // 每周期设置, 避免模式切换时残留。
-    {
-        const float FRICTION_KP_DEFAULT = 2.2f;
-        const float FRICTION_KP_UNSTOPPABLE = 2.42f; // 2.2f * 1.1f
-        float kp_target = (remote_controller.shoot_action == SHOOT_UNSTOPPABLE_MODE ||
-                           remote_controller.shoot_action == SHOOT_UNSTOPPABLE_AUTO_AIM_MODE)
-                              ? FRICTION_KP_UNSTOPPABLE
-                              : FRICTION_KP_DEFAULT;
-        friction_wheels.PidFrictionSpeed[LEFT_FRICTION_WHEEL].Kp = kp_target;
-        friction_wheels.PidFrictionSpeed[RIGHT_FRICTION_WHEEL].Kp = kp_target;
-    }
+    // {
+    //     const float FRICTION_KP_DEFAULT = 2.2f;
+    //     const float FRICTION_KP_UNSTOPPABLE = 2.2f; // 2.2f * 1.1f
+    //     float kp_target = (remote_controller.shoot_action == SHOOT_UNSTOPPABLE_MODE ||
+    //                        remote_controller.shoot_action == SHOOT_UNSTOPPABLE_AUTO_AIM_MODE)
+    //                           ? FRICTION_KP_UNSTOPPABLE
+    //                           : FRICTION_KP_DEFAULT;
+    //     friction_wheels.PidFrictionSpeed[LEFT_FRICTION_WHEEL].Kp = kp_target;
+    //     friction_wheels.PidFrictionSpeed[RIGHT_FRICTION_WHEEL].Kp = kp_target;
+    // }
 
     switch (remote_controller.shoot_action)
     {

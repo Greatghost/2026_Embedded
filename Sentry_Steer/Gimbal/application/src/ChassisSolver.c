@@ -166,8 +166,8 @@ void PCStateControl() // 比赛专用
             setShootAction(SHOOT_AUTO_AIM_MODE); // 辅瞄爽打
         setGimbalAction(GIMBAL_AUTO_AIM_MODE);
 
-        // 摇杆推上 → 手动打弹（自瞄模式下也可手动触发）
-        if ((remote_controller.dji_remote.rc.ch[RIGHT_CH_UD] - CH_MIDDLE) > 330)
+        // 摇杆推上/下 → 手动打弹（自瞄模式下也可手动触发）
+        if (fabsf(remote_controller.dji_remote.rc.ch[RIGHT_CH_UD] - CH_MIDDLE) > 330)
             toggle_controller.is_shoot = TRUE;
         else
             toggle_controller.is_shoot = FALSE;
@@ -760,8 +760,8 @@ void DJIRemoteUpdate(ChassisSolver *infantry)
                 chassis_solver.chassis_speed_y = 0; //(remote_controller.dji_remote.rc.ch[RIGHT_CH_UD] - CH_MIDDLE) * 1.0f / CH_RANGE;
                 chassis_solver.chassis_speed_w = 0;
 
-                // 摇杆推上 → 手动打弹（自瞄模式下也可手动触发）
-                if ((remote_controller.dji_remote.rc.ch[RIGHT_CH_UD] - CH_MIDDLE) > 330)
+                // 摇杆推上/下 → 手动打弹（自瞄模式下也可手动触发）
+                if (fabsf(remote_controller.dji_remote.rc.ch[RIGHT_CH_UD] - CH_MIDDLE) > 0)
                     toggle_controller.is_shoot = TRUE;
                 else
                     toggle_controller.is_shoot = FALSE;
@@ -855,10 +855,10 @@ void DJIRemoteUpdate(ChassisSolver *infantry)
             setGimbalAction(GIMBAL_ACT_MODE);
 
             // 射击模式选择: 仅由左摇杆(物理, =RIGHT_CH)决定, 右摇杆(物理, =LEFT_CH)专心控云台瞄准
-            //   - 左摇杆上推接近到底 (> 600) → UNSTOPPABLE 连续高速射击
-            //   - 左摇杆上推过半 (> 330)    → FIRE 模式, is_shoot=TRUE (单发)
+            //   - 左摇杆上推 (> 0) → UNSTOPPABLE 连续高速射击
             //   - 左摇杆居中                → FIRE 模式, is_shoot=FALSE (待机)
-            if (((int)remote_controller.dji_remote.rc.ch[RIGHT_CH_UD] - CH_MIDDLE) > 400)
+            //   - 左摇杆下推 (< 0) → FIRE 模式, is_shoot=TRUE (单发)
+            if (((int)remote_controller.dji_remote.rc.ch[RIGHT_CH_UD] - CH_MIDDLE) > 0)
             {
                 setShootAction(SHOOT_UNSTOPPABLE_MODE);
             }
@@ -884,7 +884,7 @@ void DJIRemoteUpdate(ChassisSolver *infantry)
             //             chassis_solver.chassis_speed_x = (remote_controller.dji_remote.rc.ch[RIGHT_CH_LR] - CH_MIDDLE) * 1.0f / CH_RANGE * MAX_X_SPEED;
             //            chassis_solver.chassis_speed_y = (remote_controller.dji_remote.rc.ch[RIGHT_CH_UD] - CH_MIDDLE) * 1.0f / CH_RANGE * MAX_Y_SPEED;
             chassis_solver.chassis_speed_w = 0.f * MAX_YAW_SPEED;
-            if ((remote_controller.dji_remote.rc.ch[RIGHT_CH_UD] - CH_MIDDLE) > 330)
+            if (fabsf(remote_controller.dji_remote.rc.ch[RIGHT_CH_UD] - CH_MIDDLE) > 330)
             {
                 toggle_controller.is_shoot = TRUE;
             }

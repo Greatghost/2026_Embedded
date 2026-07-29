@@ -365,6 +365,13 @@ void PCReceive(const unsigned char *PCbuffer, uint32_t length)
 	/* 与旧版一致：收到结构完整、帧头正确的PC帧即刷新通信心跳。 */
 	LossUpdate(&global_debugger.pc_receive_debugger, 0.02);
 
+	/* 按种类统计收到的下行帧（仅 TypeID 已知且在 0x00~0x05 范围内才计数） */
+	if (PCbuffer[1] < PC_DOWNLINK_TYPE_COUNT)
+	{
+		g_pc_downlink_debug.by_type[PCbuffer[1]]++;
+		g_pc_downlink_debug.total++;
+	}
+
 	switch(PCbuffer[1])
 	{
 	case PC_DOWNLINK_CONTROL: // 0x00 — 13B GimbalControlFrame（兼容旧驱动）
@@ -839,6 +846,15 @@ void SendtoPC(uint8_t data_type)
 	{
 		usb_cdc_busy_count++;
 	}
+	else if (tx_ret == USBD_OK)
+	{
+		/* 按种类统计成功提交到 USB CDC 的上行帧 */
+		if (data_type < PC_UPLINK_TYPE_COUNT)
+		{
+			g_pc_uplink_debug.by_type[data_type]++;
+			g_pc_uplink_debug.total++;
+		}
+	}
 }
 #endif
 
@@ -852,6 +868,8 @@ void SendtoPC(uint8_t data_type)
  */
 static map_path_pending_t map_path_pending;
 MapPathRxDebug_t g_map_path_rx_debug;
+PCUplinkDebug_t g_pc_uplink_debug;
+PCDownlinkDebug_t g_pc_downlink_debug;
 
 static void map_path_clear_pending(void)
 {
