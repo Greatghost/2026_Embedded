@@ -23,7 +23,8 @@
 #include "pc_serial.h"
 
 /* USER CODE BEGIN INCLUDE */
-#include "stm32f4xx_hal_pcd.h"   /* PCD_HandleTypeDef, HAL_PCD_EP_Flush, USBx_INEP */
+#include "usb_device.h"
+#include "usbd_core.h"
 /* USER CODE END INCLUDE */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -113,7 +114,7 @@ extern USBD_HandleTypeDef hUsbDeviceFS;
 
 /* USB CDC 发送诊断计数器 */
 volatile uint32_t usb_cdc_busy_count = 0U;      /* CDC_Transmit_FS 返回 USBD_BUSY 的累计次数 */
-volatile uint32_t usb_cdc_tx_reset_count = 0U;  /* 看门狗强制清零 TxState 的累计次数 */
+volatile uint32_t usb_cdc_tx_reset_count = 0U;  /* 完整 USB Device 恢复的累计次数 */
 volatile uint32_t usb_cdc_not_configured_count = 0U; /* USB 未枚举时发送被拒的累计次数 */
 volatile uint8_t  usb_cdc_last_dev_state = 0U;       /* 最近一次观察到的 USB 设备状态 */
 
@@ -298,9 +299,8 @@ uint8_t CDC_Transmit_FS(uint8_t *Buf, uint16_t Len)
   /* 记录最近一次 USB 设备状态（供调试观察） */
   usb_cdc_last_dev_state = hUsbDeviceFS.dev_state;
 
-  /* USB 未配置（未枚举/已断开）时直接返回，避免设置 TxState=1 后
-   * DMA 完成中断永不触发，导致 TxState 永久卡死 */
-  if (hUsbDeviceFS.dev_state != USBD_STATE_CONFIGURED)
+  /* USB 未配置、已断开或类数据未就绪时拒绝发送。 */
+  if ((hUsbDeviceFS.dev_state != USBD_STATE_CONFIGURED) || (hcdc == NULL))
   {
     usb_cdc_not_configured_count++;
     return USBD_FAIL;
@@ -319,28 +319,31 @@ uint8_t CDC_Transmit_FS(uint8_t *Buf, uint16_t Len)
 /* USER CODE BEGIN 8 */
 
 /**
- * @brief USB CDC TxState 看门狗
+ * @brief USB CDC TxState recovery supervisor.
  *
- * 当上位机停止读取 USB 数据时，USB 主机不发 IN 令牌，DMA 传输完成中断
- * 不触发，TxState 永久保持为 1，导致后续所有 CDC_Transmit_FS 返回 USBD_BUSY。
- *
- * 检测到 TxState 卡死超过 timeout_ms 后，必须做四件事才能彻底恢复:
- *   1) 清 TxState 软件标志        —— 让 CDC_Transmit_FS 不再返回 BUSY
- *   2) HAL_PCD_EP_Flush 清空 TX FIFO —— 清掉残留的旧数据(否则新数据会拼到旧数据后面,
- *      上位机重新读取时先收到碎片,帧同步丢失表现为"收不到数据")
- *   3) 清 DIEPINT 挂起的中断标志  —— 否则旧 XFRC 标志可能立即触发中断干扰新传输
- *   4) 清 IN_ep 软件状态(xfer_len/buff/count) —— 否则 HAL_PCD_EP_Transmit 行为异常
- *
- * 只清 TxState 不够:TX FIFO 残留数据会导致上位机重新读取时帧错位。
- * 在 GimbalTask 主循环中以 2ms 周期调用, timeout_ms 取 100。
+ * Never alter TxState, endpoint registers or HAL endpoint bookkeeping while
+ * the USB ISR can be using them.  If an IN transfer stays busy, disconnect and
+ * de-initialize the complete USB device with OTG_FS IRQ masked.  Reinitialize
+ * it after a short disconnect interval so the host performs a clean
+ * enumeration and both the USB core and HAL state are rebuilt together.
  */
 void CDC_Transmit_FS_Watchdog(uint32_t timeout_ms)
 {
   static uint32_t stuck_start_tick = 0U;
+  static uint32_t restart_tick = 0U;
+  static uint8_t restart_pending = 0U;
   USBD_CDC_HandleTypeDef *hcdc;
-  PCD_HandleTypeDef *hpcd;
-  uint32_t epnum;
-  uint32_t USBx_BASE;   /* USBx_INEP() 宏依赖此局部变量,HAL 内部同样如此 */
+  uint32_t now = HAL_GetTick();
+
+  if (restart_pending != 0U)
+  {
+    if ((now - restart_tick) >= 250U)
+    {
+      MX_USB_DEVICE_Init();
+      restart_pending = 0U;
+    }
+    return;
+  }
 
   if (hUsbDeviceFS.pClassData == NULL)
   {
@@ -360,36 +363,18 @@ void CDC_Transmit_FS_Watchdog(uint32_t timeout_ms)
   {
     if (stuck_start_tick == 0U)
     {
-      stuck_start_tick = HAL_GetTick();
+      stuck_start_tick = now;
     }
-    else if ((HAL_GetTick() - stuck_start_tick) > timeout_ms)
+    else if ((now - stuck_start_tick) > timeout_ms)
     {
-      /* 1. 清 TxState 软件标志 */
-      hcdc->TxState = 0U;
+      HAL_NVIC_DisableIRQ(OTG_FS_IRQn);
+      __DSB();
+      __ISB();
+      (void)USBD_DeInit(&hUsbDeviceFS);
+      HAL_NVIC_ClearPendingIRQ(OTG_FS_IRQn);
 
-      /* 2/3/4. 刷新 USB IN 端点硬件状态 */
-      hpcd = (PCD_HandleTypeDef *)hUsbDeviceFS.pData;
-      if (hpcd != NULL)
-      {
-        epnum = CDC_IN_EP & 0x7FU;
-        USBx_BASE = (uint32_t)hpcd->Instance;   /* 等同于 USBx */
-
-        /* 2. 清空 TX FIFO (HAL_PCD_EP_Flush 内部只调 USB_FlushTxFifo,
-         *    不清端点使能状态和中断标志,所以下面还要手动清) */
-        HAL_PCD_EP_Flush(hpcd, CDC_IN_EP);
-
-        /* 3. 清 DIEPINT 挂起的中断标志 (写1清零) */
-        USBx_INEP(epnum)->DIEPINT = 0xFFFFFFFFU;
-
-        /* 4. 清 HAL 软件层 IN_ep 状态,防止 HAL_PCD_EP_Transmit 误判 */
-        if (hpcd->IN_ep[epnum].xfer_len > 0U)
-        {
-          hpcd->IN_ep[epnum].xfer_len = 0U;
-          hpcd->IN_ep[epnum].xfer_buff = NULL;
-          hpcd->IN_ep[epnum].xfer_count = 0U;
-        }
-      }
-
+      restart_tick = now;
+      restart_pending = 1U;
       usb_cdc_tx_reset_count++;
       stuck_start_tick = 0U;
     }

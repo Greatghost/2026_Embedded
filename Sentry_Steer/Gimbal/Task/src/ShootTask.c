@@ -376,11 +376,15 @@ void Shoot_Supply_Cal()
 
 void Shoot_Unstoppable_Cal()
 {
-    // 弹频换算: 原 TOGGLE_SPEED 连续转动 900°/s ÷ ONE_GRID_ANGLE(45°/发) = 20Hz
-    // GimbalTask 500Hz (2ms/次), 20Hz 周期 50ms → UNSTOPPABLE_SHOOT_INTERVAL = 25 个周期
-    // 保持当前弹频不变, 仅把拨盘从连续转动改为位置环单发(一格一格)转动
-    static int unstoppable_delay_num = 0;
-    const int UNSTOPPABLE_SHOOT_INTERVAL = 25;
+    /*
+     * 遥控器向上的每组弹数 N 和平均弹频 f 由 ShootTask.h 配置，
+     * 组周期按 1000 * N / f 计算。
+     */
+    static TickType_t next_burst_tick = 0U;
+    static uint8_t burst_schedule_armed = 0U;
+    const TickType_t BURST_PERIOD_TICKS =
+        pdMS_TO_TICKS(REMOTE_UP_BURST_PERIOD_MS);
+    const float BURST_GRID_COUNT = (float)REMOTE_UP_BURST_SIZE_N;
 
     // 摩擦轮: 高弹频下摩擦轮受子弹持续摩擦导致掉速, 提升目标转速以维持实际弹速。
     // setFrictionSpeed() 设置基础目标 (-BULLET_17MM_23MS_SPEED_L/R), 此处叠加补偿量。
@@ -391,20 +395,34 @@ void Shoot_Unstoppable_Cal()
     motor_communication[LEFT_FRICTION_WHEEL_MOTOR].control = friction_wheels.send_to_motor_current[LEFT_FRICTION_WHEEL];
     motor_communication[RIGHT_FRICTION_WHEEL_MOTOR].control = friction_wheels.send_to_motor_current[RIGHT_FRICTION_WHEEL];
 
-    // 拨盘: 位置环单发模式, 由 is_shoot 触发, 每格间隔 UNSTOPPABLE_SHOOT_INTERVAL 个周期
-    unstoppable_delay_num++;
+    // 拨盘: 每个组周期将目标位置增加 N 格，形成一次 N 连发。
     autoReverse();
 
     switch (toggle_controller.toggle_state)
     {
     case TOGGLE_NORMAL: // 正常状态下
-        if (unstoppable_delay_num > UNSTOPPABLE_SHOOT_INTERVAL)
+        if (toggle_controller.is_shoot)
         {
-            if (toggle_controller.is_shoot)
+            const TickType_t now = xTaskGetTickCount();
+            if (burst_schedule_armed == 0U)
             {
-                ToggleAddGrid(&toggle_controller.set_pos, 1);
-                unstoppable_delay_num = 0;
+                next_burst_tick = now;
+                burst_schedule_armed = 1U;
             }
+
+            if ((int32_t)(now - next_burst_tick) >= 0)
+            {
+                ToggleAddGrid(&toggle_controller.set_pos, BURST_GRID_COUNT);
+                next_burst_tick += BURST_PERIOD_TICKS;
+
+                // 任务若曾长时间阻塞，丢弃过期组，避免恢复后连续补发。
+                if ((int32_t)(now - next_burst_tick) >= 0)
+                    next_burst_tick = now + BURST_PERIOD_TICKS;
+            }
+        }
+        else
+        {
+            burst_schedule_armed = 0U;
         }
         motor_communication[TOGGLE_MOTOR].control = Toggle_Calculate(TOGGLE_POS, toggle_controller.set_pos);
         break;

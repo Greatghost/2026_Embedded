@@ -405,12 +405,10 @@ typedef struct
     uint16_t quadrant;    // 象限: 0-7，对应八个方向
 } radar_sentinel_alert_t;
 
-// 雷达发送的哨兵赛场坐标信息 (data_cmd_id = 0x0202)
-// 格式: 7个坐标(哨兵自身 + 敌方1,2,3,4,6,7号)，每个坐标为float x + float y
+// 雷达发送的敌方赛场坐标信息 (data_cmd_id = 0x0202)
+// 格式: 6个敌方坐标(1,2,3,4,6,7号)，每个坐标为float x + float y，共48字节
 typedef struct
 {
-    float sentry_x;           // 哨兵自身x坐标
-    float sentry_y;           // 哨兵自身y坐标
     float enemy1_hero_x;      // 敌方1号英雄x
     float enemy1_hero_y;      // 敌方1号英雄y
     float enemy2_engineer_x;  // 敌方2号工程x
@@ -828,7 +826,7 @@ typedef struct Referee_t
 
 	/* 雷达站发送的数据 (通过0x0301机器人交互链路) */
 	radar_sentinel_alert_t Radar_Alert_Info;     // 0x0201 哨兵预警信息
-	radar_sentry_position_t Radar_Position_Info; // 0x0202 哨兵赛场坐标
+	radar_sentry_position_t Radar_Position_Info; // 0x0202 敌方赛场坐标（48B）
 	radar_enemy_hp_t Radar_Enemy_HP;             // 0x0205 敌方血量
 
 	// /* 绘制UI专用结构体 */

@@ -38,6 +38,7 @@ ChassisMapPathRxDebug_t g_chassis_map_path_rx_debug;
 
 void Gimbal_msgs_Decode1()
 {
+  static uint8_t last_pc_control_active = 0U;
   enum ROBOT_STATE robot_state = (enum ROBOT_STATE)gimbal_receiver_pack1.robot_state;
   enum CONTROL_TYPE contro_type = (enum CONTROL_TYPE)gimbal_receiver_pack1.control_type;
   enum CONTROL_MODE_ACTION control_mode_action = (enum CONTROL_MODE_ACTION)gimbal_receiver_pack1.control_mode_action;
@@ -57,6 +58,13 @@ void Gimbal_msgs_Decode1()
 
   setSuperPower(power_state);
   setFlyMode(fly_or_not);
+
+  if (last_pc_control_active != 0U &&
+      gimbal_receiver_pack1.pc_control_active == 0U)
+  {
+    chassis_manual_takeover_reset();
+  }
+  last_pc_control_active = gimbal_receiver_pack1.pc_control_active;
 
   // 运动百分比
   infantry.receive_x_v = gimbal_receiver_pack1.robot_speed_x / 30.0f;

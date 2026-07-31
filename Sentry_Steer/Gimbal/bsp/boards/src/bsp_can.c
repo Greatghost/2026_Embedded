@@ -13,7 +13,62 @@
  **********************************************************************************************************/
 volatile uint8_t JudgeData_update = 0;
 volatile uint8_t Blood_update = 0;
+volatile uint32_t can1_bus_off_count = 0U;
+volatile uint32_t can2_bus_off_count = 0U;
+volatile uint32_t can1_recovery_count = 0U;
+volatile uint32_t can2_recovery_count = 0U;
+static volatile uint8_t can_bus_off_waiting_mask = 0U;
+static volatile uint8_t can_recovery_alert_mask = 0U;
 // shoot_data_recv, sentry_info_recv, bullet_extended_recv 已在ChassisGet.c中定义
+
+static uint8_t CanGetRecoveryBit(const CAN_HandleTypeDef *hcan)
+{
+	if (hcan->Instance == CAN1)
+	{
+		return CAN_RECOVERY_ALERT_CAN1;
+	}
+	if (hcan->Instance == CAN2)
+	{
+		return CAN_RECOVERY_ALERT_CAN2;
+	}
+	return 0U;
+}
+
+/*
+ * Called only after HAL reports a successfully received or transmitted frame.
+ * This distinguishes real bus recovery from bxCAN merely leaving BOFF while
+ * the cable is still disconnected.
+ */
+static void CanMarkBusRecovered(CAN_HandleTypeDef *hcan)
+{
+	const uint8_t bit = CanGetRecoveryBit(hcan);
+
+	if ((bit != 0U) && ((can_bus_off_waiting_mask & bit) != 0U))
+	{
+		can_bus_off_waiting_mask &= (uint8_t)~bit;
+		can_recovery_alert_mask |= bit;
+		if (bit == CAN_RECOVERY_ALERT_CAN1)
+		{
+			can1_recovery_count++;
+		}
+		else
+		{
+			can2_recovery_count++;
+		}
+	}
+}
+
+uint8_t CanTakeRecoveryAlerts(void)
+{
+	uint8_t alerts;
+
+	taskENTER_CRITICAL();
+	alerts = can_recovery_alert_mask;
+	can_recovery_alert_mask = 0U;
+	taskEXIT_CRITICAL();
+
+	return alerts;
+}
 
 void can_filter_init(void)
 {
@@ -115,9 +170,11 @@ void can_filter_init(void)
 	HAL_CAN_Start(&hcan2);
 	HAL_CAN_ActivateNotification(&hcan2, CAN_IT_RX_FIFO1_MSG_PENDING);
 	// CAN 1 发送中断
-	HAL_CAN_ActivateNotification(&hcan1, CAN_IT_TX_MAILBOX_EMPTY);
+	HAL_CAN_ActivateNotification(&hcan1, CAN_IT_TX_MAILBOX_EMPTY |
+		CAN_IT_BUSOFF | CAN_IT_ERROR);
 	// CAN 2 发送中断
-	HAL_CAN_ActivateNotification(&hcan2, CAN_IT_TX_MAILBOX_EMPTY);
+	HAL_CAN_ActivateNotification(&hcan2, CAN_IT_TX_MAILBOX_EMPTY |
+		CAN_IT_BUSOFF | CAN_IT_ERROR);
 }
 
 
@@ -352,10 +409,15 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
 {
 	CAN_RxHeaderTypeDef rx_header;
 	uint8_t rx_data[8];
-	HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO0, &rx_header, rx_data);
+	const HAL_StatusTypeDef status =
+		HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO0, &rx_header, rx_data);
 	__HAL_CAN_CLEAR_FLAG(hcan, CAN_IT_RX_FIFO0_MSG_PENDING);
 
-	MotorReceive(hcan, &rx_header, rx_data);
+	if (status == HAL_OK)
+	{
+		CanMarkBusRecovered(hcan);
+		MotorReceive(hcan, &rx_header, rx_data);
+	}
 }
 /**********************************************************************************************************
  *函 数 名: HAL_CAN_RxFifo1MsgPendingCallback
@@ -367,10 +429,53 @@ void HAL_CAN_RxFifo1MsgPendingCallback(CAN_HandleTypeDef *hcan) // FIFO 1邮箱�
 {
 	CAN_RxHeaderTypeDef rx_header;
 	uint8_t rx_data[8];
-	HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO1, &rx_header, rx_data);
+	const HAL_StatusTypeDef status =
+		HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO1, &rx_header, rx_data);
 	__HAL_CAN_CLEAR_FLAG(hcan, CAN_IT_RX_FIFO1_MSG_PENDING);
 
-	MotorReceive(hcan, &rx_header, rx_data);
+	if (status == HAL_OK)
+	{
+		CanMarkBusRecovered(hcan);
+		MotorReceive(hcan, &rx_header, rx_data);
+	}
+}
+
+void HAL_CAN_TxMailbox0CompleteCallback(CAN_HandleTypeDef *hcan)
+{
+	CanMarkBusRecovered(hcan);
+}
+
+void HAL_CAN_TxMailbox1CompleteCallback(CAN_HandleTypeDef *hcan)
+{
+	CanMarkBusRecovered(hcan);
+}
+
+void HAL_CAN_TxMailbox2CompleteCallback(CAN_HandleTypeDef *hcan)
+{
+	CanMarkBusRecovered(hcan);
+}
+
+void HAL_CAN_ErrorCallback(CAN_HandleTypeDef *hcan)
+{
+	const uint32_t error = HAL_CAN_GetError(hcan);
+
+	if ((error & HAL_CAN_ERROR_BOF) != 0U)
+	{
+		const uint8_t bit = CanGetRecoveryBit(hcan);
+		can_bus_off_waiting_mask |= bit;
+
+		if (hcan->Instance == CAN1)
+		{
+			can1_bus_off_count++;
+		}
+		else if (hcan->Instance == CAN2)
+		{
+			can2_bus_off_count++;
+		}
+	}
+
+	/* Do not let an old BOF bit contaminate a later error callback. */
+	(void)HAL_CAN_ResetError(hcan);
 }
 
 int8_t CanSend(CAN_HandleTypeDef *hcan, int8_t *data, uint32_t std_id, CAN_TxHeaderTypeDef *Motor_Send, uint32_t *wait_time)

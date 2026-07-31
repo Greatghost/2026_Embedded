@@ -1,4 +1,5 @@
 #include "GimbalTask.h"
+#include "iwdgTask.h"
 
 uint8_t motor_send_data[2][SEND_ID_NUMS][8];
 uint8_t is_has_motor_data[2][SEND_ID_NUMS];
@@ -736,10 +737,11 @@ void GimbalTask(void *pvParameters)
         PC_Send(index);
         index++;
 
-        /* USB CDC TxState 看门狗：检测上位机长时间不读数据导致 TxState 卡死，
-         * 超过 100ms 强制清零，避免"突然收不到数据、reset 才恢复"的问题 */
-        CDC_Transmit_FS_Watchdog(100U);
+        /* Recover a genuinely stuck transfer by cleanly re-enumerating USB.
+         * A one-second timeout avoids resetting for ordinary host latency. */
+        CDC_Transmit_FS_Watchdog(1000U);
 
+        Iwdg_ReportAlive(IWDG_HEARTBEAT_GIMBAL);
         /*  延时  */
         vTaskDelayUntil(&xLastWakeTime, xFrequency);
     }

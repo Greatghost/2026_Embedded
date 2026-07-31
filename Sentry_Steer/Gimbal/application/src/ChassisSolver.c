@@ -10,16 +10,15 @@
 #include "ChassisSolver.h"
 
 ChassisSolver chassis_solver;
+uint8_t pc_control_mode_active = 0U;
 
 extern BigYawController big_yaw_controller;
 extern Nav_Cmd_t NAV_cmd;
 extern PC_StateControl PC_statecontrol;
 extern JudgeData_1_t JudgeRecieveData;
 
-static void PCNavigationSafeStop(void)
+static void PCControlMotionReset(void)
 {
-    offline_detector.pc_state = PC_OFF;
-
     NAV_cmd.Nav_Speed_x = 0.0f;
     NAV_cmd.Nav_Speed_y = 0.0f;
     NAV_cmd.Nav_Speed_w = 0.0f;
@@ -32,6 +31,12 @@ static void PCNavigationSafeStop(void)
     chassis_solver.chassis_speed_y = 0.0f;
     chassis_solver.chassis_speed_w = 0.0f;
     toggle_controller.is_shoot = FALSE;
+}
+
+static void PCNavigationSafeStop(void)
+{
+    offline_detector.pc_state = PC_OFF;
+    PCControlMotionReset();
 
     setRobotState(CONTROL_MODE);
     setControlModeAction(NOT_FOLLOW_GIMBAL);
@@ -601,7 +606,21 @@ void DJIRemoteUpdate(ChassisSolver *infantry)
 {
     PCControlSnapshot_t pc_control;
     const uint8_t pc_control_online = PCControlGetSnapshot(&pc_control);
+    const uint8_t pc_control_requested =
+        (remote_controller.dji_remote.rc.s[LEFT_SW] == Mid) ? 1U : 0U;
     int leg_len_switch = 0;
+
+    /*
+     * Leaving the PC-controlled switch bank is a control-source handover.
+     * Clear all PC motion/shooting state before the manual branch consumes
+     * the current stick values. This replaces the reset that previously only
+     * happened after reboot.
+     */
+    if (pc_control_mode_active != 0U && pc_control_requested == 0U)
+    {
+        PCControlMotionReset();
+    }
+    pc_control_mode_active = pc_control_requested;
     // 判断状态
     switch (remote_controller.dji_remote.rc.s[LEFT_SW])
     {
@@ -881,8 +900,8 @@ void DJIRemoteUpdate(ChassisSolver *infantry)
 #endif
 
             // 底盘控制
-            //             chassis_solver.chassis_speed_x = (remote_controller.dji_remote.rc.ch[RIGHT_CH_LR] - CH_MIDDLE) * 1.0f / CH_RANGE * MAX_X_SPEED;
-            //            chassis_solver.chassis_speed_y = (remote_controller.dji_remote.rc.ch[RIGHT_CH_UD] - CH_MIDDLE) * 1.0f / CH_RANGE * MAX_Y_SPEED;
+            chassis_solver.chassis_speed_x = 0.0f;
+            chassis_solver.chassis_speed_y = 0.0f;
             chassis_solver.chassis_speed_w = 0.f * MAX_YAW_SPEED;
             if (fabsf(remote_controller.dji_remote.rc.ch[RIGHT_CH_UD] - CH_MIDDLE) > 330)
             {

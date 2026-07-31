@@ -32,7 +32,7 @@
 #include "ChassisTask.h"
 #include "CPU_Task.h"
 #include "GimbalTask.h"
-// #include "iwdgTask.h"
+#include "iwdgTask.h"
 #include "Offline_Task.h"
 // #include "SDCardTask.h"
 #include "Test_Task.h"
@@ -168,6 +168,12 @@ void MX_FREERTOS_Init(void) {
   // Buzzer Alarm Task (电机掉线蜂鸣器告警, 2026-07-19新增)
   osThreadDef(BuzzerAlarmTask_, BuzzerAlarmTask, osPriorityNormal, 0, 256);
   BuzzerAlarmTaskHandle = osThreadCreate(osThread(BuzzerAlarmTask_), NULL);
+
+#if IWDG_TASK_ON
+  // Independent watchdog supervisor. It feeds only after all critical tasks report.
+  osThreadDef(IwdgTask_, Iwdg_task, osPriorityHigh, 0, 128);
+  iwdgTaskHandle = osThreadCreate(osThread(IwdgTask_), NULL);
+#endif
   // Shoot Task
 //  osThreadDef(ShootTask_, ShootTask, osPriorityRealtime, 0, 256);
 //  ShootTaskHandle = osThreadCreate(osThread(ShootTask_), NULL);

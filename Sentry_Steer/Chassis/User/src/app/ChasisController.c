@@ -2,6 +2,7 @@
 
 Infantry infantry;
 uint8_t speed_follow_enable_flag = 0;
+static float last_valid_velocity_angle = 0.0f;
 
 /*
  * Feedback recovery is deliberately separated from actuator recovery:
@@ -69,7 +70,6 @@ float speed_angle_bias = -90.0f;
 #endif
 float calculate_velocity_angle(void)
 {
-    static float last_valid_angle = 0.0f;
     /*
      * set_x_v/set_y_v 是已经按当前云台/底盘夹角变换后的底盘系速度。
      * SPEED_FOLLOW 必须使用这个速度矢量方向作为闭环目标；不能替换成
@@ -84,13 +84,29 @@ float calculate_velocity_angle(void)
     if (magnitude_sq < velocity_epsilon_sq)
     {
         speed_follow_enable_flag = 0U;
-        return last_valid_angle;
+        return last_valid_velocity_angle;
     }
 
-    last_valid_angle =
+    last_valid_velocity_angle =
         limit_pi(arm_atan2_f32(y, x) * 180.0f / PI);
     speed_follow_enable_flag = 1U;
-    return last_valid_angle;
+    return last_valid_velocity_angle;
+}
+
+void chassis_manual_takeover_reset(void)
+{
+    /*
+     * A PC-to-remote handover must not inherit the PC velocity direction,
+     * direction hysteresis or controller history. Reinitializing these states
+     * is the runtime equivalent of the reboot that previously cleared the bug.
+     */
+    taskENTER_CRITICAL();
+    last_valid_velocity_angle = 0.0f;
+    target_ang_speed = 0.0f;
+    speed_follow_enable_flag = 0U;
+    infantry.chassis_direction = CHASSIS_FRONT;
+    chassis_control_state_clear();
+    taskEXIT_CRITICAL();
 }
 
 /**

@@ -258,6 +258,14 @@ void CAN1_RX1_IRQHandler(void)
 }
 
 /**
+  * @brief This function handles CAN1 status change/error interrupts.
+  */
+void CAN1_SCE_IRQHandler(void)
+{
+  HAL_CAN_IRQHandler(&hcan1);
+}
+
+/**
   * @brief This function handles USART3 global interrupt.
   */
 //void USART3_IRQHandler(void)
@@ -339,6 +347,14 @@ void CAN2_RX1_IRQHandler(void)
   /* USER CODE BEGIN CAN2_RX1_IRQn 1 */
 
   /* USER CODE END CAN2_RX1_IRQn 1 */
+}
+
+/**
+  * @brief This function handles CAN2 status change/error interrupts.
+  */
+void CAN2_SCE_IRQHandler(void)
+{
+  HAL_CAN_IRQHandler(&hcan2);
 }
 
 /**

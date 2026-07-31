@@ -15,6 +15,10 @@
 
 extern volatile uint8_t JudgeData_update;
 extern volatile uint8_t Blood_update;
+extern volatile uint32_t can1_bus_off_count;
+extern volatile uint32_t can2_bus_off_count;
+extern volatile uint32_t can1_recovery_count;
+extern volatile uint32_t can2_recovery_count;
 extern JudgeData_1_t JudgeRecieveData;
 extern JudgeData_2_t JudgeRecieveData2;
 extern JudgeBloodData_ForSend1_t JudgeBlood_F,JudgeBlood_E;
@@ -28,6 +32,12 @@ extern JudgeData_position_t JudgeData_position;
 void can_filter_init(void);
 
 int8_t CanSend(CAN_HandleTypeDef *hcan, int8_t *data, uint32_t std_id, CAN_TxHeaderTypeDef *Motor_Send, uint32_t *wait_time);
+
+#define CAN_RECOVERY_ALERT_CAN1 (1U << 0)
+#define CAN_RECOVERY_ALERT_CAN2 (1U << 1)
+
+/* Return and atomically clear CAN buses that recovered after bus-off. */
+uint8_t CanTakeRecoveryAlerts(void);
 
 // 新增: 发送SentryCmd给底盘 (2026-05-06协议)
 void Can1SendSentryCmd(uint32_t sentry_cmd);

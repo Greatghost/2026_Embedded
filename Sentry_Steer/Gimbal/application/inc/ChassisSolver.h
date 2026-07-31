@@ -45,6 +45,7 @@ typedef struct ChassisSolver
 } ChassisSolver;
 
 extern ChassisSolver chassis_solver;
+extern uint8_t pc_control_mode_active;
 
 void get_control_info(ChassisSolver *infantry);
 void setAllModeOff(void);

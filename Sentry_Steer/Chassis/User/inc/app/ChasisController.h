@@ -202,6 +202,7 @@ void main_control(Infantry *infantry);
 void wheels_power_limit(Infantry *infantry);
 void execute_control(ExcuteTorque *torque);
 void get_sensors_info(Sensors *sensors_info);
+void chassis_manual_takeover_reset(void);
 
 // 设置机器人功率以及控制其速度
 void set_robot_speed(Infantry *infantry);

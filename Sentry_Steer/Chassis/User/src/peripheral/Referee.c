@@ -539,7 +539,7 @@ void Referee_SolveFifoData(uint8_t *frame)
 					memcpy(&referee_data.Radar_Alert_Info, frame + index, sizeof(radar_sentinel_alert_t));
 					radar_msg_update_flag = NEAREST_ENEMY_POS;
 					break;
-				case 0x0202: // 哨兵赛场坐标: 7个float坐标(哨兵自身+敌方1,2,3,4,6,7)
+				case 0x0202: // 敌方赛场坐标: 6组float坐标(敌方1,2,3,4,6,7)，载荷48字节
 					if (data_length != (uint16_t)(6U + sizeof(radar_sentry_position_t)))
 					{
 						global_debugger.referee_debugger.err_msgs_num++;
@@ -549,8 +549,6 @@ void Referee_SolveFifoData(uint8_t *frame)
 					global_debugger.referee_debugger.radar_0x0202_num++;
 					memcpy(&referee_data.Radar_Position_Info, frame + index, sizeof(radar_sentry_position_t));
 					// 同步更新到Robot_Interactive_Data.position以兼容旧代码
-					referee_data.Robot_Interactive_Data.position.sentry_x = referee_data.Radar_Position_Info.sentry_x;
-					referee_data.Robot_Interactive_Data.position.sentry_y = referee_data.Radar_Position_Info.sentry_y;
 					referee_data.Robot_Interactive_Data.position.enemy1_hero_x = referee_data.Radar_Position_Info.enemy1_hero_x;
 					referee_data.Robot_Interactive_Data.position.enemy1_hero_y = referee_data.Radar_Position_Info.enemy1_hero_y;
 					referee_data.Robot_Interactive_Data.position.enemy2_engineer_x = referee_data.Radar_Position_Info.enemy2_engineer_x;

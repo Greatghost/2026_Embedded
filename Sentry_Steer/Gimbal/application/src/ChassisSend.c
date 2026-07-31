@@ -47,6 +47,7 @@ void Pack_InfantryMode()
 	chassis_send_pack1.super_power = remote_controller.super_power_state;
 	chassis_send_pack1.fly_state = remote_controller.fly_state;
   chassis_send_pack1.sentry_posture = current_posture;  // 哨兵姿态发送给底盘板
+  chassis_send_pack1.pc_control_active = pc_control_mode_active;
   // through_hole_flag 在 ChassisSolver.c 中设置
 
   if (motor_communication[BIG_YAW_MOTOR].motor_type == DM_MOTOR)

@@ -1,4 +1,5 @@
 #include "ChassisTask.h"
+#include "iwdgTask.h"
 
 int8_t send_to_chassis_data[2][8];        // 数据
 CAN_TxHeaderTypeDef chassis_tx_header[2]; // 传输头
@@ -29,6 +30,7 @@ void ChassisTask(void *pvParameters)
                pdMS_TO_TICKS(5000U))
         {
             PCStreamProcessPending();
+            Iwdg_ReportAlive(IWDG_HEARTBEAT_CHASSIS);
             vTaskDelay(pdMS_TO_TICKS(1U));
         }
     }
@@ -74,6 +76,7 @@ void ChassisTask(void *pvParameters)
 
         i++;
 
+        Iwdg_ReportAlive(IWDG_HEARTBEAT_CHASSIS);
         /*  延时  */
         vTaskDelayUntil(&xLastWakeTime, xFrequency);
     }

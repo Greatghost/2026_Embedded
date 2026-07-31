@@ -2,6 +2,7 @@
 #include "remote_control.h"
 #include "gimbal_config.h"
 #include "main.h"
+#include "iwdgTask.h"
 
 #if USE_WBUS_PROTOCOL
 #include "wbus_decoder.h"
@@ -179,6 +180,7 @@ void Offline_task(void *pvParameters)
             PC_ON,
             PC_OFF);
 
+        Iwdg_ReportAlive(IWDG_HEARTBEAT_OFFLINE);
         vTaskDelay(pdMS_TO_TICKS(OFFLINE_MONITOR_PERIOD_MS));
     }
 }

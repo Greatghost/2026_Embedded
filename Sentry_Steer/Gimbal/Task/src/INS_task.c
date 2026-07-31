@@ -20,6 +20,7 @@
 #include "math.h"
 #include "main.h"
 #include "debug.h"
+#include "iwdgTask.h"
 INS_t INS;
 IMU_Param_t IMU_Param;
 PID_t TempCtrl = {0};
@@ -209,6 +210,7 @@ void INS_task(void const *pvParameters)
 			}
 		}
 		INS_Task_EKF();
+		Iwdg_ReportAlive(IWDG_HEARTBEAT_INS);
 		/*  延时  */
     vTaskDelayUntil(&xLastWakeTime, xFrequency);
     }
