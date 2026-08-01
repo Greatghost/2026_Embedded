@@ -117,6 +117,9 @@ volatile uint32_t usb_cdc_busy_count = 0U;      /* CDC_Transmit_FS 返回 USBD_B
 volatile uint32_t usb_cdc_tx_reset_count = 0U;  /* 完整 USB Device 恢复的累计次数 */
 volatile uint32_t usb_cdc_not_configured_count = 0U; /* USB 未枚举时发送被拒的累计次数 */
 volatile uint8_t  usb_cdc_last_dev_state = 0U;       /* 最近一次观察到的 USB 设备状态 */
+volatile uint8_t  usb_cdc_host_port_open = 0U;
+volatile uint32_t usb_cdc_host_closed_drop_count = 0U;
+volatile USB_CDC_ResetDebug_t usb_cdc_reset_debug = {0};
 
 /* USER CODE END EXPORTED_VARIABLES */
 
@@ -159,6 +162,7 @@ USBD_CDC_ItfTypeDef USBD_Interface_fops_FS =
 static int8_t CDC_Init_FS(void)
 {
   /* USER CODE BEGIN 3 */
+  usb_cdc_host_port_open = 0U;
   /* Set Application Buffers */
   USBD_CDC_SetTxBuffer(&hUsbDeviceFS, UserTxBufferFS, 0);
   USBD_CDC_SetRxBuffer(&hUsbDeviceFS, UserRxBufferFS);
@@ -173,6 +177,7 @@ static int8_t CDC_Init_FS(void)
 static int8_t CDC_DeInit_FS(void)
 {
   /* USER CODE BEGIN 4 */
+  usb_cdc_host_port_open = 0U;
   return (USBD_OK);
   /* USER CODE END 4 */
 }
@@ -235,7 +240,13 @@ static int8_t CDC_Control_FS(uint8_t cmd, uint8_t *pbuf, uint16_t length)
     break;
 
   case CDC_SET_CONTROL_LINE_STATE:
-
+    /* With wLength=0 ST passes the complete setup request in pbuf.  Linux
+     * sets DTR (wValue bit 0) while /dev/ttyACM* is open. */
+    if (pbuf != NULL)
+    {
+      const USBD_SetupReqTypedef *req = (const USBD_SetupReqTypedef *)pbuf;
+      usb_cdc_host_port_open = ((req->wValue & 0x0001U) != 0U) ? 1U : 0U;
+    }
     break;
 
   case CDC_SEND_BREAK:
@@ -306,6 +317,15 @@ uint8_t CDC_Transmit_FS(uint8_t *Buf, uint16_t Len)
     return USBD_FAIL;
   }
 
+  /* An enumerated CDC device is not necessarily open on the NUC.  Do not
+   * submit an IN transfer until the host asserts DTR, otherwise TxState can
+   * legitimately remain busy forever and must not trigger re-enumeration. */
+  if (usb_cdc_host_port_open == 0U)
+  {
+    usb_cdc_host_closed_drop_count++;
+    return USBD_FAIL;
+  }
+
   if (hcdc->TxState != 0)
   {
     return USBD_BUSY;
@@ -341,7 +361,15 @@ void CDC_Transmit_FS_Watchdog(uint32_t timeout_ms)
     {
       MX_USB_DEVICE_Init();
       restart_pending = 0U;
+      usb_cdc_reset_debug.restart_pending = 0U;
     }
+    return;
+  }
+
+  /* Do not diagnose TxState while no process owns the NUC serial port. */
+  if (usb_cdc_host_port_open == 0U)
+  {
+    stuck_start_tick = 0U;
     return;
   }
 
@@ -367,6 +395,17 @@ void CDC_Transmit_FS_Watchdog(uint32_t timeout_ms)
     }
     else if ((now - stuck_start_tick) > timeout_ms)
     {
+      /* USBD_DeInit 会清状态，所以先保存复位现场供调试器查看。 */
+      usb_cdc_reset_debug.total_count++;
+      usb_cdc_reset_debug.tx_stuck_count++;
+      usb_cdc_reset_debug.last_tick_ms = now;
+      usb_cdc_reset_debug.last_stuck_ms = now - stuck_start_tick;
+      usb_cdc_reset_debug.last_timeout_ms = timeout_ms;
+      usb_cdc_reset_debug.last_reason = USB_CDC_RESET_REASON_TX_STUCK;
+      usb_cdc_reset_debug.last_dev_state = hUsbDeviceFS.dev_state;
+      usb_cdc_reset_debug.last_tx_state = (uint8_t)hcdc->TxState;
+      usb_cdc_reset_debug.restart_pending = 1U;
+
       HAL_NVIC_DisableIRQ(OTG_FS_IRQn);
       __DSB();
       __ISB();
@@ -383,6 +422,18 @@ void CDC_Transmit_FS_Watchdog(uint32_t timeout_ms)
   {
     stuck_start_tick = 0U;
   }
+}
+
+void USB_CDC_RecordHostBusReset(void)
+{
+  usb_cdc_reset_debug.total_count++;
+  usb_cdc_reset_debug.host_bus_count++;
+  usb_cdc_reset_debug.last_tick_ms = HAL_GetTick();
+  usb_cdc_reset_debug.last_stuck_ms = 0U;
+  usb_cdc_reset_debug.last_timeout_ms = 0U;
+  usb_cdc_reset_debug.last_reason = USB_CDC_RESET_REASON_HOST_BUS;
+  usb_cdc_reset_debug.last_dev_state = hUsbDeviceFS.dev_state;
+  usb_cdc_reset_debug.last_tx_state = 0U;
 }
 
 /* USER CODE END 8 */
