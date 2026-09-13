@@ -5,7 +5,7 @@ Updated: 2026-07-18
 本文是下位机固件实现 `DownlinkTypeID=0x02` 地图路径的交接规范。它只描述上位机到
 下位机的两段 64B 串口帧，以及下位机重组成一份裁判系统 `0x0307 map_data_t` 后的发送。
 上位机 ROS 链路、路径坐标转换和字段来源见
-[downlink_control_frame.md](downlink_control_frame.md)。
+[云台上位机通信协议总览.md](云台上位机通信协议总览.md)。
 
 ## 1. 必须同步切换的协议
 
@@ -188,5 +188,5 @@ void on_upper_map_path_frame(const uint8_t frame[64], uint32_t now_ms) {
 
 - 上位机 frame 定义与 CRC：`src/gimbal_driver/module/BasicTypes.hpp`
 - 上位机两段连续写入：`src/gimbal_driver/main.cpp` 的 `SendMapPath()`
-- 上位机下行总协议：[downlink_control_frame.md](downlink_control_frame.md)
+- 上位机下行总协议：[云台上位机通信协议总览.md](云台上位机通信协议总览.md)
 - 裁判协议与上下位机总对接：[referee_serial_integration.md](referee_serial_integration.md)

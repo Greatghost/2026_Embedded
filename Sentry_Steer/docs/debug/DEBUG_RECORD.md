@@ -46,7 +46,7 @@ WBUS 通道映射（`WBUS_UpdateRemoteController`）：
 | **Pitch** | **CAN2** (PB5/PB6) | **0x06** | **0x11** | DM_MOTOR |
 | **Big Yaw** | **CAN1** (PD0/PD1) | **0x05** | **0x10** | DM_MOTOR (DM8006) |
 
-接收 ID 定义: [can_config.h](config/can_config.h)
+接收 ID 定义: [can_config.h](../../Gimbal/config/can_config.h)
 - `PITCH_MOTOR_CAN_ID = 0x11`
 - `BIG_YAW_MOTOR_CAN_ID = 0x10`
 
@@ -130,20 +130,20 @@ DM_Pitch_Motor.Kd = 5;
 
 | 文件 | 内容 |
 |---|---|
-| [ChassisSolver.c](application/src/ChassisSolver.c) | 遥控器控制逻辑、底盘速度解算 |
-| [wbus_decoder.c](application/src/wbus_decoder.c) | WBUS 协议解码、通道映射 |
-| [remote_control.c](application/src/remote_control.c) | 遥控器接收、模式设置 |
-| [can_config.h](config/can_config.h) | CAN ID 定义、滤波器配置 |
-| [can_send_config.c](config/can_send_config.c) | 电机通信配置 (`Motor_Config_Init`) |
-| [gimbal_config.h](config/gimbal_config.h) | 云台角度限位、电机符号 |
-| [Gimbal.h](application/inc/Gimbal.h) | `GimbalController` 结构体 |
-| [Gimbal.c](application/src/Gimbal.c) | PID 初始化、云台计算 |
-| [bsp_can.c](bsp/boards/src/bsp_can.c) | CAN 接收回调、滤波器初始化 |
-| [GimbalTask.c](Task/src/GimbalTask.c) | 电机数据发送任务 |
-| [ActionTask.c](Task/src/ActionTask.c) | 250Hz 控制循环 |
-| [DM_Motor.c](components/motor/src/DM_Motor.c) | DM 电机 MIT 控制/接收 |
-| [can.c](Src/can.c) | CAN 波特率配置 (1Mbps) |
-| [robot_config.h](config/robot_config.h) | `ROBOT = TIGER` |
+| [ChassisSolver.c](../../Gimbal/application/src/ChassisSolver.c) | 遥控器控制逻辑、底盘速度解算 |
+| [wbus_decoder.c](../../Gimbal/application/src/wbus_decoder.c) | WBUS 协议解码、通道映射 |
+| [remote_control.c](../../Gimbal/application/src/remote_control.c) | 遥控器接收、模式设置 |
+| [can_config.h](../../Gimbal/config/can_config.h) | CAN ID 定义、滤波器配置 |
+| [can_send_config.c](../../Gimbal/config/can_send_config.c) | 电机通信配置 (`Motor_Config_Init`) |
+| [gimbal_config.h](../../Gimbal/config/gimbal_config.h) | 云台角度限位、电机符号 |
+| [Gimbal.h](../../Gimbal/application/inc/Gimbal.h) | `GimbalController` 结构体 |
+| [Gimbal.c](../../Gimbal/application/src/Gimbal.c) | PID 初始化、云台计算 |
+| [bsp_can.c](../../Gimbal/bsp/boards/src/bsp_can.c) | CAN 接收回调、滤波器初始化 |
+| [GimbalTask.c](../../Gimbal/Task/src/GimbalTask.c) | 电机数据发送任务 |
+| [ActionTask.c](../../Gimbal/Task/src/ActionTask.c) | 250Hz 控制循环 |
+| [DM_Motor.c](../../Gimbal/components/motor/src/DM_Motor.c) | DM 电机 MIT 控制/接收 |
+| [can.c](../../Gimbal/Src/can.c) | CAN 波特率配置 (1Mbps) |
+| [robot_config.h](../../Gimbal/config/robot_config.h) | `ROBOT = TIGER` |
 
 ## 8. Bug 修复: Pitch 电机上电下冲 (2026-06-18)
 
