@@ -20,18 +20,22 @@ enum ROBOT_SENSORS_DETECT
 	SUPER_CAP_OFF,// 掉了不做处理
 	COMM_ON,
 	COMM_OFF,	// 掉了做处理
+	REFEREE_POWER_ON,  // 裁判系统功率数据(0x0201)在线
+	REFEREE_POWER_OFF, // 掉线切电池直连默认功率
 };
 #pragma pack(1)
 typedef struct
 {
 	int16_t remote_receive_num;
 	int16_t cap_receive_num;
+	int16_t referee_0201_receive_num;
 	int16_t comm_receive_num[2];
 	int16_t wheel_3508_receive_num[4];
 	int16_t steer_6020_receive_num[4];
 
 	enum ROBOT_SENSORS_DETECT remote_state;
 	enum ROBOT_SENSORS_DETECT super_cap_state;
+	enum ROBOT_SENSORS_DETECT referee_power_state;
 	enum ROBOT_SENSORS_DETECT comm_state[2];
 	enum ROBOT_SENSORS_DETECT wheel_3508_state[4];
 	enum ROBOT_SENSORS_DETECT steer_6020_state[4];

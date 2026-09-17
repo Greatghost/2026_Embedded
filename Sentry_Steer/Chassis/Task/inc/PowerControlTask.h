@@ -10,6 +10,7 @@
 #include "counter.h"
 #include "NingCap.h"
 #include "ChasisController.h"
+#include "Offline_Task.h"
 
 void PowerControlTask(void *pvParameters);
 

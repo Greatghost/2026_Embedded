@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "哨兵舵轮底盘控制系统架构",
+    "locale": "zh-CN",
+    "quality_profile": "showcase",
+    "views": [
+      {
+        "id": "main-loop",
+        "label": "1 kHz 主控链路",
+        "focus": ["gimbal", "can2", "chassis_ctrl", "steer_kin", "can1", "motors"],
+        "note": "云台指令经 CAN2 解码，在 1 kHz 主控中完成运动学解算与功率限制，经 CAN1 驱动舵轮。"
+      },
+      {
+        "id": "power-chain",
+        "label": "功率与超级电容",
+        "focus": ["referee", "referee_task", "power_ctrl", "cap", "chassis_ctrl"],
+        "note": "裁判功率上限 + 电容缓冲能量决定底盘可用功率，执行层按电机模型削减电流。"
+      },
+      {
+        "id": "report-path",
+        "label": "数据回传与裁判上报",
+        "focus": ["chassis_ctrl", "referee_task", "gimbal_task", "can2", "gimbal"],
+        "note": "裁判数据、正运动学反解速度与小地图指令按 5 ms 分频回传云台。"
+      }
+    ]
+  },
+  "components": [
+    { "id": "gimbal", "type": "external", "label": "云台板 / 上位机", "sublabel": "控制指令 · yaw角 · 哨兵坐标", "pos": [60, 180] },
+    { "id": "can2", "type": "messagebus", "label": "CAN2 板间总线", "sublabel": "云台联 · 指挥链路", "pos": [240, 180] },
+    { "id": "chassis_ctrl", "type": "backend", "label": "底盘主控任务", "sublabel": "ChasisControlTask · 1 kHz", "pos": [420, 180] },
+    { "id": "steer_kin", "type": "backend", "label": "舵轮运动学", "sublabel": "steer.c · 逆/正解 · 舵向最优", "pos": [600, 180] },
+    { "id": "can1", "type": "messagebus", "label": "CAN1 电机总线", "sublabel": "轮毂 3508 ×4 · 舵向 6020 ×4", "pos": [780, 180] },
+    { "id": "motors", "type": "external", "label": "底盘电机执行", "sublabel": "4×M3508 轮毂 · 4×GM6020 舵向", "pos": [780, 480] },
+    { "id": "gimbal_task", "type": "backend", "label": "云台通信任务", "sublabel": "GimbalTask · 5 ms", "pos": [240, 400] },
+    { "id": "referee", "type": "external", "label": "裁判系统", "sublabel": "UART4 串口 · 功率/血量/事件", "pos": [60, 640] },
+    { "id": "referee_task", "type": "backend", "label": "裁判通信任务", "sublabel": "RefereeTask · 10 ms", "pos": [240, 640] },
+    { "id": "power_ctrl", "type": "cloud", "label": "功率控制任务", "sublabel": "PowerControlTask · 1 kHz", "pos": [500, 640] },
+    { "id": "cap", "type": "external", "label": "超级电容板", "sublabel": "宁王电容 · 电能缓冲/回收", "pos": [760, 640] }
+  ],
+  "boundaries": [
+    { "kind": "region", "label": "底盘控制板 · STM32F4 · FreeRTOS", "wraps": ["can2", "chassis_ctrl", "steer_kin", "can1", "power_ctrl", "referee_task", "gimbal_task"], "pad": 16 }
+  ],
+  "connections": [
+    { "from": "gimbal", "to": "can2", "label": "0x150 / 0x151 / 0x15A", "variant": "emphasis", "labelAt": [150, 150] },
+    { "from": "can2", "to": "chassis_ctrl", "label": "指令解码 → 设定速度/角速度", "variant": "emphasis", "labelAt": [390, 150] },
+    { "from": "chassis_ctrl", "to": "steer_kin", "label": "target → 逆运动学", "variant": "emphasis", "labelAt": [570, 150] },
+    { "from": "steer_kin", "to": "can1", "label": "舵向角 + 轮速 电流", "labelAt": [750, 150] },
+    { "from": "can1", "to": "motors", "label": "0x201~0x208", "labelAt": [870, 360] },
+    { "from": "gimbal_task", "to": "can2", "label": "0x160 / 0x094~0x0A3 回传" },
+    { "from": "chassis_ctrl", "to": "gimbal_task", "label": "正运动学反解 x_v/y_v/yaw_v", "variant": "dashed" },
+    { "from": "referee", "to": "referee_task", "label": "UART4 · DMA", "variant": "emphasis" },
+    { "from": "referee_task", "to": "power_ctrl", "label": "功率上限 · 缓冲能量", "variant": "emphasis" },
+    { "from": "referee_task", "to": "gimbal_task", "label": "裁判映射 · 0x0303 小地图", "variant": "dashed" },
+    { "from": "power_ctrl", "to": "cap", "label": "CAN2 双向 · 0x050 / 0x051" }
+  ],
+  "cards": [
+    { "dot": "cyan", "title": "主控链路要点", "items": ["云台指令经 CAN2 解码 → 底盘设定速度", "舵轮逆运动学 + 舵向最优旋转 解算各电机电流", "输出经 CAN1 驱动 4×M3508 轮毂与 4×GM6020 舵向"] },
+    { "dot": "rose", "title": "功率管理要点", "items": ["裁判系统下发功率上限与缓冲能量", "PowerControlTask 决策，向电容板下发 P_ref", "执行层 wheels_power_limit 按电机模型削减电流"] },
+    { "dot": "emerald", "title": "回传链要点", "items": ["正运动学反解底盘速度回传云台(0x09A)", "裁判数据/血量/坐标 5ms 分频回传", "0x0303 小地图指令去重转发云台"] }
+  ]
+}

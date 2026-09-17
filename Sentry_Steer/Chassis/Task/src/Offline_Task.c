@@ -62,6 +62,17 @@ void Offline_task(void *pvParameters)
          {
             offline_detector.super_cap_state = SUPER_CAP_OFF;
          }
+
+        // 裁判系统功率数据 (0x0201 含 chassis_power_limit, 裁判约10Hz发送)
+        if (global_debugger.referee_debugger.cmd_0x0201_num != offline_detector.referee_0201_receive_num)
+        {
+            offline_detector.referee_power_state = REFEREE_POWER_ON;
+            offline_detector.referee_0201_receive_num = global_debugger.referee_debugger.cmd_0x0201_num;
+        }
+        else
+        {
+            offline_detector.referee_power_state = REFEREE_POWER_OFF;
+        }
 			
         // 遥控器离线状态已在RemoteReceive中检测处理
         // 此处仅更新状态标志
