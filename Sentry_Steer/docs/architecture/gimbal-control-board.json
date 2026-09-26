@@ -1,0 +1,186 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "哨兵机器人云台控制板架构",
+    "locale": "zh-CN",
+    "quality_profile": "showcase",
+    "output": "docs/architecture/gimbal-control-board.html",
+    "views": [
+      {
+        "id": "control-loop",
+        "label": "控制主链路",
+        "focus": ["imu", "ins_task", "gimbal_task", "can1", "can2", "big_yaw", "pitch_motor"],
+        "note": "从 IMU 采样到达妙电机力矩输出的闭环"
+      },
+      {
+        "id": "command-input",
+        "label": "指令来源",
+        "focus": ["wbus_rc", "pc_aim", "gimbal_task"],
+        "note": "遥控与上位机自瞄两种控制入口"
+      },
+      {
+        "id": "shooting",
+        "label": "射击机构",
+        "focus": ["gimbal_task", "can1", "can2", "shooter"],
+        "note": "摩擦轮与拨弹的驱动及掉线安全联锁"
+      },
+      {
+        "id": "chassis-comm",
+        "label": "底盘协同",
+        "focus": ["chassis_task", "can1", "chassis_board"],
+        "note": "云台板与底盘板的 CAN 报文交互"
+      }
+    ]
+  },
+  "components": [
+    {
+      "id": "imu",
+      "type": "external",
+      "label": "BMI088 + IST8310",
+      "sublabel": "SPI1+DMA · I2C3",
+      "pos": [64, 104],
+      "size": [156, 64]
+    },
+    {
+      "id": "wbus_rc",
+      "type": "external",
+      "label": "WBUS 遥控",
+      "sublabel": "USART3 · DMA+IDLE",
+      "pos": [64, 258],
+      "size": [156, 64]
+    },
+    {
+      "id": "pc_aim",
+      "type": "external",
+      "label": "上位机自瞄",
+      "sublabel": "USB CDC · CRC16",
+      "pos": [64, 422],
+      "size": [156, 64]
+    },
+    {
+      "id": "ins_task",
+      "type": "backend",
+      "label": "INS_task 姿态解算",
+      "sublabel": "四元数 EKF · 1kHz",
+      "pos": [372, 100],
+      "size": [180, 72]
+    },
+    {
+      "id": "gimbal_task",
+      "type": "backend",
+      "label": "GimbalTask 云台控制",
+      "sublabel": "双环 PID + 前馈 + 射击 · 500Hz",
+      "pos": [372, 242],
+      "size": [188, 78]
+    },
+    {
+      "id": "chassis_task",
+      "type": "backend",
+      "label": "ChassisTask 底盘通信",
+      "sublabel": "0x150 系列报文 · 1kHz",
+      "pos": [372, 400],
+      "size": [180, 72]
+    },
+    {
+      "id": "can2",
+      "type": "messagebus",
+      "label": "CAN2 总线",
+      "sublabel": "Pitch · 摩擦轮",
+      "pos": [770, 204],
+      "size": [150, 72]
+    },
+    {
+      "id": "can1",
+      "type": "messagebus",
+      "label": "CAN1 总线",
+      "sublabel": "Yaw · 拨弹 · 底盘通信",
+      "pos": [770, 400],
+      "size": [150, 72]
+    },
+    {
+      "id": "pitch_motor",
+      "type": "external",
+      "label": "DM Pitch 电机",
+      "sublabel": "MIT 模式 · 0x11",
+      "pos": [1100, 78],
+      "size": [180, 64]
+    },
+    {
+      "id": "shooter",
+      "type": "external",
+      "label": "发射机构",
+      "sublabel": "M3508×2 摩擦轮 + M2006 拨弹",
+      "pos": [1100, 254],
+      "size": [188, 72]
+    },
+    {
+      "id": "big_yaw",
+      "type": "external",
+      "label": "DM8006 大 Yaw",
+      "sublabel": "MIT 模式 · 0x10",
+      "pos": [1100, 370],
+      "size": [180, 64]
+    },
+    {
+      "id": "chassis_board",
+      "type": "external",
+      "label": "底盘控制板",
+      "sublabel": "模式 / 坐标 / 地图",
+      "pos": [1100, 494],
+      "size": [180, 64]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "云台控制板固件 · STM32F407 · FreeRTOS",
+      "wraps": ["ins_task", "gimbal_task", "chassis_task"],
+      "pad": 24
+    }
+  ],
+  "connections": [
+    { "from": "imu", "to": "ins_task", "label": "SPI1 + DMA", "fromSide": "right", "toSide": "left" },
+    { "from": "ins_task", "to": "gimbal_task", "label": "姿态四元数", "variant": "emphasis", "fromSide": "bottom", "toSide": "top" },
+    { "from": "wbus_rc", "to": "gimbal_task", "label": "遥控指令", "fromSide": "right", "toSide": "left" },
+    { "from": "pc_aim", "to": "gimbal_task", "label": "自瞄目标", "fromSide": "right", "toSide": "left" },
+    { "from": "gimbal_task", "to": "can2", "fromSide": "right", "toSide": "left" },
+    { "from": "gimbal_task", "to": "can1", "fromSide": "right", "toSide": "top" },
+    { "from": "chassis_task", "to": "can1", "label": "0x150 系列", "route": "straight", "fromSide": "right", "toSide": "left" },
+    { "from": "can1", "to": "chassis_task", "label": "底盘 / 裁判数据", "variant": "dashed", "route": "straight", "fromSide": "left", "toSide": "right" },
+    { "from": "can2", "to": "pitch_motor", "label": "MIT · 0x11", "fromSide": "right", "toSide": "left" },
+    { "from": "can2", "to": "shooter", "label": "摩擦轮 0x201/0x202", "fromSide": "right", "toSide": "left" },
+    { "from": "can1", "to": "shooter", "label": "拨弹 0x204", "fromSide": "top", "toSide": "left" },
+    { "from": "can1", "to": "big_yaw", "label": "MIT · 0x10", "fromSide": "right", "toSide": "left" },
+    { "from": "can1", "to": "chassis_board", "label": "模式 / 坐标 / 地图", "fromSide": "bottom", "toSide": "left" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "控制主链路",
+      "items": [
+        "INS_task 1kHz 四元数 EKF 姿态解算",
+        "GimbalTask 500Hz 双环 PID + 前馈 + TD",
+        "达妙电机 MIT 闭环：Yaw 0x10 · Pitch 0x11"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "射击与安全联锁",
+      "items": [
+        "摩擦轮 M3508×2 速度环，拨弹 M2006 双环",
+        "任一反馈掉线即输出切零、射击停射",
+        "TIM10 恒温加热 IMU，Offline_Task 掉线检测"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "任务与通信",
+      "items": [
+        "INS 1kHz · Gimbal 500Hz · Chassis 1kHz · Action 250Hz",
+        "CAN1：大 Yaw、拨弹、底盘；CAN2：Pitch、摩擦轮",
+        "0x150（500Hz）/0x151（10Hz）报文，PC_Send ~100Hz 回传"
+      ]
+    }
+  ]
+}

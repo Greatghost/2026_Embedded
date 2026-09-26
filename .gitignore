@@ -45,6 +45,9 @@ Thumbs.db
 *.temp
 *~
 
+# Architecture diagram visual-check artifacts
+*.visual-check.*
+
 # AI
 .agents/
 .codex/
